@@ -12,7 +12,7 @@
 * [x] 2016 KDD [node2vec](https://arxiv.org/pdf/1607.00653)
 * [x] 2017 KDD [metapath2vec](https://ericdongyx.github.io/papers/KDD17-dong-chawla-swami-metapath2vec.pdf)
 * [x] 2017 ICLR [GCN](https://arxiv.org/pdf/1609.02907)
-* [ ] 2018 ESWC [R-GCN](https://arxiv.org/pdf/1703.06103)
+* [x] 2018 ESWC [R-GCN](https://arxiv.org/pdf/1703.06103)
 * [x] 2018 ICLR [GAT](https://arxiv.org/pdf/1710.10903)
 * [x] 2019 KDD [HetGNN](https://dl.acm.org/doi/pdf/10.1145/3292500.3330961)
 * [x] 2019 WWW [HAN](https://arxiv.org/pdf/1903.07293)
@@ -22,7 +22,7 @@
 
 ### 基于知识图谱的推荐算法
 * [x] 2020 IEEE [A Survey on Knowledge Graph-Based Recommender Systems](https://arxiv.org/pdf/2003.00911)
-* [ ] 2016 KDD [CKE](https://www.kdd.org/kdd2016/papers/files/adf0066-zhangA.pdf)
+* [x] 2016 KDD [CKE](https://www.kdd.org/kdd2016/papers/files/adf0066-zhangA.pdf)
 * [ ] 2018 WWW [DKN](https://arxiv.org/pdf/1801.08284)
 * [ ] 2018 SIGIR [KSR](https://dl.acm.org/doi/abs/10.1145/3209978.3210017)
 * [ ] 2018 [CFKG](https://arxiv.org/pdf/1803.06540)
@@ -44,7 +44,7 @@
 
 ## 复现模型
 ### 异构图表示学习
-* [ ] GCN
+* [x] GCN
 * [ ] R-GCN
 * [ ] GAT
 * [ ] HetGNN
@@ -60,6 +60,10 @@
 
 ## 具体计划
 * 2020.12.21~12.25
-    * [ ] 12.22：阅读论文CKE
-    * [ ] 12.23：实现GCN
-    * [ ] 12.24：阅读论文R-GCN
+    * [x] 阅读论文CKE
+    * [x] 实现GCN
+    * [x] 阅读论文R-GCN
+* 2020.12.28~2021.1.1
+    * [ ] 实现R-GCN
+    * [ ] 阅读论文DKN
+    * [ ] 阅读论文KSR
