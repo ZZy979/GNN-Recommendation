@@ -23,11 +23,11 @@
 ### 基于知识图谱的推荐算法
 * [x] 2020 IEEE [A Survey on Knowledge Graph-Based Recommender Systems](https://arxiv.org/pdf/2003.00911)
 * [x] 2016 KDD [CKE](https://www.kdd.org/kdd2016/papers/files/adf0066-zhangA.pdf)
-* [ ] 2018 [CFKG](https://arxiv.org/pdf/1803.06540)
+* [x] 2018 [CFKG](https://arxiv.org/pdf/1803.06540)
 * [ ] 2018 WSDM [SHINE](https://arxiv.org/pdf/1712.00732)
 -----
 * [x] 2013 IJCAI [Hete-MF](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.380.3668&rep=rep1&type=pdf)
-* [ ] 2014 ICDM [Hete-CF](https://arxiv.org/pdf/1412.7610)
+* [x] 2014 ICDM [Hete-CF](https://arxiv.org/pdf/1412.7610)
 * [ ] 2013 RecSys [HeteRec](http://hanj.cs.illinois.edu/pdf/recsys13_xyu.pdf)
 * [ ] 2015 CIKM [SemRec](https://papers-gamma.link/static/memory/pdfs/152-Shi_Semantic_Path_Based_Personalized_Recommendation_on_Weighted_HIN_2015.pdf)
 * [ ] 2019 WWW [RuleRec](https://arxiv.org/pdf/1903.03714)
@@ -43,10 +43,10 @@
 ## 复现模型
 ### 异构图表示学习
 * [x] [GCN](https://github.com/ZZy979/pytorch-tutorial/tree/master/pytorch_tutorial/gnn/gcn)
-* [x] [R-GCN]((https://github.com/ZZy979/pytorch-tutorial/tree/master/pytorch_tutorial/gnn/rgcn))
-* [ ] GAT
+* [x] [R-GCN](https://github.com/ZZy979/pytorch-tutorial/tree/master/pytorch_tutorial/gnn/rgcn)
+* [x] [GAT](https://github.com/ZZy979/pytorch-tutorial/tree/master/pytorch_tutorial/gnn/gat)
 * [ ] HetGNN
-* [ ] HAN
+* [x] [HAN](https://github.com/ZZy979/pytorch-tutorial/tree/master/pytorch_tutorial/gnn/han)
 * [ ] MAGNN
 * [ ] HGT
 
@@ -66,7 +66,11 @@
     * [x] 阅读论文RippleNet
     * [x] 阅读论文Hete-MF
 * 2021.1.4~1.8
-    * [ ] 实现GAT
-    * [ ] 实现HAN
-    * [ ] 阅读论文Hete-CF
-    * [ ] 阅读论文CFKG
+    * [x] 实现GAT
+    * [x] 实现HAN
+    * [x] 阅读论文Hete-CF
+    * [x] 阅读论文CFKG
+* 2021.1.11~1.15
+    * [ ] 实现MAGNN
+    * [ ] 阅读论文KGCN
+    * [ ] 阅读论文HeteRec
