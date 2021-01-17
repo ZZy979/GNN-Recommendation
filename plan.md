@@ -28,7 +28,7 @@
 -----
 * [x] 2013 IJCAI [Hete-MF](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.380.3668&rep=rep1&type=pdf)
 * [x] 2014 ICDM [Hete-CF](https://arxiv.org/pdf/1412.7610)
-* [ ] 2013 RecSys [HeteRec](http://hanj.cs.illinois.edu/pdf/recsys13_xyu.pdf)
+* [x] 2013 RecSys [HeteRec](http://hanj.cs.illinois.edu/pdf/recsys13_xyu.pdf)
 * [ ] 2015 CIKM [SemRec](https://papers-gamma.link/static/memory/pdfs/152-Shi_Semantic_Path_Based_Personalized_Recommendation_on_Weighted_HIN_2015.pdf)
 * [ ] 2019 WWW [RuleRec](https://arxiv.org/pdf/1903.03714)
 * [ ] 2018 KDD [MCRec](https://dl.acm.org/doi/pdf/10.1145/3219819.3219965)
@@ -36,7 +36,7 @@
 -----
 * [x] 2018 CIKM [RippleNet](https://arxiv.org/pdf/1803.03467)
 * [ ] 2019 KDD [AKUPM](https://dl.acm.org/doi/abs/10.1145/3292500.3330705)
-* [ ] 2019 WWW [KGCN](https://arxiv.org/pdf/1904.12575)
+* [x] 2019 WWW [KGCN](https://arxiv.org/pdf/1904.12575)
 * [ ] 2019 KDD [KGAT](https://arxiv.org/pdf/1905.07854)
 * [ ] 2019 [KNI](https://arxiv.org/pdf/1908.04032)
 
@@ -47,7 +47,7 @@
 * [x] [GAT](https://github.com/ZZy979/pytorch-tutorial/tree/master/pytorch_tutorial/gnn/gat)
 * [ ] HetGNN
 * [x] [HAN](https://github.com/ZZy979/pytorch-tutorial/tree/master/pytorch_tutorial/gnn/han)
-* [ ] MAGNN
+* [x] [MAGNN](https://github.com/ZZy979/pytorch-tutorial/tree/master/pytorch_tutorial/gnn/magnn)
 * [ ] HGT
 
 ### 基于知识图谱的推荐算法
@@ -71,6 +71,9 @@
     * [x] 阅读论文Hete-CF
     * [x] 阅读论文CFKG
 * 2021.1.11~1.15
-    * [ ] 实现MAGNN
-    * [ ] 阅读论文KGCN
-    * [ ] 阅读论文HeteRec
+    * [x] 实现MAGNN
+    * [x] 阅读论文KGCN
+    * [x] 阅读论文HeteRec
+* 2021.1.18~1.22
+    * [ ] 阅读论文KGAT
+    * [ ] 使用OGB数据集做实验
