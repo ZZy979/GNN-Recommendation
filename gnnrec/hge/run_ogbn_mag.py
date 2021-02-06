@@ -28,7 +28,7 @@ def train(args):
     out_shape = (g.num_nodes(predict_ntype), data.num_classes)
 
     # PAP, PFP
-    metapaths = [['writes_rev', 'writes'], ['has_topic_rev', 'has_topic']]
+    metapaths = [['writes_rev', 'writes'], ['has_topic', 'has_topic_rev']]
     mgs = [dgl.metapath_reachable_graph(g, metapath) for metapath in metapaths]
     sampler = MultiLayerNeighborSampler([args.neighbor_size])
     collators = [NodeCollator(mg, None, sampler) for mg in mgs]
@@ -45,7 +45,7 @@ def train(args):
         model.train()
         losses = []
         train_logits = torch.zeros(out_shape)
-        for i, batch in tqdm(enumerate(train_dataloader)):
+        for batch in tqdm(train_dataloader):
             gs, hs = [], []
             for collator in collators:
                 input_nodes, output_nodes, blocks = collator.collate(batch)
