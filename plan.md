@@ -42,12 +42,12 @@
 
 ## 复现模型
 ### 异构图表示学习
-* [x] [GCN](https://github.com/ZZy979/pytorch-tutorial/tree/master/pytorch_tutorial/gnn/gcn)
-* [x] [R-GCN](https://github.com/ZZy979/pytorch-tutorial/tree/master/pytorch_tutorial/gnn/rgcn)
-* [x] [GAT](https://github.com/ZZy979/pytorch-tutorial/tree/master/pytorch_tutorial/gnn/gat)
+* [x] [GCN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/gcn)
+* [x] [R-GCN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/rgcn)
+* [x] [GAT](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/gat)
 * [ ] HetGNN
-* [x] [HAN](https://github.com/ZZy979/pytorch-tutorial/tree/master/pytorch_tutorial/gnn/han)
-* [x] [MAGNN](https://github.com/ZZy979/pytorch-tutorial/tree/master/pytorch_tutorial/gnn/magnn)
+* [x] [HAN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/han)
+* [x] [MAGNN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/magnn)
 * [ ] HGT
 
 ### 基于知识图谱的推荐算法
@@ -77,3 +77,6 @@
 * 2021.1.18~1.22
     * [x] 阅读论文KGAT
     * [x] 使用OGB数据集做实验
+* 2021.2.22~2.26
+    * [ ] 实现ogbn-mag数据集baseline: MLP和Full-batch R-GCN
+    * [ ] 查找最新异构图表示学习论文
