@@ -19,6 +19,7 @@
 * [x] 2020 WWW [MAGNN](https://arxiv.org/pdf/2002.01680)
 * [x] 2020 WWW [HGT](https://arxiv.org/pdf/2003.01332)
 * [x] 2020 [Heterogeneous Network Representation Learning: A Unified Framework with Survey and Benchmark](https://arxiv.org/pdf/2004.00216)
+* [ ] 2021 [HGConv](https://arxiv.org/pdf/2012.14722)
 
 ### 基于知识图谱的推荐算法
 * [x] 2020 IEEE [A Survey on Knowledge Graph-Based Recommender Systems](https://arxiv.org/pdf/2003.00911)
@@ -78,5 +79,8 @@
     * [x] 阅读论文KGAT
     * [x] 使用OGB数据集做实验
 * 2021.2.22~2.26
-    * [ ] 实现ogbn-mag数据集baseline: MLP和Full-batch R-GCN
-    * [ ] 查找最新异构图表示学习论文
+    * [x] 实现ogbn-mag数据集baseline: MLP和Full-batch GCN
+    * [x] 查找最新异构图表示学习论文
+* 2021.3.1~3.5
+    * [ ] 实现ogbn-mag数据集 R-GCN模型
+    * [ ] 阅读论文HGConv
