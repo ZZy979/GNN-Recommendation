@@ -2,9 +2,12 @@
 ## 运行命令
 * MLP: `python -m gnnrec.hge.run_ogbn_mag_mlp`
 * GCN: `python -m gnnrec.hge.run_ogbn_mag_gcn`
+* R-GCN: `python -m gnnrec.hge.run_ogbn_mag_rgcn`
 
 ## 结果
 | 模型 | Train Acc | Valid Acc | Test Acc |
 | --- | --- | --- | --- |
 | MLP | 0.2871 | 0.2603 | 0.2669 |
-| GCN | 0.2973 | 0.2993 | 0.3086 |
+| GCN (PP) | 0.2802 | 0.2293 | 0.2184 |
+| GCN (PAP) | 0.2973 | 0.2993 | 0.3086 |
+| R-GCN | 0.3412 | 0.4184 | 0.3972 |

@@ -17,18 +17,16 @@ def train(args):
     device = torch.device(device)
 
     data = DglNodePropPredDataset('ogbn-mag', DATA_DIR)
-    predict_ntype = 'paper'
     g, labels = data[0]
     g = dgl.metapath_reachable_graph(add_reverse_edges(g), ['writes_rev', 'writes']).to(device)
     features = g.ndata['feat']
-    labels = labels[predict_ntype].to(device)
+    labels = labels['paper'].to(device)
     split_idx = data.get_idx_split()
-    train_idx = split_idx['train'][predict_ntype].to(device)
-    val_idx = split_idx['valid'][predict_ntype].to(device)
-    test_idx = split_idx['test'][predict_ntype].to(device)
+    train_idx = split_idx['train']['paper'].to(device)
+    val_idx = split_idx['valid']['paper'].to(device)
+    test_idx = split_idx['test']['paper'].to(device)
 
-    model = GCN(features.shape[1], args.num_hidden, data.num_classes, args.dropout)
-    model = model.to(device)
+    model = GCN(features.shape[1], args.num_hidden, data.num_classes, args.dropout).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     evaluator = Evaluator(data.name)
     for epoch in range(args.epochs):
