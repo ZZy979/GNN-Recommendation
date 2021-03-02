@@ -8,7 +8,7 @@ from ogb.nodeproppred import DglNodePropPredDataset, Evaluator
 
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.models.gcn import GCN
-from gnnrec.hge.utils import set_random_seed
+from gnnrec.hge.utils import set_random_seed, add_reverse_edges
 
 
 def train(args):
@@ -19,7 +19,7 @@ def train(args):
     data = DglNodePropPredDataset('ogbn-mag', DATA_DIR)
     predict_ntype = 'paper'
     g, labels = data[0]
-    g = dgl.add_self_loop(dgl.remove_self_loop(g['paper', 'cites', 'paper'])).to(device)
+    g = dgl.metapath_reachable_graph(add_reverse_edges(g), ['writes_rev', 'writes']).to(device)
     features = g.ndata['feat']
     labels = labels[predict_ntype].to(device)
     split_idx = data.get_idx_split()
@@ -77,4 +77,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

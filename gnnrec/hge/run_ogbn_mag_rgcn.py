@@ -1,14 +1,13 @@
 import argparse
 
-import dgl
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from dgl.utils import set_new_frames, extract_node_subframes
 from ogb.nodeproppred import DglNodePropPredDataset, Evaluator
 
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.models.rgcn import RGCN
+from gnnrec.hge.utils import add_reverse_edges
 
 
 def train(args):
@@ -46,18 +45,6 @@ def train(args):
 
     test_acc = evaluate(model, g, {'paper': features}, labels, test_idx, evaluator)
     print('Test Acc {:.4f}'.format(test_acc))
-
-
-def add_reverse_edges(g):
-    data = {}
-    for stype, etype, dtype in g.canonical_etypes:
-        u, v = g.edges(etype=(stype, etype, dtype))
-        data[(stype, etype, dtype)] = u, v
-        if stype != dtype:
-            data[(dtype, etype + '_rev', stype)] = v, u
-    new_g = dgl.heterograph(data)
-    set_new_frames(new_g, node_frames=extract_node_subframes(g, None))
-    return new_g
 
 
 def accuracy(logits, labels, evaluator):
