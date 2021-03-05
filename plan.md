@@ -1,6 +1,6 @@
 # 工作计划
 ## 总体计划
-* [ ] 2020.12~2021.2 继续阅读国内外相关文献，细化技术方案
+* [x] 2020.12~2021.2 继续阅读国内外相关文献，细化技术方案
 * [ ] 2021.3~2021.4 准备数据集，实现异构图表示学习模型，并完成与现有方法的对比实验
 * [ ] 2021.5~2021.6 实现基于知识图谱的推荐算法并尝试优化
 * [ ] 2021.7~2021.9 实现可视化系统
@@ -19,7 +19,8 @@
 * [x] 2020 WWW [MAGNN](https://arxiv.org/pdf/2002.01680)
 * [x] 2020 WWW [HGT](https://arxiv.org/pdf/2003.01332)
 * [x] 2020 [Heterogeneous Network Representation Learning: A Unified Framework with Survey and Benchmark](https://arxiv.org/pdf/2004.00216)
-* [x] 2021 [HGConv](https://arxiv.org/pdf/2012.14722)
+* [ ] 2020 [NARS](https://arxiv.org/pdf/2011.09679)
+* [x] 2020 [HGConv](https://arxiv.org/pdf/2012.14722)
 
 ### 基于知识图谱的推荐算法
 * [x] 2020 IEEE [A Survey on Knowledge Graph-Based Recommender Systems](https://arxiv.org/pdf/2003.00911)
@@ -38,7 +39,7 @@
 * [x] 2018 CIKM [RippleNet](https://arxiv.org/pdf/1803.03467)
 * [ ] 2019 KDD [AKUPM](https://dl.acm.org/doi/abs/10.1145/3292500.3330705)
 * [x] 2019 WWW [KGCN](https://arxiv.org/pdf/1904.12575)
-* [ ] 2019 KDD [KGAT](https://arxiv.org/pdf/1905.07854)
+* [x] 2019 KDD [KGAT](https://arxiv.org/pdf/1905.07854)
 * [ ] 2019 [KNI](https://arxiv.org/pdf/1908.04032)
 
 ## 复现模型
@@ -50,7 +51,7 @@
 * [x] [HAN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/han)
 * [x] [MAGNN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/magnn)
 * [ ] HGT
-* [ ] HGConv
+* [x] [HGConv](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/hgconv)
 
 ### 基于知识图谱的推荐算法
 * [ ] CKE
@@ -85,3 +86,7 @@
 * 2021.3.1~3.5
     * [x] 实现ogbn-mag数据集 R-GCN模型
     * [x] 阅读论文HGConv
+* 2021.3.8~3.12
+    * [x] 实现ogbn-mag数据集 HGConv模型
+    * [ ] 尝试解决ogbn-mag数据集 HAN模型内存占用过大的问题
+    * [ ] 阅读论文NARS

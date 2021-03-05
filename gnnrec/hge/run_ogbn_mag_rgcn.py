@@ -64,7 +64,7 @@ def evaluate(model, g, features, labels, mask, evaluator):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='ogbn-mag')
+    parser = argparse.ArgumentParser(description='ogbn-mag数据集 R-GCN模型')
     parser.add_argument('--seed', type=int, default=8, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
     parser.add_argument('--num-hidden', type=int, default=64, help='隐藏层维数')
