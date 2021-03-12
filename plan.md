@@ -21,6 +21,9 @@
 * [x] 2020 [Heterogeneous Network Representation Learning: A Unified Framework with Survey and Benchmark](https://arxiv.org/pdf/2004.00216)
 * [ ] 2020 [NARS](https://arxiv.org/pdf/2011.09679)
 * [x] 2020 [HGConv](https://arxiv.org/pdf/2012.14722)
+* [ ] 2020 [GraphSAINT](https://openreview.net/pdf?id=BJe8pkHFwS)
+* [ ] 2020 [SuperGAT](https://openreview.net/pdf?id=Wi5KUNlqWty)
+* [ ] 2020 [SIGN](https://arxiv.org/pdf/2004.11198)
 
 ### 基于知识图谱的推荐算法
 * [x] 2020 IEEE [A Survey on Knowledge Graph-Based Recommender Systems](https://arxiv.org/pdf/2003.00911)
@@ -88,5 +91,8 @@
     * [x] 阅读论文HGConv
 * 2021.3.8~3.12
     * [x] 实现ogbn-mag数据集 HGConv模型
-    * [ ] 尝试解决ogbn-mag数据集 HAN模型内存占用过大的问题
-    * [ ] 阅读论文NARS
+    * [x] 尝试解决ogbn-mag数据集 HAN模型内存占用过大的问题
+    * [x] 阅读论文NARS
+* 2021.3.15~3.19
+    * [ ] 阅读论文GraphSAINT
+    * [ ] 阅读论文SuperGAT

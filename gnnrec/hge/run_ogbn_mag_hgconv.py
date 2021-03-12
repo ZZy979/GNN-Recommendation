@@ -60,7 +60,7 @@ def train(args):
             loss.backward()
             optimizer.step()
 
-        train_acc = accuracy(torch.stack(logits, dim=0), torch.stack(train_labels, dim=0), evaluator)
+        train_acc = accuracy(torch.cat(logits, dim=0), torch.cat(train_labels, dim=0), evaluator)
         val_acc = evaluate(val_loader, device, model, labels, evaluator)
         print('Epoch {:d} | Train Loss {:.4f} | Train Acc {:.4f} | Val Acc {:.4f}'.format(
             epoch, torch.tensor(losses).mean().item(), train_acc, val_acc
@@ -76,8 +76,8 @@ def add_node_feat(g):
 
 
 def accuracy(logits, labels, evaluator):
-    predict = logits.argmax(dim=-1, keepdim=True)
-    return evaluator.eval({'y_true': labels, 'y_pred': predict})['acc']
+    predict = logits.argmax(dim=-1, keepdim=True).cpu()
+    return evaluator.eval({'y_true': labels.cpu(), 'y_pred': predict})['acc']
 
 
 def evaluate(loader, device, model, labels, evaluator):
@@ -92,7 +92,7 @@ def evaluate(loader, device, model, labels, evaluator):
 
             logits.append(batch_logits)
             eval_labels.append(batch_labels)
-    return accuracy(torch.stack(logits, dim=0), torch.stack(eval_labels, dim=0), evaluator)
+    return accuracy(torch.cat(logits, dim=0), torch.cat(eval_labels, dim=0), evaluator)
 
 
 def main():
