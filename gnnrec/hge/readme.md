@@ -3,6 +3,8 @@
 * MLP: `python -m gnnrec.hge.run_ogbn_mag_mlp`
 * GCN: `python -m gnnrec.hge.run_ogbn_mag_gcn`
 * R-GCN: `python -m gnnrec.hge.run_ogbn_mag_rgcn`
+* HAN: `python -m gnnrec.hge.run_ogbn_mag_han`
+* HGConv: `python -m gnnrec.hge.run_ogbn_mag_hgconv`
 
 ## 结果
 | 模型 | Train Acc | Valid Acc | Test Acc |

@@ -20,10 +20,10 @@
 * [x] 2020 WWW [HGT](https://arxiv.org/pdf/2003.01332)
 * [x] 2020 [Heterogeneous Network Representation Learning: A Unified Framework with Survey and Benchmark](https://arxiv.org/pdf/2004.00216)
 * [x] 2020 [HGConv](https://arxiv.org/pdf/2012.14722)
-* [ ] 2020 [SIGN](https://arxiv.org/pdf/2004.11198)
-* [ ] 2020 [NARS](https://arxiv.org/pdf/2011.09679)
-* [ ] 2020 ICLR [GraphSAINT](https://openreview.net/pdf?id=BJe8pkHFwS)
-* [ ] 2021 ICLR [SuperGAT](https://openreview.net/pdf?id=Wi5KUNlqWty)
+* [x] 2020 ICLR [GraphSAINT](https://openreview.net/pdf?id=BJe8pkHFwS)
+* [x] 2020 [SIGN](https://arxiv.org/pdf/2004.11198)
+* [x] 2020 [NARS](https://arxiv.org/pdf/2011.09679)
+* [x] 2021 ICLR [SuperGAT](https://openreview.net/pdf?id=Wi5KUNlqWty)
 
 ### 基于知识图谱的推荐算法
 * [x] 2020 IEEE [A Survey on Knowledge Graph-Based Recommender Systems](https://arxiv.org/pdf/2003.00911)
@@ -54,7 +54,9 @@
 * [x] [HAN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/han)
 * [x] [MAGNN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/magnn)
 * [ ] HGT
+* [x] [SIGN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/sign)
 * [x] [HGConv](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/hgconv)
+* [ ] SuperGAT
 
 ### 基于知识图谱的推荐算法
 * [ ] CKE
@@ -94,8 +96,13 @@
     * [x] 尝试解决ogbn-mag数据集 HAN模型内存占用过大的问题
     * [x] 阅读论文NARS
 * 2021.3.15~3.19
-    * [ ] 阅读论文SIGN
-    * [ ] 阅读论文GraphSAINT
-    * [ ] 阅读论文SuperGAT
+    * [x] 阅读论文SIGN
+    * [x] 阅读论文GraphSAINT
+    * [x] 阅读论文SuperGAT
 * 2021.3.22~3.26
     * 继续看上周的论文（找实习面试好难啊😢）
+    * 2021.4.1 人生中第一个offer🎉
+* 2021.4.5~4.9
+    * [ ] 使用子图采样的方法在ogbn-mag数据集上训练HAN模型
+    * [ ] 重新训练ogbn-mag数据集 HGConv模型
+    * [ ] 实现SuperGAT
