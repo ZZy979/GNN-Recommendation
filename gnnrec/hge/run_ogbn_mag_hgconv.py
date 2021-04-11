@@ -3,6 +3,7 @@ import warnings
 
 import dgl.function as fn
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from dgl.dataloading import MultiLayerNeighborSampler, NodeDataLoader
@@ -72,7 +73,9 @@ def train(args):
 def add_node_feat(g):
     g.multi_update_all({'writes_rev': (fn.copy_u('feat', 'm'), fn.mean('m', 'feat'))}, 'sum')
     g.multi_update_all({'affiliated_with': (fn.copy_u('feat', 'm'), fn.mean('m', 'feat'))}, 'sum')
-    g.nodes['field_of_study'].data['feat'] = torch.eye(g.num_nodes('field_of_study'))
+    a = torch.FloatTensor(g.num_nodes('field_of_study'), 128)
+    nn.init.xavier_uniform_(a, nn.init.calculate_gain('relu'))
+    g.nodes['field_of_study'].data['feat'] = a
 
 
 def accuracy(logits, labels, evaluator):

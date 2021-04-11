@@ -56,7 +56,7 @@
 * [ ] HGT
 * [x] [SIGN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/sign)
 * [x] [HGConv](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/hgconv)
-* [ ] SuperGAT
+* [x] [SuperGAT](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/supergat)
 
 ### 基于知识图谱的推荐算法
 * [ ] CKE
@@ -104,5 +104,5 @@
     * 2021.4.1 人生中第一个offer🎉
 * 2021.4.5~4.9
     * [ ] 使用子图采样的方法在ogbn-mag数据集上训练HAN模型
-    * [ ] 重新训练ogbn-mag数据集 HGConv模型
-    * [ ] 实现SuperGAT
+    * [x] 重新训练ogbn-mag数据集 HGConv模型
+    * [x] 实现SuperGAT
