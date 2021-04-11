@@ -20,6 +20,7 @@
 * [x] 2020 WWW [HGT](https://arxiv.org/pdf/2003.01332)
 * [x] 2020 [Heterogeneous Network Representation Learning: A Unified Framework with Survey and Benchmark](https://arxiv.org/pdf/2004.00216)
 * [x] 2020 [HGConv](https://arxiv.org/pdf/2012.14722)
+* [ ] 2020 KDD [GPT-GNN](https://arxiv.org/pdf/2006.15437)
 * [x] 2020 ICLR [GraphSAINT](https://openreview.net/pdf?id=BJe8pkHFwS)
 * [x] 2020 [SIGN](https://arxiv.org/pdf/2004.11198)
 * [x] 2020 [NARS](https://arxiv.org/pdf/2011.09679)
@@ -103,6 +104,10 @@
     * 继续看上周的论文（找实习面试好难啊😢）
     * 2021.4.1 人生中第一个offer🎉
 * 2021.4.5~4.9
-    * [ ] 使用子图采样的方法在ogbn-mag数据集上训练HAN模型
     * [x] 重新训练ogbn-mag数据集 HGConv模型
     * [x] 实现SuperGAT
+* 2021.4.12~4.18
+    * [ ] 使用子图采样的方法在ogbn-mag数据集上训练HAN模型
+    * [ ] 阅读论文GPT-GNN
+    * [ ] 实现metapath2vec
+    * [ ] 使用metapath2vec预训练ogbn-mag数据集的顶点特征，重新跑HGConv模型
