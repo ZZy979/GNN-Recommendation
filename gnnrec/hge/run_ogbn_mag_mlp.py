@@ -3,31 +3,23 @@ import argparse
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from ogb.nodeproppred import DglNodePropPredDataset, Evaluator
+from ogb.nodeproppred import Evaluator
 
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.models.mlp import MLP
-from gnnrec.hge.utils import set_random_seed
+from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, accuracy
 
 
 def train(args):
     set_random_seed(args.seed)
-    device = f'cuda:{args.device}' if torch.cuda.is_available() else 'cpu'
-    device = torch.device(device)
+    device = get_device(args.device)
 
-    data = DglNodePropPredDataset('ogbn-mag', DATA_DIR)
-    g, labels = data[0]
-    features = g.nodes['paper'].data['feat'].to(device)
-    labels = labels['paper'].to(device)
-    split_idx = data.get_idx_split()
-    train_idx = split_idx['train']['paper'].to(device)
-    val_idx = split_idx['valid']['paper'].to(device)
-    test_idx = split_idx['test']['paper'].to(device)
+    data, g, features, labels, train_idx, val_idx, test_idx = load_ogbn_mag(DATA_DIR, device=device)
+    evaluator = Evaluator(data.name)
 
     model = MLP(features.shape[1], args.num_hidden, data.num_classes, args.num_layers, args.dropout)
     model = model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    evaluator = Evaluator(data.name)
     for epoch in range(args.epochs):
         model.train()
         logits = model(features[train_idx])
@@ -43,11 +35,6 @@ def train(args):
         ))
     test_acc = evaluate(model, features[test_idx], labels[test_idx], evaluator)
     print('Test Acc {:.4f}'.format(test_acc))
-
-
-def accuracy(logits, labels, evaluator):
-    predict = logits.argmax(dim=-1, keepdim=True)
-    return evaluator.eval({'y_true': labels, 'y_pred': predict})['acc']
 
 
 def evaluate(model, features, labels, evaluator):

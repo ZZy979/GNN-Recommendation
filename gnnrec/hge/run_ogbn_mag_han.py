@@ -5,28 +5,22 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from dgl.dataloading import MultiLayerNeighborSampler, NodeCollator
-from ogb.nodeproppred import DglNodePropPredDataset, Evaluator
+from ogb.nodeproppred import Evaluator
 from torch.utils.data import DataLoader
 
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.models.han import HAN
-from gnnrec.hge.utils import set_random_seed, add_reverse_edges
+from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, accuracy
 
 
 def train(args):
     set_random_seed(args.seed)
-    device = f'cuda:{args.device}' if torch.cuda.is_available() else 'cpu'
-    device = torch.device(device)
+    device = get_device(args.device)
 
-    data = DglNodePropPredDataset('ogbn-mag', DATA_DIR)
-    g, labels = data[0]
-    g = add_reverse_edges(g)
-    features = g.nodes['paper'].data['feat'].to(device)
-    labels = labels['paper'].to(device)
-    split_idx = data.get_idx_split()
-    train_idx = split_idx['train']['paper']
-    val_idx = split_idx['valid']['paper']
-    test_idx = split_idx['test']['paper']
+    data, g, features, labels, train_idx, val_idx, test_idx = load_ogbn_mag(DATA_DIR, True)
+    features = features.to(device)
+    labels = labels.to(device)
+    evaluator = Evaluator(data.name)
 
     # PAP, PFP
     # metapaths = [['writes_rev', 'writes'], ['has_topic', 'has_topic_rev']]
@@ -42,7 +36,6 @@ def train(args):
         len(mgs), features.shape[1], args.num_hidden, data.num_classes, args.num_heads, args.dropout
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    evaluator = Evaluator(data.name)
     for epoch in range(args.epochs):
         model.train()
         logits, train_labels, losses = [], [], []
@@ -67,11 +60,6 @@ def train(args):
         ))
     test_acc = evaluate(collators, test_dataloader, device, model, labels, evaluator)
     print('Test Acc {:.4f}'.format(test_acc))
-
-
-def accuracy(logits, labels, evaluator):
-    predict = logits.argmax(dim=-1, keepdim=True).cpu()
-    return evaluator.eval({'y_true': labels.cpu(), 'y_pred': predict})['acc']
 
 
 def evaluate(collators, dataloader, device, model, labels, evaluator):

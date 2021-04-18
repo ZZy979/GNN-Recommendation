@@ -4,31 +4,23 @@ import dgl
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from ogb.nodeproppred import DglNodePropPredDataset, Evaluator
+from ogb.nodeproppred import Evaluator
 
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.models.gcn import GCN
-from gnnrec.hge.utils import set_random_seed, add_reverse_edges
+from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, accuracy
 
 
 def train(args):
     set_random_seed(args.seed)
-    device = f'cuda:{args.device}' if torch.cuda.is_available() else 'cpu'
-    device = torch.device(device)
+    device = get_device(args.device)
 
-    data = DglNodePropPredDataset('ogbn-mag', DATA_DIR)
-    g, labels = data[0]
-    g = dgl.metapath_reachable_graph(add_reverse_edges(g), ['writes_rev', 'writes']).to(device)
-    features = g.ndata['feat']
-    labels = labels['paper'].to(device)
-    split_idx = data.get_idx_split()
-    train_idx = split_idx['train']['paper'].to(device)
-    val_idx = split_idx['valid']['paper'].to(device)
-    test_idx = split_idx['test']['paper'].to(device)
+    data, g, features, labels, train_idx, val_idx, test_idx = load_ogbn_mag(DATA_DIR, True, device)
+    g = dgl.metapath_reachable_graph(g, ['writes_rev', 'writes']).to(device)
+    evaluator = Evaluator(data.name)
 
     model = GCN(features.shape[1], args.num_hidden, data.num_classes, args.dropout).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    evaluator = Evaluator(data.name)
     for epoch in range(args.epochs):
         model.train()
         logits = model(g, features)
@@ -42,14 +34,8 @@ def train(args):
         print('Epoch {:d} | Train Loss {:.4f} | Train Acc {:.4f} | Val Acc {:.4f}'.format(
             epoch, loss.item(), train_acc, val_acc
         ))
-
     test_acc = evaluate(model, g, features, labels, test_idx, evaluator)
     print('Test Acc {:.4f}'.format(test_acc))
-
-
-def accuracy(logits, labels, evaluator):
-    predict = logits.argmax(dim=-1, keepdim=True)
-    return evaluator.eval({'y_true': labels, 'y_pred': predict})['acc']
 
 
 def evaluate(model, g, features, labels, mask, evaluator):

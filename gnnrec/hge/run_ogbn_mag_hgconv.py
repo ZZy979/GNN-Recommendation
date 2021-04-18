@@ -7,28 +7,21 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from dgl.dataloading import MultiLayerNeighborSampler, NodeDataLoader
-from ogb.nodeproppred import DglNodePropPredDataset, Evaluator
+from ogb.nodeproppred import Evaluator
 from tqdm import tqdm
 
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.models.hgconv import HGConv
-from gnnrec.hge.utils import set_random_seed, add_reverse_edges
+from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, accuracy
 
 
 def train(args):
     set_random_seed(args.seed)
-    device = f'cuda:{args.device}' if torch.cuda.is_available() else 'cpu'
-    device = torch.device(device)
+    device = get_device(args.device)
 
-    data = DglNodePropPredDataset('ogbn-mag', DATA_DIR)
-    g, labels = data[0]
-    g = add_reverse_edges(g)
+    data, g, features, labels, train_idx, val_idx, test_idx = load_ogbn_mag(DATA_DIR, True, device)
     add_node_feat(g)
-    labels = labels['paper'].to(device)
-    split_idx = data.get_idx_split()
-    train_idx = split_idx['train']['paper'].to(device)
-    val_idx = split_idx['valid']['paper'].to(device)
-    test_idx = split_idx['test']['paper'].to(device)
+    evaluator = Evaluator(data.name)
 
     sampler = MultiLayerNeighborSampler([args.neighbor_size] * args.num_layers)
     train_loader = NodeDataLoader(g, {'paper': train_idx}, sampler, batch_size=args.batch_size)
@@ -41,7 +34,6 @@ def train(args):
         args.num_layers, args.dropout, args.residual
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    evaluator = Evaluator(data.name)
     warnings.filterwarnings('ignore', 'Setting attributes on ParameterDict is not supported')
     for epoch in range(args.epochs):
         model.train()
@@ -76,11 +68,6 @@ def add_node_feat(g):
     a = torch.FloatTensor(g.num_nodes('field_of_study'), 128)
     nn.init.xavier_uniform_(a, nn.init.calculate_gain('relu'))
     g.nodes['field_of_study'].data['feat'] = a
-
-
-def accuracy(logits, labels, evaluator):
-    predict = logits.argmax(dim=-1, keepdim=True).cpu()
-    return evaluator.eval({'y_true': labels.cpu(), 'y_pred': predict})['acc']
 
 
 def evaluate(loader, device, model, labels, evaluator):
