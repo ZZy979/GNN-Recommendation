@@ -11,7 +11,7 @@ from ogb.nodeproppred import Evaluator
 from tqdm import tqdm
 
 from gnnrec.config import DATA_DIR
-from gnnrec.hge.models.hgconv import HGConv
+from gnnrec.hge.hgconv.model import HGConv
 from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, accuracy
 
 

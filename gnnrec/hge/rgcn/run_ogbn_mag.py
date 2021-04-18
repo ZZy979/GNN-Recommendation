@@ -6,7 +6,7 @@ import torch.optim as optim
 from ogb.nodeproppred import Evaluator
 
 from gnnrec.config import DATA_DIR
-from gnnrec.hge.models.rgcn import RGCN
+from gnnrec.hge.rgcn.model import RGCN
 from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, accuracy
 
 

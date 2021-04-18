@@ -9,7 +9,7 @@ from ogb.nodeproppred import Evaluator
 from torch.utils.data import DataLoader
 
 from gnnrec.config import DATA_DIR
-from gnnrec.hge.models.han import HAN
+from gnnrec.hge.han.model import HAN
 from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, accuracy
 
 

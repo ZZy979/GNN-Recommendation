@@ -1,10 +1,10 @@
 # ogbn-mag数据集
 ## 运行命令
-* MLP: `python -m gnnrec.hge.run_ogbn_mag_mlp`
-* GCN: `python -m gnnrec.hge.run_ogbn_mag_gcn`
-* R-GCN: `python -m gnnrec.hge.run_ogbn_mag_rgcn`
-* HAN: `python -m gnnrec.hge.run_ogbn_mag_han`
-* HGConv: `python -m gnnrec.hge.run_ogbn_mag_hgconv`
+* MLP: `python -m gnnrec.hge.mlp.run_ogbn_mag`
+* GCN: `python -m gnnrec.hge.gcn.run_ogbn_mag`
+* R-GCN: `python -m gnnrec.hge.rgcn.run_ogbn_mag`
+* HAN: `python -m gnnrec.hge.han.run_ogbn_mag`
+* HGConv: `python -m gnnrec.hge.hgconv.run_ogbn_mag`
 
 ## 结果
 | 模型 | Train Acc | Valid Acc | Test Acc |
