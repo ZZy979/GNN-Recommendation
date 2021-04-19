@@ -46,21 +46,25 @@ class RelGraphConv(nn.Module):
             self.loop_weight = nn.Parameter(torch.Tensor(in_dim, out_dim))
             nn.init.xavier_uniform_(self.loop_weight, nn.init.calculate_gain('relu'))
 
-    def forward(self, g, inputs):
+    def forward(self, g, feats):
         """
         :param g: DGLGraph 异构图
-        :param inputs: Dict[str, tensor(N_i, d_in)] 顶点类型到输入特征的映射
+        :param feats: Dict[str, tensor(N_i, d_in)] 顶点类型到输入特征的映射
         :return: Dict[str, tensor(N_i, d_out)] 顶点类型到输出特征的映射
         """
+        if g.is_block:
+            feats_dst = {ntype: feats[ntype][:g.num_dst_nodes(ntype)] for ntype in feats}
+        else:
+            feats_dst = feats
         if self.use_weight:
             weight = self.basis() if self.use_basis else self.weight  # (R, d_in, d_out)
             kwargs = {rel: {'weight': weight[i]} for i, rel in enumerate(self.rel_names)}
         else:
             kwargs = {}
-        hs = self.conv(g, inputs, mod_kwargs=kwargs)  # Dict[ntype, (N_i, d_out)]
+        hs = self.conv(g, feats, mod_kwargs=kwargs)  # Dict[ntype, (N_i, d_out)]
         for ntype in hs:
             if self.self_loop:
-                hs[ntype] += torch.matmul(inputs[ntype], self.loop_weight)
+                hs[ntype] += torch.matmul(feats_dst[ntype], self.loop_weight)
             if self.activation:
                 hs[ntype] = self.activation(hs[ntype])
             hs[ntype] = self.dropout(hs[ntype])
@@ -70,7 +74,7 @@ class RelGraphConv(nn.Module):
 class RGCN(nn.Module):
 
     def __init__(
-            self, num_nodes, in_dims, hidden_dim, out_dim, rel_names,
+            self, num_nodes, in_dims, hidden_dim, out_dim, rel_names, predict_ntype,
             num_hidden_layers=1, num_bases=None, self_loop=True, dropout=0.0):
         """R-GCN实体分类模型
 
@@ -79,6 +83,7 @@ class RGCN(nn.Module):
         :param hidden_dim: int 隐含特征维数
         :param out_dim: int 输出特征维数
         :param rel_names: List[str] 关系名称
+        :param predict_ntype: str 待预测顶点类型
         :param num_hidden_layers: int, optional R-GCN隐藏层数，默认为1
         :param num_bases: int, optional 基的个数，默认使用关系个数
         :param self_loop: bool 是否包括自环消息，默认为True
@@ -100,21 +105,22 @@ class RGCN(nn.Module):
         self.layers.append(RelGraphConv(
             hidden_dim, out_dim, rel_names, num_bases, True, self_loop, dropout=dropout
         ))
+        self.predict_ntype = predict_ntype
         self.reset_parameters()
 
     def reset_parameters(self):
         for k in self.embeds:
             nn.init.xavier_uniform_(self.embeds[k].weight, gain=nn.init.calculate_gain('relu'))
 
-    def forward(self, g, h):
+    def forward(self, blocks, h):
         """
-        :param g: DGLGraph 异构图
+        :param blocks: List[DGLBlock]
         :param h: Dict[str, tensor(N_i, d_in_i)] （部分）顶点类型到输入特征的映射
         :return: Dict[str, tensor(N_i, d_out)] 顶点类型到顶点嵌入的映射
         """
         h = {k: self.fc[k](feat) for k, feat in h.items()}
         for k in self.embeds:
-            h[k] = self.embeds[k].weight
-        for layer in self.layers:
-            h = layer(g, h)  # Dict[ntype, (N_i, d_hid)]
-        return h
+            h[k] = self.embeds[k](blocks[0].srcnodes(k))
+        for i in range(len(self.layers)):
+            h = self.layers[i](blocks[i], h)  # Dict[ntype, (N_i, d_hid)]
+        return h[self.predict_ntype]

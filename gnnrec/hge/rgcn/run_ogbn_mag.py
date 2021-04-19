@@ -3,6 +3,7 @@ import argparse
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+from dgl.dataloading import MultiLayerNeighborSampler, NodeDataLoader
 from ogb.nodeproppred import Evaluator
 
 from gnnrec.config import DATA_DIR
@@ -15,37 +16,60 @@ def train(args):
     device = get_device(args.device)
 
     data, g, features, labels, train_idx, val_idx, test_idx = load_ogbn_mag(DATA_DIR, True, device)
+    g = g.cpu()
     evaluator = Evaluator(data.name)
+
+    sampler = MultiLayerNeighborSampler([args.neighbor_size] * (args.num_hidden_layers + 1))
+    train_loader = NodeDataLoader(g, {'paper': train_idx}, sampler, batch_size=args.batch_size)
+    val_loader = NodeDataLoader(g, {'paper': val_idx}, sampler, batch_size=args.batch_size)
+    test_loader = NodeDataLoader(g, {'paper': test_idx}, sampler, batch_size=args.batch_size)
 
     model = RGCN(
         {ntype: g.num_nodes(ntype) for ntype in g.ntypes},
         {'paper': features.shape[1]}, args.num_hidden, data.num_classes, g.etypes,
-        args.num_hidden_layers, dropout=args.dropout
+        'paper', args.num_hidden_layers, dropout=args.dropout
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    model_input = {'paper': features}
     for epoch in range(args.epochs):
         model.train()
-        logits = model(g, model_input)['paper']
-        loss = F.cross_entropy(logits[train_idx], labels[train_idx].squeeze(dim=1))
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        logits, train_labels, losses = [], [], []
+        for input_nodes, output_nodes, blocks in train_loader:
+            blocks = [b.to(device) for b in blocks]
+            features = {'paper': blocks[0].srcnodes['paper'].data['feat']}
+            batch_labels = labels[output_nodes['paper']]
+            batch_logits = model(blocks, features)
+            loss = F.cross_entropy(batch_logits, batch_labels.squeeze(dim=1))
 
-        train_acc = accuracy(logits[train_idx], labels[train_idx], evaluator)
-        val_acc = evaluate(model, g, model_input, labels, val_idx, evaluator)
+            logits.append(batch_logits)
+            train_labels.append(batch_labels)
+            losses.append(loss.item())
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+        train_acc = accuracy(torch.cat(logits, dim=0), torch.cat(train_labels, dim=0), evaluator)
+        val_acc = evaluate(val_loader, device, model, labels, evaluator)
         print('Epoch {:d} | Train Loss {:.4f} | Train Acc {:.4f} | Val Acc {:.4f}'.format(
-            epoch, loss.item(), train_acc, val_acc
+            epoch, torch.tensor(losses).mean().item(), train_acc, val_acc
         ))
-    test_acc = evaluate(model, g, model_input, labels, test_idx, evaluator)
+    test_acc = evaluate(test_loader, device, model, labels, evaluator)
     print('Test Acc {:.4f}'.format(test_acc))
 
 
-def evaluate(model, g, features, labels, mask, evaluator):
+def evaluate(loader, device, model, labels, evaluator):
     model.eval()
+    logits, eval_labels = [], []
     with torch.no_grad():
-        logits = model(g, features)['paper']
-    return accuracy(logits[mask], labels[mask], evaluator)
+        for input_nodes, output_nodes, blocks in loader:
+            blocks = [b.to(device) for b in blocks]
+            features = {'paper': blocks[0].srcnodes['paper'].data['feat']}
+            batch_labels = labels[output_nodes['paper']]
+            batch_logits = model(blocks, features)
+
+            logits.append(batch_logits)
+            eval_labels.append(batch_labels)
+    return accuracy(torch.cat(logits, dim=0), torch.cat(eval_labels, dim=0), evaluator)
 
 
 def main():
@@ -56,6 +80,8 @@ def main():
     parser.add_argument('--num-hidden-layers', type=int, default=1, help='隐藏层数')
     parser.add_argument('--dropout', type=float, default=0.6, help='Dropout概率')
     parser.add_argument('--epochs', type=int, default=50, help='训练epoch数')
+    parser.add_argument('--batch-size', type=int, default=2560, help='批大小')
+    parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
     parser.add_argument('--lr', type=float, default=0.01, help='学习率')
     parser.add_argument('--weight-decay', type=float, default=0.0, help='权重衰减')
     args = parser.parse_args()
