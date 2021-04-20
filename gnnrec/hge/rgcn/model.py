@@ -82,7 +82,7 @@ class RGCN(nn.Module):
         :param in_dims: Dict[str, int] 顶点类型到输入特征维数的映射
         :param hidden_dim: int 隐含特征维数
         :param out_dim: int 输出特征维数
-        :param rel_names: List[str] 关系名称
+        :param rel_names: List[List[str]] 每一层的关系名称，长度等于num_hidden_layers+1
         :param predict_ntype: str 待预测顶点类型
         :param num_hidden_layers: int, optional R-GCN隐藏层数，默认为1
         :param num_bases: int, optional 基的个数，默认使用关系个数
@@ -98,12 +98,12 @@ class RGCN(nn.Module):
             for ntype in num_nodes if ntype not in in_dims
         })
         self.layers = nn.ModuleList()
-        for _ in range(num_hidden_layers):
+        for i in range(num_hidden_layers):
             self.layers.append(RelGraphConv(
-                hidden_dim, hidden_dim, rel_names, num_bases, False, self_loop, F.relu, dropout
+                hidden_dim, hidden_dim, rel_names[i], num_bases, False, self_loop, F.relu, dropout
             ))
         self.layers.append(RelGraphConv(
-            hidden_dim, out_dim, rel_names, num_bases, True, self_loop, dropout=dropout
+            hidden_dim, out_dim, rel_names[-1], num_bases, True, self_loop, dropout=dropout
         ))
         self.predict_ntype = predict_ntype
         self.reset_parameters()

@@ -5,8 +5,8 @@
 * R-GCN: `python -m gnnrec.hge.rgcn.run_ogbn_mag`
 * HAN: `python -m gnnrec.hge.han.run_ogbn_mag`
 * HGConv
-    * 随机游走： `python -m gnnrec.hge.metapath2vec.random_walk data\word2vec\ogbn_mag_corpus.txt`
-    * 训练词向量（顶点嵌入）： `python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 data\word2vec\ogbn_mag_corpus.txt data\word2vec\ogbn_mag.model`
+    * 随机游走： `python -m gnnrec.hge.metapath2vec.random_walk data/word2vec/ogbn_mag_corpus.txt`
+    * 训练词向量（顶点嵌入）： `python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 data/word2vec/ogbn_mag_corpus.txt data/word2vec/ogbn_mag.model`
     * `python -m gnnrec.hge.hgconv.run_ogbn_mag`
 
 ## 结果

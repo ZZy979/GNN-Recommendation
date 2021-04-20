@@ -20,6 +20,7 @@ def train(args):
     device = get_device(args.device)
 
     data, g, features, labels, train_idx, val_idx, test_idx = load_ogbn_mag(DATA_DIR, True, device)
+    g = g.cpu()
     add_node_feat(g)
     evaluator = Evaluator(data.name)
 
@@ -45,8 +46,8 @@ def train(args):
             batch_logits = model(blocks, features)
             loss = F.cross_entropy(batch_logits, batch_labels.squeeze(dim=1))
 
-            logits.append(batch_logits)
-            train_labels.append(batch_labels)
+            logits.append(batch_logits.detach().cpu())
+            train_labels.append(batch_labels.detach().cpu())
             losses.append(loss.item())
 
             optimizer.zero_grad()
@@ -80,8 +81,8 @@ def evaluate(loader, device, model, labels, evaluator):
             batch_labels = labels[output_nodes['paper']]
             batch_logits = model(blocks, features)
 
-            logits.append(batch_logits)
-            eval_labels.append(batch_labels)
+            logits.append(batch_logits.detach().cpu())
+            eval_labels.append(batch_labels.detach().cpu())
     return accuracy(torch.cat(logits, dim=0), torch.cat(eval_labels, dim=0), evaluator)
 
 
