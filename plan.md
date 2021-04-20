@@ -20,10 +20,11 @@
 * [x] 2020 WWW [HGT](https://arxiv.org/pdf/2003.01332)
 * [x] 2020 [Heterogeneous Network Representation Learning: A Unified Framework with Survey and Benchmark](https://arxiv.org/pdf/2004.00216)
 * [x] 2020 [HGConv](https://arxiv.org/pdf/2012.14722)
-* [ ] 2020 KDD [GPT-GNN](https://arxiv.org/pdf/2006.15437)
+* [x] 2020 KDD [GPT-GNN](https://arxiv.org/pdf/2006.15437)
 * [x] 2020 ICLR [GraphSAINT](https://openreview.net/pdf?id=BJe8pkHFwS)
 * [x] 2020 [SIGN](https://arxiv.org/pdf/2004.11198)
 * [x] 2020 [NARS](https://arxiv.org/pdf/2011.09679)
+* [ ] 2020 [A Survey on Heterogeneous Graph Embedding: Methods, Techniques, Applications and Sources](https://arxiv.org/pdf/2011.14867)
 * [x] 2021 ICLR [SuperGAT](https://openreview.net/pdf?id=Wi5KUNlqWty)
 
 ### 基于知识图谱的推荐算法
@@ -55,6 +56,7 @@
 * [x] [HAN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/han)
 * [x] [MAGNN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/magnn)
 * [ ] HGT
+* [x] [metapath2vec](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/metapath2vec)
 * [x] [SIGN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/sign)
 * [x] [HGConv](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/hgconv)
 * [x] [SuperGAT](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/supergat)
@@ -107,7 +109,10 @@
     * [x] 重新训练ogbn-mag数据集 HGConv模型
     * [x] 实现SuperGAT
 * 2021.4.12~4.18
+    * [x] 阅读论文GPT-GNN
+    * [x] 实现metapath2vec
+* 2021.4.19~4.25
     * [ ] 使用子图采样的方法在ogbn-mag数据集上训练HAN模型
-    * [ ] 阅读论文GPT-GNN
-    * [ ] 实现metapath2vec
     * [ ] 使用metapath2vec预训练ogbn-mag数据集的顶点特征，重新跑HGConv模型
+    * [ ] 实现HGT
+    * [ ] 阅读综述A Survey on Heterogeneous Graph Embedding
