@@ -113,6 +113,6 @@
     * [x] 实现metapath2vec
 * 2021.4.19~4.25
     * [ ] 使用子图采样的方法在ogbn-mag数据集上训练HAN模型
-    * [ ] 使用metapath2vec预训练ogbn-mag数据集的顶点特征，重新跑HGConv模型
+    * [x] 使用metapath2vec预训练ogbn-mag数据集的顶点特征，重新跑HGConv模型
     * [ ] 实现HGT
     * [ ] 阅读综述A Survey on Heterogeneous Graph Embedding

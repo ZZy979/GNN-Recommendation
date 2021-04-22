@@ -3,7 +3,7 @@ import argparse
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from dgl.dataloading import MultiLayerNeighborSampler, NodeDataLoader
+from dgl.dataloading import MultiLayerFullNeighborSampler, NodeDataLoader
 from ogb.nodeproppred import Evaluator
 from tqdm import tqdm
 
@@ -20,7 +20,7 @@ def train(args):
     g = g.cpu()
     evaluator = Evaluator(data.name)
 
-    sampler = MultiLayerNeighborSampler([args.neighbor_size] * (args.num_hidden_layers + 1))
+    sampler = MultiLayerFullNeighborSampler(args.num_hidden_layers + 1)
     train_loader = NodeDataLoader(g, {'paper': train_idx}, sampler, batch_size=args.batch_size)
     val_loader = NodeDataLoader(g, {'paper': val_idx}, sampler, batch_size=args.batch_size)
     test_loader = NodeDataLoader(g, {'paper': test_idx}, sampler, batch_size=args.batch_size)
@@ -50,6 +50,7 @@ def train(args):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            torch.cuda.empty_cache()
 
         train_acc = accuracy(torch.cat(logits, dim=0), torch.cat(train_labels, dim=0), evaluator)
         val_acc = evaluate(val_loader, device, model, labels, evaluator)
@@ -73,18 +74,18 @@ def get_rel_names(g, num_layers):
     return etypes
 
 
+@torch.no_grad()
 def evaluate(loader, device, model, labels, evaluator):
     model.eval()
     logits, eval_labels = [], []
-    with torch.no_grad():
-        for input_nodes, output_nodes, blocks in loader:
-            blocks = [b.to(device) for b in blocks]
-            features = {'paper': blocks[0].srcnodes['paper'].data['feat']}
-            batch_labels = labels[output_nodes['paper']]
-            batch_logits = model(blocks, features)
+    for input_nodes, output_nodes, blocks in loader:
+        blocks = [b.to(device) for b in blocks]
+        features = {'paper': blocks[0].srcnodes['paper'].data['feat']}
+        batch_labels = labels[output_nodes['paper']]
+        batch_logits = model(blocks, features)
 
-            logits.append(batch_logits.detach().cpu())
-            eval_labels.append(batch_labels.detach().cpu())
+        logits.append(batch_logits.detach().cpu())
+        eval_labels.append(batch_labels.detach().cpu())
     return accuracy(torch.cat(logits, dim=0), torch.cat(eval_labels, dim=0), evaluator)
 
 
@@ -97,7 +98,6 @@ def main():
     parser.add_argument('--dropout', type=float, default=0.6, help='Dropout概率')
     parser.add_argument('--epochs', type=int, default=50, help='训练epoch数')
     parser.add_argument('--batch-size', type=int, default=2560, help='批大小')
-    parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
     parser.add_argument('--lr', type=float, default=0.01, help='学习率')
     parser.add_argument('--weight-decay', type=float, default=0.0, help='权重衰减')
     args = parser.parse_args()

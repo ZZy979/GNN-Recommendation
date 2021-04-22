@@ -1,3 +1,7 @@
+import torch
+
+
+@torch.no_grad()
 def accuracy(logits, labels, evaluator):
     """计算准确率
 

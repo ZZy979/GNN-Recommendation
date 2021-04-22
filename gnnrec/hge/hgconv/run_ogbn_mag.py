@@ -3,10 +3,10 @@ import warnings
 
 import dgl.function as fn
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from dgl.dataloading import MultiLayerNeighborSampler, NodeDataLoader
+from gensim.models import Word2Vec
 from ogb.nodeproppred import Evaluator
 from tqdm import tqdm
 
@@ -19,9 +19,9 @@ def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
 
-    data, g, features, labels, train_idx, val_idx, test_idx = load_ogbn_mag(DATA_DIR, True, device)
+    data, g, _, labels, train_idx, val_idx, test_idx = load_ogbn_mag(DATA_DIR, True, device)
     g = g.cpu()
-    add_node_feat(g)
+    add_node_feat(g, args.node_feat, args.word2vec_path)
     evaluator = Evaluator(data.name)
 
     sampler = MultiLayerNeighborSampler([args.neighbor_size] * args.num_layers)
@@ -41,9 +41,8 @@ def train(args):
         logits, train_labels, losses = [], [], []
         for input_nodes, output_nodes, blocks in tqdm(train_loader):
             blocks = [b.to(device) for b in blocks]
-            features = {ntype: blocks[0].srcnodes[ntype].data['feat'] for ntype in blocks[0].ntypes}
             batch_labels = labels[output_nodes['paper']]
-            batch_logits = model(blocks, features)
+            batch_logits = model(blocks, blocks[0].srcdata['feat'])
             loss = F.cross_entropy(batch_logits, batch_labels.squeeze(dim=1))
 
             logits.append(batch_logits.detach().cpu())
@@ -53,6 +52,7 @@ def train(args):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            torch.cuda.empty_cache()
 
         train_acc = accuracy(torch.cat(logits, dim=0), torch.cat(train_labels, dim=0), evaluator)
         val_acc = evaluate(val_loader, device, model, labels, evaluator)
@@ -63,26 +63,31 @@ def train(args):
     print('Test Acc {:.4f}'.format(test_acc))
 
 
-def add_node_feat(g):
-    g.multi_update_all({'writes_rev': (fn.copy_u('feat', 'm'), fn.mean('m', 'feat'))}, 'sum')
-    g.multi_update_all({'affiliated_with': (fn.copy_u('feat', 'm'), fn.mean('m', 'feat'))}, 'sum')
-    a = torch.FloatTensor(g.num_nodes('field_of_study'), 128)
-    nn.init.xavier_uniform_(a, nn.init.calculate_gain('relu'))
-    g.nodes['field_of_study'].data['feat'] = a
+def add_node_feat(g, method, word2vec_path):
+    if method == 'average':
+        message_func, resuce_func = fn.copy_u('feat', 'm'), fn.mean('m', 'feat')
+        g.multi_update_all({'writes_rev': (message_func, resuce_func)}, 'sum')
+        g.multi_update_all({'affiliated_with': (message_func, resuce_func)}, 'sum')
+        g.multi_update_all({'has_topic': (message_func, resuce_func)}, 'sum')
+    elif method == 'metapath2vec':
+        model = Word2Vec.load(word2vec_path)
+        for ntype in ('author', 'field_of_study', 'institution'):
+            g.nodes[ntype].data['feat'] = torch.from_numpy(
+                model.wv[[ntype + '_' + str(i) for i in range(g.num_nodes(ntype))]]
+            )
 
 
+@torch.no_grad()
 def evaluate(loader, device, model, labels, evaluator):
     model.eval()
     logits, eval_labels = [], []
-    with torch.no_grad():
-        for input_nodes, output_nodes, blocks in loader:
-            blocks = [b.to(device) for b in blocks]
-            features = {ntype: blocks[0].srcnodes[ntype].data['feat'] for ntype in blocks[0].ntypes}
-            batch_labels = labels[output_nodes['paper']]
-            batch_logits = model(blocks, features)
+    for input_nodes, output_nodes, blocks in loader:
+        blocks = [b.to(device) for b in blocks]
+        batch_labels = labels[output_nodes['paper']]
+        batch_logits = model(blocks, blocks[0].srcdata['feat'])
 
-            logits.append(batch_logits.detach().cpu())
-            eval_labels.append(batch_labels.detach().cpu())
+        logits.append(batch_logits.detach().cpu())
+        eval_labels.append(batch_labels.detach().cpu())
     return accuracy(torch.cat(logits, dim=0), torch.cat(eval_labels, dim=0), evaluator)
 
 
@@ -90,13 +95,18 @@ def main():
     parser = argparse.ArgumentParser(description='ogbn-mag数据集 HGConv模型')
     parser.add_argument('--seed', type=int, default=8, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
+    parser.add_argument(
+        '--node-feat', choices=['average', 'metapath2vec'], default='average',
+        help='如何获取无特征顶点的输入特征'
+    )
+    parser.add_argument('--word2vec-path', help='使用metapath2vec预训练的word2vec模型路径')
     parser.add_argument('--num-hidden', type=int, default=32, help='隐藏层维数')
     parser.add_argument('--num-heads', type=int, default=8, help='注意力头数')
     parser.add_argument('--num-layers', type=int, default=2, help='层数')
     parser.add_argument('--no-residual', action='store_false', help='不使用残差连接', dest='residual')
     parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
     parser.add_argument('--epochs', type=int, default=200, help='训练epoch数')
-    parser.add_argument('--batch-size', type=int, default=2560, help='批大小')
+    parser.add_argument('--batch-size', type=int, default=2048, help='批大小')
     parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
     parser.add_argument('--lr', type=float, default=0.001, help='学习率')
     parser.add_argument('--weight-decay', type=float, default=0.0, help='权重衰减')

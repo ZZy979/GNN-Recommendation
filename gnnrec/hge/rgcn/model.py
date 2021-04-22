@@ -76,7 +76,7 @@ class RGCN(nn.Module):
     def __init__(
             self, num_nodes, in_dims, hidden_dim, out_dim, rel_names, predict_ntype,
             num_hidden_layers=1, num_bases=None, self_loop=True, dropout=0.0):
-        """R-GCN实体分类模型
+        """R-GCN模型
 
         :param num_nodes: Dict[str, int] 顶点类型到顶点数的映射
         :param in_dims: Dict[str, int] 顶点类型到输入特征维数的映射
@@ -123,4 +123,41 @@ class RGCN(nn.Module):
             h[k] = self.embeds[k](blocks[0].srcnodes(k))
         for i in range(len(self.layers)):
             h = self.layers[i](blocks[i], h)  # Dict[ntype, (N_i, d_hid)]
+        return h[self.predict_ntype]
+
+
+class RGCNFull(RGCN):
+
+    def __init__(
+            self, num_nodes, in_dims, hidden_dim, out_dim, rel_names, predict_ntype,
+            num_hidden_layers=1, num_bases=None, self_loop=True, dropout=0.0):
+        """RGCN模型（全图训练）
+
+        :param num_nodes: Dict[str, int] 顶点类型到顶点数的映射
+        :param in_dims: Dict[str, int] 顶点类型到输入特征维数的映射
+        :param hidden_dim: int 隐含特征维数
+        :param out_dim: int 输出特征维数
+        :param rel_names: List[str] 关系名称
+        :param predict_ntype: str 待预测顶点类型
+        :param num_hidden_layers: int, optional R-GCN隐藏层数，默认为1
+        :param num_bases: int, optional 基的个数，默认使用关系个数
+        :param self_loop: bool 是否包括自环消息，默认为True
+        :param dropout: float, optional Dropout概率，默认为0
+        """
+        super().__init__(
+            num_nodes, in_dims, hidden_dim, out_dim, [rel_names] * (num_hidden_layers + 1),
+            predict_ntype, num_hidden_layers, num_bases, self_loop, dropout
+        )
+
+    def forward(self, g, h):
+        """
+        :param g: DGLGraph 异构图
+        :param h: Dict[str, tensor(N_i, d_in_i)] （部分）顶点类型到输入特征的映射
+        :return: Dict[str, tensor(N_i, d_out)] 顶点类型到顶点嵌入的映射
+        """
+        h = {k: self.fc[k](feat) for k, feat in h.items()}
+        for k in self.embeds:
+            h[k] = self.embeds[k].weight
+        for i in range(len(self.layers)):
+            h = self.layers[i](g, h)  # Dict[ntype, (N_i, d_hid)]
         return h[self.predict_ntype]

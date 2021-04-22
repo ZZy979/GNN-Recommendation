@@ -1,8 +1,10 @@
 import argparse
 
+import torch
 from dgl.sampling import random_walk
 from ogb.nodeproppred import DglNodePropPredDataset
-from tqdm import trange
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.utils import add_reverse_edges
@@ -17,15 +19,22 @@ def main():
 
     data = DglNodePropPredDataset('ogbn-mag', DATA_DIR)
     g = add_reverse_edges(data[0][0])
-    # APFPAIA
-    metapath = [
-        'writes', 'has_topic', 'has_topic_rev', 'writes_rev',
-        'affiliated_with', 'affiliated_with_rev'
-    ]
+    metapaths = {
+        'author': [
+            'writes', 'has_topic', 'has_topic_rev', 'writes_rev',
+            'affiliated_with', 'affiliated_with_rev'
+        ],  # APFPAIA
+        'field_of_study': ['has_topic_rev', 'writes_rev', 'writes', 'has_topic'],  # FPAPF
+        'institution': ['affiliated_with_rev', 'writes', 'writes_rev', 'affiliated_with']  # IAPAI
+    }
     f = open(args.output_file, 'w')
-    for aid in trange(g.num_nodes('author'), ncols=80):
-        traces, types = random_walk(g, [aid] * args.num_walks, metapath=metapath * args.walk_length)
-        f.writelines([trace2name(g, trace, types) + '\n' for trace in traces])
+    for ntype, metapath in metapaths.items():
+        print(ntype)
+        loader = DataLoader(torch.arange(g.num_nodes(ntype)), batch_size=200)
+        for b in tqdm(loader):
+            nodes = torch.repeat_interleave(b, args.num_walks)
+            traces, types = random_walk(g, nodes, metapath=metapath * args.walk_length)
+            f.writelines([trace2name(g, trace, types) + '\n' for trace in traces])
     f.close()
 
 
