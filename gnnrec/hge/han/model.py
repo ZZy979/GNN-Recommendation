@@ -52,13 +52,13 @@ class HANLayer(nn.Module):
         # 语义层次的注意力
         self.semantic_attention = SemanticAttention(in_dim=num_heads * out_dim)
 
-    def forward(self, gs, h):
+    def forward(self, gs, hs):
         """
         :param gs: List[DGLGraph] 基于元路径的邻居组成的同构图
-        :param h: tensor(N, d_in) 输入顶点特征
+        :param hs: List[tensor(N, d_in)] 输入顶点特征
         :return: tensor(N, K*d_out) 输出顶点特征
         """
-        zp = [gat(g, h).flatten(start_dim=1) for gat, g in zip(self.gats, gs)]  # 基于元路径的嵌入
+        zp = [gat(g, h).flatten(start_dim=1) for gat, g, h in zip(self.gats, gs, hs)]  # 基于元路径的嵌入
         zp = torch.stack(zp, dim=1)  # (N, M, K*d_out)
         z = self.semantic_attention(zp)  # (N, K*d_out)
         return z
@@ -80,12 +80,12 @@ class HAN(nn.Module):
         self.han = HANLayer(num_metapaths, in_dim, hidden_dim, num_heads, dropout)
         self.predict = nn.Linear(num_heads * hidden_dim, out_dim)
 
-    def forward(self, gs, h):
+    def forward(self, gs, hs):
         """
         :param gs: List[DGLGraph] 基于元路径的邻居组成的同构图
-        :param h: tensor(N, d_in) 输入顶点特征
+        :param hs: List[tensor(N, d_in)] 输入顶点特征
         :return: tensor(N, d_out) 输出顶点嵌入
         """
-        h = self.han(gs, h)  # (N, K*d_hid)
+        h = self.han(gs, hs)  # (N, K*d_hid)
         out = self.predict(h)  # (N, d_out)
         return out

@@ -3,6 +3,7 @@ import random
 import numpy as np
 
 from .data import *
+from .metapath import *
 from .metrics import *
 
 
