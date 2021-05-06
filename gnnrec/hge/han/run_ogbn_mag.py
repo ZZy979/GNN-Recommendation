@@ -4,7 +4,6 @@ import dgl
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from ogb.nodeproppred import Evaluator
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -18,10 +17,10 @@ def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
 
-    data, g, features, labels, train_idx, val_idx, test_idx = load_ogbn_mag(DATA_DIR, True)
+    g, features, labels, num_classes, train_idx, val_idx, test_idx, evaluator = \
+        load_ogbn_mag(DATA_DIR, True)
     features = features.to(device)
     labels = labels.to(device)
-    evaluator = Evaluator(data.name)
 
     # PAP, PFP
     metapaths = [['writes_rev', 'writes'], ['has_topic', 'has_topic_rev']]
@@ -35,7 +34,7 @@ def train(args):
     test_dataloader = DataLoader(test_idx, batch_size=args.batch_size)
 
     model = HAN(
-        len(metapaths), features.shape[1], args.num_hidden, data.num_classes,
+        len(metapaths), features.shape[1], args.num_hidden, num_classes,
         args.num_heads, args.dropout
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)

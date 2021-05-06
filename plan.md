@@ -24,7 +24,7 @@
 * [x] 2020 ICLR [GraphSAINT](https://openreview.net/pdf?id=BJe8pkHFwS)
 * [x] 2020 [SIGN](https://arxiv.org/pdf/2004.11198)
 * [x] 2020 [NARS](https://arxiv.org/pdf/2011.09679)
-* [ ] 2020 [A Survey on Heterogeneous Graph Embedding: Methods, Techniques, Applications and Sources](https://arxiv.org/pdf/2011.14867)
+* [x] 2020 [A Survey on Heterogeneous Graph Embedding: Methods, Techniques, Applications and Sources](https://arxiv.org/pdf/2011.14867)
 * [x] 2021 ICLR [SuperGAT](https://openreview.net/pdf?id=Wi5KUNlqWty)
 
 ### 基于知识图谱的推荐算法
@@ -52,10 +52,10 @@
 * [x] [GCN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/gcn)
 * [x] [R-GCN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/rgcn)
 * [x] [GAT](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/gat)
-* [ ] HetGNN
+* [x] [HetGNN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/hetgnn)
 * [x] [HAN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/han)
 * [x] [MAGNN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/magnn)
-* [ ] HGT
+* [x] [HGT](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/hgt)
 * [x] [metapath2vec](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/metapath2vec)
 * [x] [SIGN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/sign)
 * [x] [HGConv](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/hgconv)
@@ -115,7 +115,9 @@
     * [x] 使用子图采样的方法在ogbn-mag数据集上训练HAN模型
     * [x] 使用metapath2vec预训练ogbn-mag数据集的顶点特征，重新跑HGConv模型
     * [x] 阅读综述A Survey on Heterogeneous Graph Embedding
-* 2021.4.26~5.2
-    * [ ] 实现HGT
-    * [ ] 实现HetGNN
+* 2021.4.26~5.9
+    * [x] 实现HGT
+    * [x] 实现HetGNN
+    * [ ] 实现ogbn-mag数据集 HGT模型
+    * [ ] 实现ogbn-mag数据集 HetGNN模型
     * [ ] 尝试改进：HetGNN的内容聚集+HGConv

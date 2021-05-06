@@ -4,7 +4,6 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from dgl.dataloading import MultiLayerFullNeighborSampler, NodeDataLoader
-from ogb.nodeproppred import Evaluator
 from tqdm import tqdm
 
 from gnnrec.config import DATA_DIR
@@ -16,9 +15,9 @@ def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
 
-    data, g, features, labels, train_idx, val_idx, test_idx = load_ogbn_mag(DATA_DIR, True, device)
+    g, features, labels, num_classes, train_idx, val_idx, test_idx, evaluator = \
+        load_ogbn_mag(DATA_DIR, True, device)
     g = g.cpu()
-    evaluator = Evaluator(data.name)
 
     sampler = MultiLayerFullNeighborSampler(args.num_hidden_layers + 1)
     train_loader = NodeDataLoader(g, {'paper': train_idx}, sampler, batch_size=args.batch_size)
@@ -27,7 +26,7 @@ def train(args):
 
     model = RGCN(
         {ntype: g.num_nodes(ntype) for ntype in g.ntypes},
-        {'paper': features.shape[1]}, args.num_hidden, data.num_classes,
+        {'paper': features.shape[1]}, args.num_hidden, num_classes,
         get_rel_names(g, args.num_hidden_layers + 1),
         'paper', args.num_hidden_layers, dropout=args.dropout
     ).to(device)

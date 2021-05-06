@@ -1,28 +1,26 @@
 import argparse
 import warnings
 
-import dgl.function as fn
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from dgl.dataloading import MultiLayerNeighborSampler, NodeDataLoader
-from gensim.models import Word2Vec
-from ogb.nodeproppred import Evaluator
 from tqdm import tqdm
 
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.hgconv.model import HGConv
-from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, accuracy
+from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, accuracy, \
+    average_node_feat, load_pretrained_node_embed
 
 
 def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
 
-    data, g, _, labels, train_idx, val_idx, test_idx = load_ogbn_mag(DATA_DIR, True, device)
+    g, _, labels, num_classes, train_idx, val_idx, test_idx, evaluator = \
+        load_ogbn_mag(DATA_DIR, True, device)
     g = g.cpu()
-    add_node_feat(g, args.node_feat, args.word2vec_path)
-    evaluator = Evaluator(data.name)
+    add_node_feat(g, args.node_feat, args.node_embed_path)
 
     sampler = MultiLayerNeighborSampler([args.neighbor_size] * args.num_layers)
     train_loader = NodeDataLoader(g, {'paper': train_idx}, sampler, batch_size=args.batch_size)
@@ -31,7 +29,7 @@ def train(args):
 
     model = HGConv(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
-        args.num_hidden, data.num_classes, args.num_heads, g, 'paper',
+        args.num_hidden, num_classes, args.num_heads, g, 'paper',
         args.num_layers, args.dropout, args.residual
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
@@ -63,18 +61,11 @@ def train(args):
     print('Test Acc {:.4f}'.format(test_acc))
 
 
-def add_node_feat(g, method, word2vec_path):
+def add_node_feat(g, method, node_embed_path):
     if method == 'average':
-        message_func, resuce_func = fn.copy_u('feat', 'm'), fn.mean('m', 'feat')
-        g.multi_update_all({'writes_rev': (message_func, resuce_func)}, 'sum')
-        g.multi_update_all({'affiliated_with': (message_func, resuce_func)}, 'sum')
-        g.multi_update_all({'has_topic': (message_func, resuce_func)}, 'sum')
-    elif method == 'metapath2vec':
-        model = Word2Vec.load(word2vec_path)
-        for ntype in ('author', 'field_of_study', 'institution'):
-            g.nodes[ntype].data['feat'] = torch.from_numpy(
-                model.wv[[ntype + '_' + str(i) for i in range(g.num_nodes(ntype))]]
-            )
+        average_node_feat(g)
+    elif method == 'pretrained':
+        load_pretrained_node_embed(g, node_embed_path)
 
 
 @torch.no_grad()
@@ -96,10 +87,10 @@ def main():
     parser.add_argument('--seed', type=int, default=8, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
     parser.add_argument(
-        '--node-feat', choices=['average', 'metapath2vec'], default='average',
+        '--node-feat', choices=['average', 'pretrained'], default='average',
         help='如何获取无特征顶点的输入特征'
     )
-    parser.add_argument('--word2vec-path', help='使用metapath2vec预训练的word2vec模型路径')
+    parser.add_argument('--node-embed-path', help='预训练顶点嵌入路径')
     parser.add_argument('--num-hidden', type=int, default=32, help='隐藏层维数')
     parser.add_argument('--num-heads', type=int, default=8, help='注意力头数')
     parser.add_argument('--num-layers', type=int, default=2, help='层数')

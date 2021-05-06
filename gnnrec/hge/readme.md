@@ -8,7 +8,7 @@
 * HGConv+metapath2vec
     * 随机游走： `python -m gnnrec.hge.metapath2vec.random_walk <corpus-path>`
     * 训练词向量（顶点嵌入）： `python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 <corpus-path> <model-path>`
-    * `python -m gnnrec.hge.hgconv.run_ogbn_mag --node-feat=metapath2vec --word2vec-path=<model-path>`
+    * `python -m gnnrec.hge.hgconv.run_ogbn_mag --node-feat=pretrained --node-embed-path=<model-path>`
 
 ## 结果
 | 模型 | Train Acc | Valid Acc | Test Acc |

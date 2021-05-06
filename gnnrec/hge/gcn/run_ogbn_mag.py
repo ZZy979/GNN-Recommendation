@@ -4,7 +4,6 @@ import dgl
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from ogb.nodeproppred import Evaluator
 
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.gcn.model import GCN
@@ -15,11 +14,11 @@ def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
 
-    data, g, features, labels, train_idx, val_idx, test_idx = load_ogbn_mag(DATA_DIR, True, device)
+    g, features, labels, num_classes, train_idx, val_idx, test_idx, evaluator = \
+        load_ogbn_mag(DATA_DIR, True, device)
     g = dgl.metapath_reachable_graph(g, ['writes_rev', 'writes']).to(device)
-    evaluator = Evaluator(data.name)
 
-    model = GCN(features.shape[1], args.num_hidden, data.num_classes, args.dropout).to(device)
+    model = GCN(features.shape[1], args.num_hidden, num_classes, args.dropout).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     for epoch in range(args.epochs):
         model.train()

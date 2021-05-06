@@ -3,7 +3,6 @@ import argparse
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from ogb.nodeproppred import Evaluator
 
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.rgcn.model import RGCNFull
@@ -14,12 +13,12 @@ def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
 
-    data, g, features, labels, train_idx, val_idx, test_idx = load_ogbn_mag(DATA_DIR, True, device)
-    evaluator = Evaluator(data.name)
+    g, features, labels, num_classes, train_idx, val_idx, test_idx, evaluator = \
+        load_ogbn_mag(DATA_DIR, True, device)
 
     model = RGCNFull(
         {ntype: g.num_nodes(ntype) for ntype in g.ntypes},
-        {'paper': features.shape[1]}, args.num_hidden, data.num_classes, g.etypes, 'paper',
+        {'paper': features.shape[1]}, args.num_hidden, num_classes, g.etypes, 'paper',
         args.num_hidden_layers, dropout=args.dropout
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
