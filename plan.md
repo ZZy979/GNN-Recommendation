@@ -119,5 +119,5 @@
     * [x] 实现HGT
     * [x] 实现HetGNN
     * [x] 实现ogbn-mag数据集 HGT模型
-    * [ ] 实现ogbn-mag数据集 HetGNN模型
+    * [x] 实现ogbn-mag数据集 HetGNN模型
     * [ ] 尝试改进：HetGNN的内容聚集+HGConv

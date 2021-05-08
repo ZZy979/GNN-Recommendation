@@ -12,6 +12,10 @@
 ### HAN
 `python -m gnnrec.hge.han.run_ogbn_mag`
 
+### HetGNN
+1. 预处理 `python -m gnnrec.hge.hetgnn.preprocess data/word2vec/ogbn_mag.model data/word2vec/ogbn_mag_corpus.txt data/hetgnn`
+2. 训练模型（有监督） `python -m gnnrec.hge.hetgnn.run_ogbn_mag data/hetgnn`
+
 ### HGT
 #### 邻居平均(average)
 `python -m gnnrec.hge.hgt.run_ogbn_mag`
@@ -38,6 +42,7 @@
 | GCN (PAP) | 0.2973 | 0.2993 | 0.3086 |
 | R-GCN (full batch) | 0.3500 | 0.4043 | 0.3858 |
 | HAN | 0.2154 | 0.2215 | 0.2364 |
+| HetGNN | 0.4609 | 0.4093 | 0.4026 |
 | HGT + average | 0.6393 | 0.4371 | 0.4078 |
 | HGT + pretrained | 0.8185 | 0.4507 | 0.4158 |
 | HGConv + average | 0.5186 | 0.4737 | 0.4556 |
