@@ -13,17 +13,15 @@ from gnnrec.hge.utils import add_reverse_edges
 def main():
     parser = argparse.ArgumentParser(description='metapath2vec基于元路径的随机游走')
     parser.add_argument('--num-walks', type=int, default=5, help='每个顶点游走次数')
-    parser.add_argument('--walk-length', type=int, default=32, help='元路径重复次数')
+    parser.add_argument('--walk-length', type=int, default=16, help='元路径重复次数')
     parser.add_argument('output_file', help='输出文件名')
     args = parser.parse_args()
 
     data = DglNodePropPredDataset('ogbn-mag', DATA_DIR)
     g = add_reverse_edges(data[0][0])
     metapaths = {
-        'author': [
-            'writes', 'has_topic', 'has_topic_rev', 'writes_rev',
-            'affiliated_with', 'affiliated_with_rev'
-        ],  # APFPAIA
+        'author': ['writes', 'has_topic', 'has_topic_rev', 'writes_rev'],  # APFPA
+        'paper': ['writes_rev', 'writes', 'has_topic', 'has_topic_rev'],  # PAPFP
         'field_of_study': ['has_topic_rev', 'writes_rev', 'writes', 'has_topic'],  # FPAPF
         'institution': ['affiliated_with_rev', 'writes', 'writes_rev', 'affiliated_with']  # IAPAI
     }
@@ -39,10 +37,7 @@ def main():
 
 
 def trace2name(g, trace, types):
-    return ' '.join(
-        g.ntypes[t] + '_' + str(int(n)) for n, t in zip(trace, types)
-        if int(n) >= 0 and g.ntypes[t] != 'paper'
-    )
+    return ' '.join(g.ntypes[t] + '_' + str(int(n)) for n, t in zip(trace, types) if int(n) >= 0)
 
 
 if __name__ == '__main__':
