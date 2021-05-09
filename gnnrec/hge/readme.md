@@ -21,7 +21,7 @@
 `python -m gnnrec.hge.hgt.run_ogbn_mag`
 
 #### 预训练顶点嵌入(pretrained)
-`python -m gnnrec.hge.hgt.run_ogbn_mag --node-feat=pretrained --node-embed-path=data/word2vec/ogbn_mag.model`
+`python -m gnnrec.hge.hgt.run_ogbn_mag --node-feat=pretrained --node-embed-path=data/word2vec/ogbn_mag.model --epochs=40`
 
 ### HGConv
 #### 邻居平均(average)
@@ -43,11 +43,10 @@
 | R-GCN (full batch) | 0.3500 | 0.4043 | 0.3858 |
 | HAN | 0.2154 | 0.2215 | 0.2364 |
 | HetGNN | 0.4609 | 0.4093 | 0.4026 |
-| HGT + average | 0.6393 | 0.4371 | 0.4078 |
-| HGT + pretrained | 0.8185 | 0.4507 | 0.4158 |
+| HGT + average | 0.5960 | 0.4410 | 0.4139 |
+| HGT + pretrained | 0.6506 | 0.4757 | 0.4482 |
 | HGConv + average | 0.5186 | 0.4737 | 0.4556 |
 | HGConv + pretrained | 0.5776 | 0.5009 | 0.4796 |
 
 ## TODO
 * R-GCN minibatch训练即使不使用邻居采样也无法达到与全图训练相同的准确率？
-* HGT模型使用不同输入特征时训练不同的epoch数：average - 100, pretrained - 40

@@ -74,7 +74,7 @@ def evaluate(loader, device, model, labels, evaluator):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='HetGNN无监督训练')
+    parser = argparse.ArgumentParser(description='ogbn-mag数据集 HetGNN模型（有监督训练）')
     parser.add_argument('--seed', type=int, default=10, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
     parser.add_argument('--num-hidden', type=int, default=128, help='隐藏层维数')
