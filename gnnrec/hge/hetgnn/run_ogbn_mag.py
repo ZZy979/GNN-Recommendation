@@ -29,7 +29,7 @@ def train(args):
     test_loader = NodeDataLoader(g, {'paper': test_idx}, sampler, batch_size=args.batch_size)
 
     model = HetGNN(
-        feats['author'].shape[-1], args.num_hidden, num_classes, g.ntypes, 'paper', args.dropout
+        feats['author'].shape[-1], args.num_hidden, num_classes, g.ntypes, 'paper'
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     for epoch in range(args.epochs):
@@ -78,7 +78,6 @@ def main():
     parser.add_argument('--seed', type=int, default=10, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
     parser.add_argument('--num-hidden', type=int, default=128, help='隐藏层维数')
-    parser.add_argument('--dropout', type=float, default=0.0, help='Dropout概率')
     parser.add_argument('--epochs', type=int, default=50, help='训练epoch数')
     parser.add_argument('--batch-size', type=int, default=4096, help='批大小')
     parser.add_argument('--lr', type=float, default=0.001, help='学习率')
