@@ -30,6 +30,9 @@
 #### 预训练顶点嵌入(pretrained)
 `python -m gnnrec.hge.hgconv.run_ogbn_mag --node-feat=pretrained --node-embed-path=data/word2vec/ogbn_mag.model`
 
+### MyGNN
+`python -m gnnrec.hge.mygnn.run_ogbn_mag`
+
 ## 预训练顶点嵌入
 1. 随机游走 `python -m gnnrec.hge.metapath2vec.random_walk data/word2vec/ogbn_mag_corpus.txt`
 2. 训练词向量 `python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 data/word2vec/ogbn_mag_corpus.txt data/word2vec/ogbn_mag.model`
@@ -47,6 +50,7 @@
 | HGT + pretrained | 0.6506 | 0.4757 | 0.4482 |
 | HGConv + average | 0.5186 | 0.4737 | 0.4556 |
 | HGConv + pretrained | 0.5776 | 0.5009 | 0.4796 |
+| MyGNN | 0.5919 | 0.4347 | 0.4006 |
 
 ## TODO
 * R-GCN minibatch训练即使不使用邻居采样也无法达到与全图训练相同的准确率？

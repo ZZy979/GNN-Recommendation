@@ -86,7 +86,7 @@ def main():
     parser.add_argument('--num-heads', type=int, default=8, help='注意力头数')
     parser.add_argument('--num-layers', type=int, default=2, help='层数')
     parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
-    parser.add_argument('--epochs', type=int, default=100, help='训练epoch数')
+    parser.add_argument('--epochs', type=int, default=40, help='训练epoch数')
     parser.add_argument('--batch-size', type=int, default=2048, help='批大小')
     parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
     parser.add_argument('--lr', type=float, default=0.001, help='学习率')

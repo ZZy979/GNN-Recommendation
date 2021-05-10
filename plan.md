@@ -8,6 +8,10 @@
 
 ## 论文阅读
 ### 异构图表示学习
+#### 综述
+* [x] 2020 [Heterogeneous Network Representation Learning: A Unified Framework with Survey and Benchmark](https://arxiv.org/pdf/2004.00216)
+* [x] 2020 [A Survey on Heterogeneous Graph Embedding: Methods, Techniques, Applications and Sources](https://arxiv.org/pdf/2011.14867)
+#### 图神经网络
 * [x] 2014 KDD [DeepWalk](https://arxiv.org/pdf/1403.6652)
 * [x] 2016 KDD [node2vec](https://arxiv.org/pdf/1607.00653)
 * [x] 2017 KDD [metapath2vec](https://ericdongyx.github.io/papers/KDD17-dong-chawla-swami-metapath2vec.pdf)
@@ -18,21 +22,26 @@
 * [x] 2019 WWW [HAN](https://arxiv.org/pdf/1903.07293)
 * [x] 2020 WWW [MAGNN](https://arxiv.org/pdf/2002.01680)
 * [x] 2020 WWW [HGT](https://arxiv.org/pdf/2003.01332)
-* [x] 2020 [Heterogeneous Network Representation Learning: A Unified Framework with Survey and Benchmark](https://arxiv.org/pdf/2004.00216)
 * [x] 2020 [HGConv](https://arxiv.org/pdf/2012.14722)
 * [x] 2020 KDD [GPT-GNN](https://arxiv.org/pdf/2006.15437)
 * [x] 2020 ICLR [GraphSAINT](https://openreview.net/pdf?id=BJe8pkHFwS)
 * [x] 2020 [SIGN](https://arxiv.org/pdf/2004.11198)
 * [x] 2020 [NARS](https://arxiv.org/pdf/2011.09679)
-* [x] 2020 [A Survey on Heterogeneous Graph Embedding: Methods, Techniques, Applications and Sources](https://arxiv.org/pdf/2011.14867)
 * [x] 2021 ICLR [SuperGAT](https://openreview.net/pdf?id=Wi5KUNlqWty)
+#### 自监督/预训练
+* [ ] 2020 [Self-Supervised Learning: Generative or Contrastive](https://arxiv.org/pdf/2006.08218)
+* [ ] 2020 [Self-Supervised Graph Representation Learning via Global Context Prediction](https://arxiv.org/pdf/2003.01604)
+* [ ] 2020 ICML [When Does Self-Supervision Help Graph Convolutional Networks?](http://proceedings.mlr.press/v119/you20a/you20a.pdf)
+* [ ] 2020 ICLR [Strategies for Pre-Training Graph Neural Networks](https://www.openreview.net/pdf?id=HJlWWJSFDH)
 
 ### 基于知识图谱的推荐算法
+#### 综述
 * [x] 2020 IEEE [A Survey on Knowledge Graph-Based Recommender Systems](https://arxiv.org/pdf/2003.00911)
+#### 基于嵌入的方法
 * [x] 2016 KDD [CKE](https://www.kdd.org/kdd2016/papers/files/adf0066-zhangA.pdf)
 * [x] 2018 [CFKG](https://arxiv.org/pdf/1803.06540)
 * [ ] 2018 WSDM [SHINE](https://arxiv.org/pdf/1712.00732)
------
+#### 基于路径的方法
 * [x] 2013 IJCAI [Hete-MF](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.380.3668&rep=rep1&type=pdf)
 * [x] 2014 ICDM [Hete-CF](https://arxiv.org/pdf/1412.7610)
 * [x] 2013 RecSys [HeteRec](http://hanj.cs.illinois.edu/pdf/recsys13_xyu.pdf)
@@ -40,7 +49,7 @@
 * [ ] 2019 WWW [RuleRec](https://arxiv.org/pdf/1903.03714)
 * [ ] 2018 KDD [MCRec](https://dl.acm.org/doi/pdf/10.1145/3219819.3219965)
 * [ ] 2018 RecSys [RKGE](https://repository.tudelft.nl/islandora/object/uuid:9a3559e9-27b6-47cd-820d-d7ecc76cbc06/datastream/OBJ/download)
------
+#### 嵌入和路径结合的方法
 * [x] 2018 CIKM [RippleNet](https://arxiv.org/pdf/1803.03467)
 * [ ] 2019 KDD [AKUPM](https://dl.acm.org/doi/abs/10.1145/3292500.3330705)
 * [x] 2019 WWW [KGCN](https://arxiv.org/pdf/1904.12575)
@@ -121,3 +130,7 @@
     * [x] 实现ogbn-mag数据集 HGT模型
     * [x] 实现ogbn-mag数据集 HetGNN模型
     * [x] 尝试改进：HetGNN的内容聚集+HGConv
+* 2021.5.10~5.16
+    * [ ] 继续尝试异构图表示学习模型的改进
+    * [ ] 阅读论文Strategies for Pre-Training Graph Neural Networks
+    * [ ] 阅读论文Self-Supervised Graph Representation Learning via Global Context Prediction
