@@ -29,10 +29,10 @@
 * [x] 2020 [NARS](https://arxiv.org/pdf/2011.09679)
 * [x] 2021 ICLR [SuperGAT](https://openreview.net/pdf?id=Wi5KUNlqWty)
 #### 自监督/预训练
-* [ ] 2020 [Self-Supervised Learning: Generative or Contrastive](https://arxiv.org/pdf/2006.08218)
-* [ ] 2020 [Self-Supervised Graph Representation Learning via Global Context Prediction](https://arxiv.org/pdf/2003.01604)
+* [x] 2020 [Self-Supervised Graph Representation Learning via Global Context Prediction](https://arxiv.org/pdf/2003.01604)
 * [ ] 2020 ICML [When Does Self-Supervision Help Graph Convolutional Networks?](http://proceedings.mlr.press/v119/you20a/you20a.pdf)
-* [ ] 2020 ICLR [Strategies for Pre-Training Graph Neural Networks](https://www.openreview.net/pdf?id=HJlWWJSFDH)
+* [x] 2020 ICLR [Strategies for Pre-Training Graph Neural Networks](https://www.openreview.net/pdf?id=HJlWWJSFDH)
+* [ ] 2021 WWW [Self-Supervised Learning of Contextual Embeddings for Link Prediction in Heterogeneous Networks](https://arxiv.org/pdf/2007.11192)
 
 ### 基于知识图谱的推荐算法
 #### 综述
@@ -131,6 +131,9 @@
     * [x] 实现ogbn-mag数据集 HetGNN模型
     * [x] 尝试改进：HetGNN的内容聚集+HGConv
 * 2021.5.10~5.16
+    * [x] 阅读论文Strategies for Pre-Training Graph Neural Networks
+    * [x] 阅读论文Self-Supervised Graph Representation Learning via Global Context Prediction
+* 2021.5.17~5.23
     * [ ] 继续尝试异构图表示学习模型的改进
-    * [ ] 阅读论文Strategies for Pre-Training Graph Neural Networks
-    * [ ] 阅读论文Self-Supervised Graph Representation Learning via Global Context Prediction
+    * [ ] 阅读论文Self-Supervised Learning of Contextual Embeddings for Link Prediction in Heterogeneous Networks
+    * [ ] 整理OAG数据集
