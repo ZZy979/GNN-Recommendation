@@ -6,8 +6,6 @@
 [ogbn-mag](https://ogb.stanford.edu/docs/nodeprop/#ogbn-mag) - OGB提供的微软学术数据集
 
 ### Baseline
-* MLP
-* [GCN](https://arxiv.org/pdf/1609.02907)
 * [R-GCN](https://arxiv.org/pdf/1703.06103)
 * [HAN](https://arxiv.org/pdf/1903.07293)
 * [HetGNN](https://dl.acm.org/doi/pdf/10.1145/3292500.3330961)

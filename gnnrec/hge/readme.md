@@ -1,11 +1,5 @@
 # ogbn-mag数据集
 ## 运行命令
-### MLP
-`python -m gnnrec.hge.mlp.run_ogbn_mag`
-
-### GCN
-`python -m gnnrec.hge.gcn.run_ogbn_mag`
-
 ### R-GCN (full batch)
 `python -m gnnrec.hge.rgcn.run_ogbn_mag_full`
 
@@ -40,9 +34,6 @@
 ## 结果
 | 模型 | Train Acc | Valid Acc | Test Acc |
 | --- | --- | --- | --- |
-| MLP | 0.2871 | 0.2603 | 0.2669 |
-| GCN (PP) | 0.2802 | 0.2293 | 0.2184 |
-| GCN (PAP) | 0.2973 | 0.2993 | 0.3086 |
 | R-GCN (full batch) | 0.3500 | 0.4043 | 0.3858 |
 | HAN | 0.2154 | 0.2215 | 0.2364 |
 | HetGNN | 0.4609 | 0.4093 | 0.4026 |
