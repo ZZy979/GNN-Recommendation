@@ -29,8 +29,8 @@ def train(args):
 
     model = HGT(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
-        args.num_hidden, num_classes, g.ntypes, g.etypes, args.num_heads, args.num_layers,
-        'paper', args.dropout
+        args.num_hidden, num_classes, args.num_heads, g.ntypes, g.canonical_etypes,
+        'paper', args.num_layers, args.dropout
     ).to(device)
     optimizer = optim.AdamW(model.parameters(), eps=1e-6)
     scheduler = optim.lr_scheduler.OneCycleLR(
@@ -101,7 +101,7 @@ def main():
     parser.add_argument('--num-layers', type=int, default=2, help='层数')
     parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
     parser.add_argument('--epochs', type=int, default=100, help='训练epoch数')
-    parser.add_argument('--batch-size', type=int, default=4096, help='批大小')
+    parser.add_argument('--batch-size', type=int, default=2048, help='批大小')
     parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
     parser.add_argument('--max-lr', type=float, default=5e-4, help='学习率上界')
     args = parser.parse_args()

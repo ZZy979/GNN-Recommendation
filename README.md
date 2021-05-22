@@ -13,3 +13,5 @@
 * [HGConv](https://arxiv.org/pdf/2012.14722)
 
 ## kgrec：基于知识图谱的推荐算法
+### 数据集
+[OAG v2](https://www.aminer.cn/oag-2-1) - Open Academic Graph微软学术数据集

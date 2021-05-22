@@ -1,18 +1,16 @@
 import argparse
-import os
 import warnings
 
-import dgl.function as fn
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from dgl.data.utils import load_info
 from dgl.dataloading import MultiLayerNeighborSampler, NodeDataLoader
 from tqdm import tqdm
 
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.mygnn.model import MyGNN
-from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, accuracy
+from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, accuracy, \
+    load_pretrained_node_embed
 
 
 def train(args):
@@ -22,9 +20,7 @@ def train(args):
     g, _, labels, num_classes, train_idx, val_idx, test_idx, evaluator = \
         load_ogbn_mag(DATA_DIR, True, device)
     g = g.cpu()
-    feats = load_info(os.path.join(args.data_path, 'ogbn_mag_in_feats.pkl'))
-    g.ndata['feat'] = feats
-    g.multi_update_all({'affiliated_with': (fn.copy_u('feat', 'm'), fn.mean('m', 'feat'))}, 'sum')
+    load_pretrained_node_embed(g, args.node_embed_path)
 
     sampler = MultiLayerNeighborSampler([args.neighbor_size] * args.num_layers)
     train_loader = NodeDataLoader(g, {'paper': train_idx}, sampler, batch_size=args.batch_size)
@@ -32,8 +28,9 @@ def train(args):
     test_loader = NodeDataLoader(g, {'paper': test_idx}, sampler, batch_size=args.batch_size)
 
     model = MyGNN(
-        feats['author'].shape[-1], args.num_hidden, num_classes, args.num_heads,
-        g, 'paper', args.num_layers, args.dropout
+        {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
+        args.num_hidden, num_classes, args.num_heads,
+        g.ntypes, g.canonical_etypes, 'paper', args.num_layers, args.dropout
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     warnings.filterwarnings('ignore', 'Setting attributes on ParameterDict is not supported')
@@ -86,12 +83,12 @@ def main():
     parser.add_argument('--num-heads', type=int, default=8, help='注意力头数')
     parser.add_argument('--num-layers', type=int, default=2, help='层数')
     parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
-    parser.add_argument('--epochs', type=int, default=40, help='训练epoch数')
+    parser.add_argument('--epochs', type=int, default=25, help='训练epoch数')
     parser.add_argument('--batch-size', type=int, default=2048, help='批大小')
     parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
     parser.add_argument('--lr', type=float, default=0.001, help='学习率')
     parser.add_argument('--weight-decay', type=float, default=0.0, help='权重衰减')
-    parser.add_argument('data_path', help='预处理数据所在目录')
+    parser.add_argument('node_embed_path', help='预训练顶点嵌入路径')
     args = parser.parse_args()
     print(args)
     train(args)

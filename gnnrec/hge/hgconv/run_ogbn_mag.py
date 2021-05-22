@@ -29,7 +29,7 @@ def train(args):
 
     model = HGConv(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
-        args.num_hidden, num_classes, args.num_heads, g, 'paper',
+        args.num_hidden, num_classes, args.num_heads, g.ntypes, g.canonical_etypes, 'paper',
         args.num_layers, args.dropout, args.residual
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
@@ -96,7 +96,7 @@ def main():
     parser.add_argument('--num-layers', type=int, default=2, help='层数')
     parser.add_argument('--no-residual', action='store_false', help='不使用残差连接', dest='residual')
     parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
-    parser.add_argument('--epochs', type=int, default=150, help='训练epoch数')
+    parser.add_argument('--epochs', type=int, default=100, help='训练epoch数')
     parser.add_argument('--batch-size', type=int, default=4096, help='批大小')
     parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
     parser.add_argument('--lr', type=float, default=0.001, help='学习率')

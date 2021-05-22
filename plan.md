@@ -32,7 +32,7 @@
 * [x] 2020 [Self-Supervised Graph Representation Learning via Global Context Prediction](https://arxiv.org/pdf/2003.01604)
 * [ ] 2020 ICML [When Does Self-Supervision Help Graph Convolutional Networks?](http://proceedings.mlr.press/v119/you20a/you20a.pdf)
 * [x] 2020 ICLR [Strategies for Pre-Training Graph Neural Networks](https://www.openreview.net/pdf?id=HJlWWJSFDH)
-* [ ] 2021 WWW [Self-Supervised Learning of Contextual Embeddings for Link Prediction in Heterogeneous Networks](https://arxiv.org/pdf/2007.11192)
+* [x] 2021 WWW [Self-Supervised Learning of Contextual Embeddings for Link Prediction in Heterogeneous Networks](https://arxiv.org/pdf/2007.11192)
 
 ### 基于知识图谱的推荐算法
 #### 综述
@@ -134,6 +134,6 @@
     * [x] 阅读论文Strategies for Pre-Training Graph Neural Networks
     * [x] 阅读论文Self-Supervised Graph Representation Learning via Global Context Prediction
 * 2021.5.17~5.23
-    * [ ] 继续尝试异构图表示学习模型的改进
-    * [ ] 阅读论文Self-Supervised Learning of Contextual Embeddings for Link Prediction in Heterogeneous Networks
-    * [ ] 整理OAG数据集
+    * [x] 继续尝试异构图表示学习模型的改进
+    * [x] 阅读论文Self-Supervised Learning of Contextual Embeddings for Link Prediction in Heterogeneous Networks
+    * [x] 整理OAG数据集
