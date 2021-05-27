@@ -28,6 +28,7 @@
 * [x] 2020 [SIGN](https://arxiv.org/pdf/2004.11198)
 * [x] 2020 [NARS](https://arxiv.org/pdf/2011.09679)
 * [x] 2021 ICLR [SuperGAT](https://openreview.net/pdf?id=Wi5KUNlqWty)
+* [x] 2021 [R-HGNN](https://arxiv.org/pdf/2105.11122)
 #### 自监督/预训练
 * [x] 2020 [Self-Supervised Graph Representation Learning via Global Context Prediction](https://arxiv.org/pdf/2003.01604)
 * [ ] 2020 ICML [When Does Self-Supervision Help Graph Convolutional Networks?](http://proceedings.mlr.press/v119/you20a/you20a.pdf)
@@ -69,6 +70,7 @@
 * [x] [SIGN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/sign)
 * [x] [HGConv](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/hgconv)
 * [x] [SuperGAT](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/supergat)
+* [ ] R-HGNN
 
 ### 基于知识图谱的推荐算法
 * [ ] CKE
@@ -137,3 +139,9 @@
     * [x] 继续尝试异构图表示学习模型的改进
     * [x] 阅读论文Self-Supervised Learning of Contextual Embeddings for Link Prediction in Heterogeneous Networks
     * [x] 整理OAG数据集
+* 2021.5.24~5.30
+    * 实习第一周
+    * [x] 阅读论文R-HGNN
+* 2021.5.31~6.6
+    * [ ] 实现R-HGNN
+    * [ ] 利用OAG数据集构造计算机领域的子集

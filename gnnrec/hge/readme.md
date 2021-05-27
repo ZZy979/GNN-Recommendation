@@ -46,3 +46,4 @@
 
 ## TODO
 * R-GCN minibatch训练即使不使用邻居采样也无法达到与全图训练相同的准确率？
+* HGT和HGConv改用离线推断
