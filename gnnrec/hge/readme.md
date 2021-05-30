@@ -39,11 +39,10 @@
 | HetGNN | 0.4609 | 0.4093 | 0.4026 |
 | HGT+average | 0.5956 | 0.4386 | 0.4160 |
 | HGT+pretrained | 0.6507 | 0.4807 | 0.4491 |
-| HGConv+average | 0.5022 | 0.4681 | 0.4481 |
-| HGConv+pretrained | 0.5657 | 0.4981 | 0.4746 |
+| HGConv+average | 0.5032 | 0.4626 | 0.4507 |
+| HGConv+pretrained | 0.5669 | 0.5039 | 0.4882 |
 | HetGNN内容聚集+HGConv | 0.5919 | 0.4347 | 0.4006 |
 | HGT注意力+HGConv | 0.5502 | 0.4469 | 0.4218 |
 
 ## TODO
 * R-GCN minibatch训练即使不使用邻居采样也无法达到与全图训练相同的准确率？
-* HGT和HGConv改用离线推断

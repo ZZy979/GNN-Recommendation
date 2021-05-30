@@ -2,8 +2,10 @@ import dgl.function as fn
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from dgl.dataloading import MultiLayerFullNeighborSampler, NodeDataLoader
 from dgl.ops import edge_softmax
 from dgl.utils import expand_as_pair
+from tqdm import tqdm
 
 
 class MicroConv(nn.Module):
@@ -229,6 +231,7 @@ class HGConv(nn.Module):
         :param residual: bool, optional 是否使用残差连接，默认True
         """
         super().__init__()
+        self.d = num_heads * hidden_dim
         self.predict_ntype = predict_ntype
         # 对齐输入特征维数
         self.fc_in = nn.ModuleDict({
@@ -251,3 +254,32 @@ class HGConv(nn.Module):
         for i in range(len(self.layers)):
             feats = self.layers[i](blocks[i], feats)  # {ntype: tensor(N_i, K*d_hid)}
         return self.classifier(feats[self.predict_ntype])
+
+    @torch.no_grad()
+    def inference(self, g, feats, device, batch_size):
+        """离线推断所有顶点的最终嵌入（不使用邻居采样）
+
+        :param g: DGLGraph 异构图
+        :param feats: Dict[str, tensor(N_i, d_in_i)] 顶点类型到输入顶点特征的映射
+        :param device: torch.device
+        :param batch_size: int 批大小
+        :return: tensor(N_i, d_out) 待预测顶点的最终嵌入
+        """
+        g.ndata['emb'] = {
+            ntype: self.fc_in[ntype](feat.to(device)).cpu()
+            for ntype, feat in feats.items()
+        }
+        for layer in self.layers:
+            embeds = {ntype: torch.zeros(g.num_nodes(ntype), self.d) for ntype in g.ntypes}
+            sampler = MultiLayerFullNeighborSampler(1)
+            loader = NodeDataLoader(
+                g, {ntype: torch.arange(g.num_nodes(ntype)) for ntype in g.ntypes}, sampler,
+                batch_size=batch_size, shuffle=True
+            )
+            for input_nodes, output_nodes, blocks in tqdm(loader):
+                block = blocks[0].to(device)
+                h = layer(block, block.srcdata['emb'])
+                for ntype in h:
+                    embeds[ntype][output_nodes[ntype]] = h[ntype].cpu()
+            g.ndata['emb'] = embeds
+        return self.classifier(g.nodes[self.predict_ntype].data['emb'].to(device))

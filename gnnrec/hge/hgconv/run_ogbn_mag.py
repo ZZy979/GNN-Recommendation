@@ -54,10 +54,12 @@ def train(args):
 
         train_acc = accuracy(torch.cat(logits, dim=0), torch.cat(train_labels, dim=0), evaluator)
         val_acc = evaluate(val_loader, device, model, labels, evaluator)
-        print('Epoch {:d} | Train Loss {:.4f} | Train Acc {:.4f} | Val Acc {:.4f}'.format(
-            epoch, torch.tensor(losses).mean().item(), train_acc, val_acc
+        test_acc = evaluate(test_loader, device, model, labels, evaluator)
+        print('Epoch {:d} | Train Loss {:.4f} | Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(
+            epoch, torch.tensor(losses).mean().item(), train_acc, val_acc, test_acc
         ))
-    test_acc = evaluate(test_loader, device, model, labels, evaluator)
+    embed = model.inference(g, g.ndata['feat'], device, args.batch_size)
+    test_acc = accuracy(embed[test_idx], labels[test_idx], evaluator)
     print('Test Acc {:.4f}'.format(test_acc))
 
 

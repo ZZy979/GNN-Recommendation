@@ -143,7 +143,7 @@ class HGT(nn.Module):
         :param out_dim: int 输出特征维数
         :param num_heads: int 注意力头数K
         :param ntypes: List[str] 顶点类型列表
-        :param etypes: List[str] 边类型列表
+        :param etypes: List[(str, str, str)] 规范边类型列表
         :param predict_ntype: str 待预测顶点类型
         :param num_layers: int 层数
         :param dropout: dropout: float, optional Dropout概率，默认为0.2
