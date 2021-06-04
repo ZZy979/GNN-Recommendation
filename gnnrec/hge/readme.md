@@ -24,6 +24,9 @@
 #### 预训练顶点嵌入(pretrained)
 `python -m gnnrec.hge.hgconv.run_ogbn_mag --node-feat=pretrained --node-embed-path=data/word2vec/ogbn_mag.model`
 
+### R-HGNN
+`python -m gnnrec.hge.rhgnn.run_ogbn_mag data/word2vec/ogbn_mag.model`
+
 ### MyGNN
 `python -m gnnrec.hge.mygnn.run_ogbn_mag data/word2vec/ogbn_mag.model`
 
@@ -41,6 +44,7 @@
 | HGT+pretrained | 0.6507 | 0.4807 | 0.4491 |
 | HGConv+average | 0.5032 | 0.4626 | 0.4507 |
 | HGConv+pretrained | 0.5669 | 0.5039 | 0.4882 |
+| R-HGNN | 0.5777 | 0.5321 | 0.5152 | 0.5142 |
 | HetGNN内容聚集+HGConv | 0.5919 | 0.4347 | 0.4006 |
 | HGT注意力+HGConv | 0.5502 | 0.4469 | 0.4218 |
 

@@ -70,7 +70,7 @@
 * [x] [SIGN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/sign)
 * [x] [HGConv](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/hgconv)
 * [x] [SuperGAT](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/supergat)
-* [ ] R-HGNN
+* [x] [R-HGNN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/rhgnn)
 
 ### 基于知识图谱的推荐算法
 * [ ] CKE
@@ -143,5 +143,5 @@
     * 实习第一周
     * [x] 阅读论文R-HGNN
 * 2021.5.31~6.6
-    * [ ] 实现R-HGNN
+    * [x] 实现R-HGNN
     * [ ] 利用OAG数据集构造计算机领域的子集
