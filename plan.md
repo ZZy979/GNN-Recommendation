@@ -29,6 +29,7 @@
 * [x] 2020 [NARS](https://arxiv.org/pdf/2011.09679)
 * [x] 2021 ICLR [SuperGAT](https://openreview.net/pdf?id=Wi5KUNlqWty)
 * [x] 2021 [R-HGNN](https://arxiv.org/pdf/2105.11122)
+* [ ] 2021 ICLR [C&S](https://arxiv.org/pdf/2010.13993)
 #### 自监督/预训练
 * [x] 2020 [Self-Supervised Graph Representation Learning via Global Context Prediction](https://arxiv.org/pdf/2003.01604)
 * [ ] 2020 ICML [When Does Self-Supervision Help Graph Convolutional Networks?](http://proceedings.mlr.press/v119/you20a/you20a.pdf)
@@ -144,4 +145,7 @@
     * [x] 阅读论文R-HGNN
 * 2021.5.31~6.6
     * [x] 实现R-HGNN
-    * [ ] 利用OAG数据集构造计算机领域的子集
+* 2021.6.7~6.13
+    * [x] 利用OAG数据集构造计算机领域的子集
+* 2021.6.14~6.20
+    * [ ] 阅读论文C&S
