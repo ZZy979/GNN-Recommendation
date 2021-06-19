@@ -7,42 +7,7 @@ import torch
 from dgl.data import DGLDataset, extract_archive
 from dgl.data.utils import save_graphs, save_info, load_graphs, load_info
 
-CS_FIELD_L2 = [
-    'algorithm',
-    'artificial intelligence',
-    'computational science',
-    'computer architecture',
-    'computer engineering',
-    'computer graphics',
-    'computer hardware',
-    'computer network',
-    'computer security',
-    'computer vision',
-    'data mining',
-    'data science',
-    'database',
-    'distributed computing',
-    'embedded system',
-    'human computer interaction',
-    'information retrieval',
-    'internet privacy',
-    'knowledge management',
-    'library science',
-    'machine learning',
-    'multimedia',
-    'natural language processing',
-    'operating system',
-    'parallel computing',
-    'pattern recognition',
-    'programming language',
-    'real time computing',
-    'simulation',
-    'software engineering',
-    'speech recognition',
-    'telecommunications',
-    'theoretical computer science',
-    'world wide web',
-]
+from .config import CS_FIELD_L2
 
 
 class OAGCSDataset(DGLDataset):
@@ -81,11 +46,12 @@ class OAGCSDataset(DGLDataset):
 
     paper顶点属性
     -----
-    * feat: tensor(1478783, 128) 标题和摘要词向量
+    * feat: tensor(1478783, 128) 预训练的标题和摘要词向量
     * year: tensor(1478783) 发表年份（1944~2021）
     """
 
     def __init__(self):
+        # TODO 更新下载链接
         super().__init__('oag-cs', 'https://pan.baidu.com/s/10mTwTer21XPzIahn1elzFA')
 
     def download(self):
@@ -125,8 +91,8 @@ class OAGCSDataset(DGLDataset):
         self.field_names = CS_FIELD_L2
 
         self.g = self._build_graph(paper_author, paper_venue, paper_field, paper_paper, author_inst)
+        self.g.nodes['paper'].data['feat'] = torch.load(os.path.join(self.raw_path, 'paper_feat.pkl'))
         self.g.nodes['paper'].data['year'] = torch.tensor(paper_years)
-        # TODO 论文feat属性
 
     def _iter_json(self, filename):
         with open(os.path.join(self.raw_path, filename), encoding='utf8') as f:

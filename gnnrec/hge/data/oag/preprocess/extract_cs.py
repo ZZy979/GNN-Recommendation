@@ -2,16 +2,15 @@ import argparse
 import json
 import os
 
-from gnnrec.hge.data.oag.cs import CS_FIELD_L2
+from gnnrec.hge.data.oag.config import CS, CS_FIELD_L2
 from gnnrec.hge.data.oag.preprocess.iter_raw import iter_lines
 
 
 def extract_papers(raw_path):
     valid_keys = ['title', 'authors', 'venue', 'year', 'indexed_abstract', 'fos', 'references']
-    cs = 'computer science'
     cs_fields = set(CS_FIELD_L2)
     for p in iter_lines(raw_path, 'paper'):
-        if all(p.get(k) for k in valid_keys) and any(f['name'] == cs for f in p['fos']) \
+        if all(p.get(k) for k in valid_keys) and any(f['name'] == CS for f in p['fos']) \
                 and any(f['name'] in cs_fields for f in p['fos']):
             try:
                 abstract = parse_abstract(p['indexed_abstract'])

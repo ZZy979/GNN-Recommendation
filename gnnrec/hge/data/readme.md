@@ -58,6 +58,8 @@
 过滤掉关键字段为空以及标题和摘要过短或过长的论文，
 从微软学术抓取了计算机科学下的34个二级领域作为领域字段过滤条件
 
+二级领域列表：[CS_FIELD_L2](oag/config.py)
+
 | 类型 | 文件 | 数量 |
 | --- | --- | --- |
 | author | mag_authors.txt | 1478783 |
@@ -65,19 +67,19 @@
 | venue | mag_venues.txt | 10806 |
 | affiliation | mag_institutions.txt | 13138 |
 
-抽取出的原始数据下载地址：<https://pan.baidu.com/s/10mTwTer21XPzIahn1elzFA>，提取码：d15v
-
-大小：755 MB，解压后大小：2.08 GB
-
 ## 第2步：预训练论文向量
-`python -m gnnrec.hge.data.oag.preprocess.fine_tune <raw_paper_path>`
+`python -m gnnrec.hge.data.oag.preprocess.fine_tune <raw_paper_file>`
 
-通过论文二级领域分类任务fine-tune SciBERT模型，之后计算标题+摘要的128维向量作为paper顶点的输入特征
+通过论文二级领域分类任务fine-tune SciBERT模型，之后将隐藏层输出的128维向量作为paper顶点的输入特征
 
 预训练的SciBERT模型来自Transformers [allenai/scibert_scivocab_uncased](https://huggingface.co/allenai/scibert_scivocab_uncased)
 
+抽取出的原始数据及预训练的论文向量下载地址：<https://pan.baidu.com/s/10mTwTer21XPzIahn1elzFA>，提取码：d15v
+
+大小：755 MB，解压后大小：2.08 GB
+
 ## 第3步：构造图数据集
-将上一步得到的4个txt压缩为oag-cs.zip（或者直接下载），放到`$DGL_DOWNLOAD_DIR`目录下
+将上一步得到的4个txt和论文向量pkl文件压缩为oag-cs.zip（或者直接下载），放到`$DGL_DOWNLOAD_DIR`目录下
 
 环境变量`DGL_DOWNLOAD_DIR`默认为`~/.dgl/`
 
