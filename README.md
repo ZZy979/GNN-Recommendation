@@ -4,7 +4,6 @@
 ## hge：异构图嵌入（表示学习）
 ### 数据集
 [ogbn-mag](https://ogb.stanford.edu/docs/nodeprop/#ogbn-mag) - OGB提供的微软学术数据集
-[OAG v2](https://www.aminer.cn/oag-2-1) - Open Academic Graph微软学术数据集
 
 ### Baseline
 * [R-GCN](https://arxiv.org/pdf/1703.06103)
@@ -16,3 +15,4 @@
 
 ## kgrec：基于知识图谱的推荐算法
 ### 数据集
+[OAG v2](https://www.aminer.cn/oag-2-1) - Open Academic Graph微软学术数据集

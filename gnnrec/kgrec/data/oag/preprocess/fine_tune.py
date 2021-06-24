@@ -11,7 +11,7 @@ from torch.utils.data import IterableDataset, DataLoader
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModel, get_linear_schedule_with_warmup
 
-from gnnrec.hge.data.oag.config import CS_FIELD_L2
+from gnnrec.kgrec.data.oag.config import CS_FIELD_L2
 from gnnrec.hge.utils import set_random_seed, get_device
 
 
@@ -109,7 +109,7 @@ def main():
     parser.add_argument('--seed', type=int, default=42, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
     parser.add_argument('--num-hidden', type=int, default=128, help='隐藏层维数')
-    parser.add_argument('--epochs', type=int, default=5, help='训练epoch数')
+    parser.add_argument('--epochs', type=int, default=10, help='训练epoch数')
     parser.add_argument('--batch-size', type=int, default=64, help='批大小')
     parser.add_argument('--lr', type=float, default=5e-5, help='学习率')
     parser.add_argument('raw_paper_file', help='论文原始数据文件路径')

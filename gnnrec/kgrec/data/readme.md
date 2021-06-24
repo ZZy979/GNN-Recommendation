@@ -14,7 +14,7 @@
 | affiliation | mag_affiliations.zip | 25776 |
 
 ## 字段分析
-`python -m gnnrec.hge.data.oag.preprocess.analyze <type> <raw_path>`
+`python -m gnnrec.kgrec.data.oag.preprocess.analyze <type> <raw_path>`
 
 ```
 数据类型： venue
@@ -53,7 +53,7 @@
 ```
 
 ## 第1步：抽取计算机领域的子集
-`python -m gnnrec.hge.data.oag.preprocess.extract_cs <raw_path> <output_path>`
+`python -m gnnrec.kgrec.data.oag.preprocess.extract_cs <raw_path> <output_path>`
 
 过滤掉关键字段为空以及标题和摘要过短或过长的论文，
 从微软学术抓取了计算机科学下的34个二级领域作为领域字段过滤条件
@@ -68,15 +68,27 @@
 | affiliation | mag_institutions.txt | 13138 |
 
 ## 第2步：预训练论文向量
-`python -m gnnrec.hge.data.oag.preprocess.fine_tune <raw_paper_file>`
+`python -m gnnrec.kgrec.data.oag.preprocess.fine_tune <raw_paper_file> <save_path>`
 
 通过论文二级领域分类任务fine-tune SciBERT模型，之后将隐藏层输出的128维向量作为paper顶点的输入特征
 
 预训练的SciBERT模型来自Transformers [allenai/scibert_scivocab_uncased](https://huggingface.co/allenai/scibert_scivocab_uncased)
+```
+Epoch 0 | Loss 0.1044 | Mirco F1 0.5844
+Epoch 1 | Loss 0.0680 | Mirco F1 0.7103
+Epoch 2 | Loss 0.0623 | Mirco F1 0.7395
+Epoch 3 | Loss 0.0570 | Mirco F1 0.7664
+Epoch 4 | Loss 0.0516 | Mirco F1 0.7930
+Epoch 5 | Loss 0.0465 | Mirco F1 0.8173
+Epoch 6 | Loss 0.0415 | Mirco F1 0.8396
+Epoch 7 | Loss 0.0370 | Mirco F1 0.8587
+Epoch 8 | Loss 0.0334 | Mirco F1 0.8740
+Epoch 9 | Loss 0.0317 | Mirco F1 0.8808
+```
 
-抽取出的原始数据及预训练的论文向量下载地址：<https://pan.baidu.com/s/10mTwTer21XPzIahn1elzFA>，提取码：d15v
+抽取出的原始数据及预训练的论文向量下载地址：<https://pan.baidu.com/s/1vzPogglwfnUpWBCKkAi92w>，提取码：0juq
 
-大小：755 MB，解压后大小：2.08 GB
+大小：1.38 GB，解压后大小：2.78 GB
 
 ## 第3步：构造图数据集
 将上一步得到的4个txt和论文向量pkl文件压缩为oag-cs.zip（或者直接下载），放到`$DGL_DOWNLOAD_DIR`目录下
@@ -84,7 +96,7 @@
 环境变量`DGL_DOWNLOAD_DIR`默认为`~/.dgl/`
 
 ```python
-from gnnrec.hge.data import OAGCSDataset
+from gnnrec.kgrec.data import OAGCSDataset
 
 data = OAGCSDataset()
 g = data[0]
