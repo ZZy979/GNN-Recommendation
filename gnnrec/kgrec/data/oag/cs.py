@@ -33,11 +33,10 @@ class OAGCSDataset(DGLDataset):
     * 5377236 paper-cites->paper
     * 1528195 author-affiliated_with->institution
 
-    不包含标签（标签由具体子类提供）
+    不包含标签
 
     属性
     -----
-    * num_classes: int 类别数（具体子类提供）
     * author_names: List[str] 学者姓名
     * paper_titles: List[str] 论文标题
     * venue_names: List[str] 期刊名称
@@ -51,12 +50,12 @@ class OAGCSDataset(DGLDataset):
     """
 
     def __init__(self):
-        super().__init__('oag-cs', 'https://pan.baidu.com/s/1vzPogglwfnUpWBCKkAi92w')
+        super().__init__('oag-cs', 'https://pan.baidu.com/s/1qTth5C_WDxuhJo4yurpITg')
 
     def download(self):
         zip_file_path = os.path.join(self.raw_dir, 'oag-cs.zip')
         if not os.path.exists(zip_file_path):
-            raise FileNotFoundError('请手动下载文件 {} 提取码：0juq 并保存为 {}'.format(
+            raise FileNotFoundError('请手动下载文件 {} 提取码：tz1b 并保存为 {}'.format(
                 self.url, zip_file_path
             ))
         extract_archive(zip_file_path, self.raw_path)
@@ -175,7 +174,3 @@ class OAGCSDataset(DGLDataset):
 
     def __len__(self):
         return 1
-
-    @property
-    def num_classes(self):
-        raise NotImplementedError
