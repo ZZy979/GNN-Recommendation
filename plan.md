@@ -29,12 +29,14 @@
 * [x] 2020 [NARS](https://arxiv.org/pdf/2011.09679)
 * [x] 2021 ICLR [SuperGAT](https://openreview.net/pdf?id=Wi5KUNlqWty)
 * [x] 2021 [R-HGNN](https://arxiv.org/pdf/2105.11122)
-* [x] 2021 ICLR [C&S](https://arxiv.org/pdf/2010.13993)
 #### 自监督/预训练
 * [x] 2020 [Self-Supervised Graph Representation Learning via Global Context Prediction](https://arxiv.org/pdf/2003.01604)
 * [ ] 2020 ICML [When Does Self-Supervision Help Graph Convolutional Networks?](http://proceedings.mlr.press/v119/you20a/you20a.pdf)
 * [x] 2020 ICLR [Strategies for Pre-Training Graph Neural Networks](https://www.openreview.net/pdf?id=HJlWWJSFDH)
 * [x] 2021 WWW [Self-Supervised Learning of Contextual Embeddings for Link Prediction in Heterogeneous Networks](https://arxiv.org/pdf/2007.11192)
+* [ ] 2021 KDD [HeCo](https://arxiv.org/pdf/2105.09111)
+#### 其他
+* [x] 2021 ICLR [C&S](https://arxiv.org/pdf/2010.13993)
 
 ### 基于知识图谱的推荐算法
 #### 综述
@@ -72,6 +74,8 @@
 * [x] [HGConv](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/hgconv)
 * [x] [SuperGAT](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/supergat)
 * [x] [R-HGNN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/rhgnn)
+* [ ] C&S
+* [ ] HeCo
 
 ### 基于知识图谱的推荐算法
 * [ ] CKE
@@ -150,3 +154,6 @@
 * 2021.6.14~6.20
     * [x] 阅读论文C&S
     * [x] 完成SciBERT模型的fine-tune，获取OAG-CS数据集的paper顶点输入特征
+* 2021.7.5~7.18
+    * [ ] 实现C&S
+    * [ ] 阅读论文HeCo
