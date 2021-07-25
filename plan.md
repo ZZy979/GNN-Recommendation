@@ -75,7 +75,7 @@
 * [x] [SuperGAT](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/supergat)
 * [x] [R-HGNN](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/rhgnn)
 * [x] [C&S](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/cs)
-* [ ] HeCo
+* [x] [HeCo](https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/heco)
 
 ### 基于知识图谱的推荐算法
 * [ ] CKE
@@ -158,5 +158,6 @@
     * [x] 实现C&S
     * [x] 阅读论文HeCo
 * 2021.7.19~7.25
-    * [ ] 实现HeCo
-    * [ ] 尝试将HeCo与R-HGNN结合
+    * [x] 实现HeCo
+* 2021.7.26~8.1
+    * [ ] 尝试改进HeCo：mini-batch训练、元路径编码器改为其他方式、Loss增加分类损失
