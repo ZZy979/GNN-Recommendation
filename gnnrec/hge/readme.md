@@ -28,7 +28,14 @@
 `python -m gnnrec.hge.rhgnn.run_ogbn_mag data/word2vec/ogbn_mag.model`
 
 ### MyGNN
-`python -m gnnrec.hge.mygnn.run_ogbn_mag data/word2vec/ogbn_mag.model`
+在HeCo的基础上改进：
+* 使用预训练的HGT计算的注意力权重选择正样本
+* 元路径视图编码器替换为正样本图上的GCN编码器
+* 适配mini-batch训练
+
+1. 预训练HGT `python -m gnnrec.hge.hgt.run_ogbn_mag --node-feat=pretrained --node-embed-path=data/word2vec/ogbn_mag.model --epochs=40 --save-path=/home/zzy/output/hgt_pretrain.pt`
+2. 构造正样本图 `python -m gnnrec.hge.mygnn.build_pos_graph --num-samples=5 data/word2vec/ogbn_mag.model /home/zzy/output/hgt_pretrain.pt /home/zzy/output/pos_graph.bin`
+3. 训练模型 `python -m gnnrec.hge.mygnn.run_ogbn_mag data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph.bin`
 
 ## 预训练顶点嵌入
 1. 随机游走 `python -m gnnrec.hge.metapath2vec.random_walk data/word2vec/ogbn_mag_corpus.txt`

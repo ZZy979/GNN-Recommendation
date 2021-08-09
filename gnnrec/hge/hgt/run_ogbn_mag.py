@@ -64,6 +64,8 @@ def train(args):
         ))
     test_acc = evaluate(test_loader, device, model, labels, evaluator)
     print('Test Acc {:.4f}'.format(test_acc))
+    if args.save_path:
+        torch.save(model.cpu().state_dict(), args.save_path)
 
 
 def add_node_feat(g, method, node_embed_path):
@@ -104,6 +106,7 @@ def main():
     parser.add_argument('--batch-size', type=int, default=2048, help='批大小')
     parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
     parser.add_argument('--max-lr', type=float, default=5e-4, help='学习率上界')
+    parser.add_argument('--save-path', help='模型保存路径')
     args = parser.parse_args()
     print(args)
     train(args)

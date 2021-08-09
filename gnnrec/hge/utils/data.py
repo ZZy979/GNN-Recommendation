@@ -6,12 +6,13 @@ from gensim.models import Word2Vec
 from ogb.nodeproppred import DglNodePropPredDataset, Evaluator
 
 
-def load_ogbn_mag(path, add_reverse_edge=False, device=None):
+def load_ogbn_mag(path, add_reverse_edge=False, device=None, reverse_self=True):
     """加载ogbn-mag数据集
 
     :param path: str 数据集所在目录
     :param add_reverse_edge: bool, optional 是否添加反向边，默认为False
     :param device: torch.device, optional 将图和数据移动到指定的设备上，默认为CPU
+    :param reverse_self: bool, optional 起点和终点类型相同时是否添加反向边，默认为True
     :return: g, features, labels, num_classes, train_idx, val_idx, test_idx, evaluator
     """
     if device is None:
@@ -19,7 +20,7 @@ def load_ogbn_mag(path, add_reverse_edge=False, device=None):
     data = DglNodePropPredDataset('ogbn-mag', path)
     g, labels = data[0]
     if add_reverse_edge:
-        g = add_reverse_edges(g)
+        g = add_reverse_edges(g, reverse_self)
     g = g.to(device)
     features = g.nodes['paper'].data['feat']
     labels = labels['paper'].to(device)
@@ -30,17 +31,19 @@ def load_ogbn_mag(path, add_reverse_edge=False, device=None):
     return g, features, labels, data.num_classes, train_idx, val_idx, test_idx, Evaluator(data.name)
 
 
-def add_reverse_edges(g):
+def add_reverse_edges(g, reverse_self=True):
     """给异构图的每种边添加反向边，返回新的异构图
 
     :param g: DGLGraph 异构图
+    :param reverse_self: bool, optional 起点和终点类型相同时是否添加反向边，默认为True
     :return: DGLGraph 添加反向边之后的异构图
     """
     data = {}
     for stype, etype, dtype in g.canonical_etypes:
         u, v = g.edges(etype=(stype, etype, dtype))
         data[(stype, etype, dtype)] = u, v
-        data[(dtype, etype + '_rev', stype)] = v, u
+        if stype != dtype or reverse_self:
+            data[(dtype, etype + '_rev', stype)] = v, u
     new_g = dgl.heterograph(data, {ntype: g.num_nodes(ntype) for ntype in g.ntypes})
     node_frames = extract_node_subframes(g, None)
     set_new_frames(new_g, node_frames=node_frames)
