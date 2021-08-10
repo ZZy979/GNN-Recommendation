@@ -204,11 +204,12 @@ class Contrast(nn.Module):
 
 class HeCo(nn.Module):
 
-    def __init__(self, in_dims, hidden_dim, feat_drop, attn_drop, relations, tau, lambda_):
+    def __init__(self, in_dims, hidden_dim, out_dim, feat_drop, attn_drop, relations, tau, lambda_):
         """HeCo模型
 
         :param in_dims: Dict[str, int] 顶点类型到输入特征维数的映射
         :param hidden_dim: int 隐含特征维数
+        :param out_dim: int 输出特征维数
         :param feat_drop: float 输入特征dropout
         :param attn_drop: float 注意力dropout
         :param relations: List[(str, str, str)] 目标顶点关联的关系列表，长度为邻居类型数S
@@ -224,12 +225,14 @@ class HeCo(nn.Module):
         self.sc_encoder = NetworkSchemaEncoder(hidden_dim, attn_drop, relations)
         self.mp_encoder = PositiveGraphEncoder(hidden_dim)
         self.contrast = Contrast(hidden_dim, tau, lambda_)
+        self.predict = nn.Linear(hidden_dim, out_dim)
         self.reset_parameters()
 
     def reset_parameters(self):
         gain = nn.init.calculate_gain('relu')
         for ntype in self.fcs:
             nn.init.xavier_normal_(self.fcs[ntype].weight, gain)
+        nn.init.xavier_normal_(self.predict.weight, gain)
 
     def forward(self, g, feats, pos_g, pos_feat, pos):
         """
@@ -239,14 +242,14 @@ class HeCo(nn.Module):
         :param pos_feat: tensor(N_pos_src, d_in) 正样本图源顶点的输入特征
         :param pos: tensor(B, N) 布尔张量，每个顶点的正样本
             （B是batch大小，真正的目标顶点；N是B个目标顶点加上其正样本后的顶点数）
-        :return: float, tensor(B, d_hid) 对比损失，元路径编码器输出的目标顶点特征
+        :return: float, tensor(B, d_out) 对比损失，目标顶点输出特征
         """
         h = {ntype: F.elu(self.feat_drop(self.fcs[ntype](feat))) for ntype, feat in feats.items()}
         pos_h = F.elu(self.feat_drop(self.fcs[self.dtype](pos_feat)))
         z_sc = self.sc_encoder(g, h)  # (N, d_hid)
         z_mp = self.mp_encoder(pos_g, pos_h)  # (N, d_hid)
         loss = self.contrast(z_sc, z_mp, pos)
-        return loss, z_mp[:pos.shape[0]]
+        return loss, self.predict(z_mp[:pos.shape[0]])
 
     @torch.no_grad()
     def get_embeds(self, pos_g, feat):
@@ -254,8 +257,8 @@ class HeCo(nn.Module):
 
         :param pos_g: DGLGraph 正样本图
         :param feat: tensor(N_tgt, d_in) 目标顶点的输入特征
-        :return: tensor(N_tgt, d_hid) 目标顶点的最终嵌入
+        :return: tensor(N_tgt, d_out) 目标顶点的最终嵌入
         """
         h = F.elu(self.fcs[self.dtype](feat))
         z_mp = self.mp_encoder(pos_g, h)
-        return z_mp
+        return self.predict(z_mp)

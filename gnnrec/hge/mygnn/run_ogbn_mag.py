@@ -2,12 +2,11 @@ import argparse
 
 import dgl
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from dgl.dataloading import MultiLayerNeighborSampler, MultiLayerFullNeighborSampler
 from torch.utils.data import DataLoader
-from tqdm import tqdm, trange
+from tqdm import tqdm
 
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.mygnn.collator import PositiveSampleCollator
@@ -40,7 +39,7 @@ def train(args):
 
     model = HeCo(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
-        args.num_hidden, args.feat_drop, args.attn_drop,
+        args.num_hidden, num_classes, args.feat_drop, args.attn_drop,
         relations, args.tau, args.lambda_
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
@@ -52,9 +51,10 @@ def train(args):
             pos_block = pos_collator.collate(batch).to(device)
             pos = torch.zeros(pos_block.num_dst_nodes(), batch.shape[0], dtype=torch.int, device=device)
             pos[pos_block.in_edges(torch.arange(batch.shape[0], device=device))] = 1
-            loss, _ = model(
+            contrast_loss, logits = model(
                 block, block.srcdata['feat'], pos_block, pos_block.srcdata['feat'], pos.t()
             )
+            loss = contrast_loss + F.cross_entropy(logits, labels[batch].squeeze(dim=1))
             losses.append(loss.item())
 
             optimizer.zero_grad()
@@ -62,36 +62,19 @@ def train(args):
             optimizer.step()
             torch.cuda.empty_cache()
         print('Epoch {:d} | Train Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
-        if epoch % args.eval_every == 0:
-            train_acc, val_acc, test_acc = evaluate(
+        if (epoch + 1) % args.eval_every == 0:
+            print('Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(*evaluate(
                 model, pos_g, pos_g.ndata['feat'], device, labels, num_classes,
                 train_idx, val_idx, test_idx, evaluator
-            )
-            print('Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(train_acc, val_acc, test_acc))
+            )))
 
 
 def evaluate(model, pos_g, feat, device, labels, num_classes, train_idx, val_idx, test_idx, evaluator):
     model.eval()
     embeds = model.get_embeds(pos_g.to(device), feat.to(device))
-
-    clf = nn.Linear(embeds.shape[1], num_classes).to(device)
-    optimizer = optim.Adam(clf.parameters(), lr=0.05)
-    best_acc, best_logits = 0, None
-    for epoch in trange(200):
-        clf.train()
-        logits = clf(embeds)
-        loss = F.cross_entropy(logits[train_idx], labels[train_idx].squeeze(dim=1))
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        with torch.no_grad():
-            clf.eval()
-            if accuracy(logits[val_idx], labels[val_idx], evaluator) > best_acc:
-                best_logits = logits
-    train_acc = accuracy(best_logits[train_idx], labels[train_idx], evaluator)
-    val_acc = accuracy(best_logits[val_idx], labels[val_idx], evaluator)
-    test_acc = accuracy(best_logits[test_idx], labels[test_idx], evaluator)
+    train_acc = accuracy(embeds[train_idx], labels[train_idx], evaluator)
+    val_acc = accuracy(embeds[val_idx], labels[val_idx], evaluator)
+    test_acc = accuracy(embeds[test_idx], labels[test_idx], evaluator)
     return train_acc, val_acc, test_acc
 
 
@@ -103,7 +86,7 @@ def main():
     parser.add_argument('--feat-drop', type=float, default=0.3, help='特征dropout')
     parser.add_argument('--attn-drop', type=float, default=0.5, help='注意力dropout')
     parser.add_argument('--tau', type=float, default=0.8, help='温度参数')
-    parser.add_argument('--lambda', type=float, default='0.5', dest='lambda_', help='对比损失的平衡系数')
+    parser.add_argument('--lambda', type=float, default=0.5, dest='lambda_', help='对比损失的平衡系数')
     parser.add_argument('--epochs', type=int, default=200, help='训练epoch数')
     parser.add_argument('--batch-size', type=int, default=4096, help='批大小')
     parser.add_argument('--lr', type=float, default=0.0008, help='学习率')
