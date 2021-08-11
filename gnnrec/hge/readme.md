@@ -27,6 +27,9 @@
 ### R-HGNN
 `python -m gnnrec.hge.rhgnn.run_ogbn_mag data/word2vec/ogbn_mag.model`
 
+### C&S
+`python -m gnnrec.hge.cs.run_ogbn_mag /home/zzy/output/pos_graph_5.bin`
+
 ### MyGNN
 在HeCo的基础上改进：
 * 使用预训练的HGT计算的注意力权重选择正样本
@@ -34,8 +37,8 @@
 * 适配mini-batch训练
 
 1. 预训练HGT `python -m gnnrec.hge.hgt.run_ogbn_mag --node-feat=pretrained --node-embed-path=data/word2vec/ogbn_mag.model --epochs=40 --save-path=/home/zzy/output/hgt_pretrain.pt`
-2. 构造正样本图 `python -m gnnrec.hge.mygnn.build_pos_graph --num-samples=5 data/word2vec/ogbn_mag.model /home/zzy/output/hgt_pretrain.pt /home/zzy/output/pos_graph.bin`
-3. 训练模型 `python -m gnnrec.hge.mygnn.run_ogbn_mag data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph.bin`
+2. 构造正样本图 `python -m gnnrec.hge.mygnn.build_pos_graph --num-samples=5 data/word2vec/ogbn_mag.model /home/zzy/output/hgt_pretrain.pt /home/zzy/output/pos_graph_5.bin`
+3. 训练模型 `python -m gnnrec.hge.mygnn.run_ogbn_mag data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin`
 
 ## 预训练顶点嵌入
 1. 随机游走 `python -m gnnrec.hge.metapath2vec.random_walk data/word2vec/ogbn_mag_corpus.txt`
@@ -52,6 +55,9 @@
 | HGConv+average | 0.5032 | 0.4626 | 0.4507 |
 | HGConv+pretrained | 0.5669 | 0.5039 | 0.4882 |
 | R-HGNN | 0.5777 | 0.5321 | 0.5142 |
+| C&S+正样本图 | 0.2602 | 0.2392 | 0.2453 -> 0.2334 |
+| Smooth+正样本图 | 0.2602 | 0.2392 | 0.2453 -> 0.3090 |
+| Smooth+引用图 | 0.2602 | 0.2392 | 0.2453 -> 0.2565 |
 | HetGNN内容聚集+HGConv | 0.5919 | 0.4347 | 0.4006 |
 | HGT注意力+HGConv | 0.5502 | 0.4469 | 0.4218 |
 | HeCo+正样本图+无监督 | 0.2649 | 0.2448 | 0.2467 |

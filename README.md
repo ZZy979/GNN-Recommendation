@@ -12,6 +12,7 @@
 * [HGT](https://arxiv.org/pdf/2003.01332)
 * [HGConv](https://arxiv.org/pdf/2012.14722)
 * [R-HGNN](https://arxiv.org/pdf/2105.11122)
+* [C&S](https://arxiv.org/pdf/2010.13993)
 
 ## kgrec：基于知识图谱的推荐算法
 ### 数据集
