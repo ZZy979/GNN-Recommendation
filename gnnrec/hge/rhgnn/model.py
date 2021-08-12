@@ -2,11 +2,8 @@ import dgl.function as fn
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from dgl.dataloading import MultiLayerFullNeighborSampler, NodeDataLoader
 from dgl.ops import edge_softmax
 from dgl.utils import expand_as_pair
-from torch.utils.data import DataLoader
-from tqdm import tqdm
 
 
 class RelationGraphConv(nn.Module):
@@ -364,53 +361,4 @@ class RHGNN(nn.Module):
                 {e: rel_feats[e] for s, e, d in feats if d == ntype}
             ) for ntype in set(d for _, _, d in feats)
         }  # {ntype: tensor(N_i, K*d_hid)}
-        return self.classifier(out_feats[self.predict_ntype])
-
-    @torch.no_grad()
-    def inference(self, g, feats, device, batch_size):
-        """离线推断所有顶点的最终嵌入（不使用邻居采样）
-
-        :param g: DGLGraph 异构图
-        :param feats: Dict[str, tensor(N_i, d_in_i)] 顶点类型到输入顶点特征的映射
-        :param device: torch.device
-        :param batch_size: int 批大小
-        :return: tensor(N_i, d_out) 待预测顶点的最终嵌入
-        """
-        feats = {
-            (stype, etype, dtype): self.fc_in[dtype](feats[dtype].to(device))
-            for stype, etype, dtype in self.etypes
-        }
-        rel_feats = {rel: emb.flatten() for rel, emb in self.rel_embed.items()}
-        for layer in self.layers:
-            # TODO 内存占用过大
-            embeds = {
-                (stype, etype, dtype): torch.zeros(g.num_nodes(dtype), self._d)
-                for stype, etype, dtype in g.canonical_etypes
-            }
-            sampler = MultiLayerFullNeighborSampler(1)
-            loader = NodeDataLoader(
-                g, {ntype: torch.arange(g.num_nodes(ntype)) for ntype in g.ntypes}, sampler,
-                batch_size=batch_size, shuffle=True
-            )
-            for input_nodes, output_nodes, blocks in tqdm(loader):
-                block = blocks[0].to(device)
-                in_feats = {
-                    (s, e, d): feats[(s, e, d)][input_nodes[d]].to(device)
-                    for s, e, d in feats
-                }
-                h, rel_embeds = layer(block, in_feats, rel_feats)
-                for s, e, d in h:
-                    embeds[(s, e, d)][output_nodes[d]] = h[(s, e, d)].cpu()
-            feats = embeds
-            rel_feats = rel_embeds
-        feats = {r: feat.to(device) for r, feat in feats.items()}
-
-        out_feats = {ntype: torch.zeros(g.num_nodes(ntype), self._d) for ntype in g.ntypes}
-        for ntype in set(d for _, _, d in feats):
-            dst_feats = {e: feats[(s, e, d)] for s, e, d in feats if d == ntype}
-            dst_rel_feats = {e: rel_feats[e] for s, e, d in feats if d == ntype}
-            for batch in DataLoader(torch.arange(g.num_nodes(ntype)), batch_size=batch_size):
-                out_feats[ntype][batch] = self.rel_fusing[ntype](
-                    {e: dst_feats[e][batch] for e in dst_rel_feats}, dst_rel_feats
-                )
         return self.classifier(out_feats[self.predict_ntype])

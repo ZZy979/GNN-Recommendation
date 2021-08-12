@@ -10,6 +10,10 @@
 1. 预处理 `python -m gnnrec.hge.hetgnn.preprocess data/word2vec/ogbn_mag.model data/word2vec/ogbn_mag_corpus.txt data/hetgnn`
 2. 训练模型（有监督） `python -m gnnrec.hge.hetgnn.run_ogbn_mag data/hetgnn`
 
+### 预训练顶点嵌入
+1. 随机游走 `python -m gnnrec.hge.metapath2vec.random_walk data/word2vec/ogbn_mag_corpus.txt`
+2. 训练词向量 `python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 data/word2vec/ogbn_mag_corpus.txt data/word2vec/ogbn_mag.model`
+
 ### HGT
 #### 邻居平均(average)
 `python -m gnnrec.hge.hgt.run_ogbn_mag`
@@ -28,7 +32,12 @@
 `python -m gnnrec.hge.rhgnn.run_ogbn_mag data/word2vec/ogbn_mag.model`
 
 ### C&S
+#### Baseline: Smooth+正样本图
 `python -m gnnrec.hge.cs.run_ogbn_mag /home/zzy/output/pos_graph_5.bin`
+
+#### R-HGNN+Smooth+正样本图
+1. 预训练R-HGNN `python -m gnnrec.hge.rhgnn.run_ogbn_mag --save-path=/home/zzy/output/rhgnn.pt data/word2vec/ogbn_mag.model`
+2. Smooth `python -m gnnrec.hge.rhgnn.smooth data/word2vec/ogbn_mag.model /home/zzy/output/rhgnn.pt /home/zzy/output/pos_graph_10.bin`
 
 ### MyGNN
 在HeCo的基础上改进：
@@ -39,10 +48,6 @@
 1. 预训练HGT `python -m gnnrec.hge.hgt.run_ogbn_mag --node-feat=pretrained --node-embed-path=data/word2vec/ogbn_mag.model --epochs=40 --save-path=/home/zzy/output/hgt_pretrain.pt`
 2. 构造正样本图 `python -m gnnrec.hge.mygnn.build_pos_graph --num-samples=5 data/word2vec/ogbn_mag.model /home/zzy/output/hgt_pretrain.pt /home/zzy/output/pos_graph_5.bin`
 3. 训练模型 `python -m gnnrec.hge.mygnn.run_ogbn_mag data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin`
-
-## 预训练顶点嵌入
-1. 随机游走 `python -m gnnrec.hge.metapath2vec.random_walk data/word2vec/ogbn_mag_corpus.txt`
-2. 训练词向量 `python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 data/word2vec/ogbn_mag_corpus.txt data/word2vec/ogbn_mag.model`
 
 ## 结果
 | 模型 | Train Acc | Valid Acc | Test Acc |
@@ -62,6 +67,5 @@
 | HGT注意力+HGConv | 0.5502 | 0.4469 | 0.4218 |
 | HeCo+正样本图+无监督 | 0.2649 | 0.2448 | 0.2467 |
 | HeCo+正样本图+半监督 | 0.2804 | 0.2618 | 0.2632 |
-
-## TODO
-* R-GCN minibatch训练即使不使用邻居采样也无法达到与全图训练相同的准确率？
+| R-HGNN+Smooth+正样本图 | 0.5777 | 0.5306 | 0.5124 -> 0.5200 |
+| HeCo+Smooth+正样本图 | | | |

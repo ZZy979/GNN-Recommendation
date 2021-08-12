@@ -73,10 +73,11 @@ def train(args):
         print('Epoch {:d} | Train Loss {:.4f} | Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(
             epoch, torch.tensor(losses).mean().item(), train_acc, val_acc, test_acc
         ))
-    # embed = model.inference(g, g.ndata['feat'], device, args.batch_size)
-    # test_acc = accuracy(embed[test_idx], labels[test_idx], evaluator)
     test_acc = evaluate(test_loader, device, model, labels, evaluator)
     print('Test Acc {:.4f}'.format(test_acc))
+    if args.save_path:
+        torch.save(model.cpu().state_dict(), args.save_path)
+        print('模型已保存到', args.save_path)
 
 
 @torch.no_grad()
@@ -94,25 +95,22 @@ def evaluate(loader, device, model, labels, evaluator):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='R-HGNN ogbn-mag')
-    parser.add_argument('--seed', type=int, default=0, help='random seed')
-    parser.add_argument('--device', type=int, default=0, help='GPU device')
-    parser.add_argument('--num-hidden', type=int, default=64, help='number of hidden units')
-    parser.add_argument(
-        '--num-rel-hidden', type=int, default=8, help='number of relation hidden units'
-    )
-    parser.add_argument('--num-heads', type=int, default=8, help='number of attention heads')
-    parser.add_argument('--num-layers', type=int, default=2, help='number of layers')
-    parser.add_argument('--dropout', type=float, default=0.5, help='dropout probability')
-    parser.add_argument(
-        '--no-residual', action='store_false', help='no residual connection', dest='residual'
-    )
-    parser.add_argument('--epochs', type=int, default=200, help='number of training epochs')
-    parser.add_argument('--batch-size', type=int, default=4096, help='batch size')
-    parser.add_argument('--neighbor-size', type=int, default=10, help='number of sampled neighbors')
-    parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
-    parser.add_argument('--weight-decay', type=float, default=0.0, help='weight decay')
-    parser.add_argument('node_embed_path', help='path to pretrained node embeddings')
+    parser = argparse.ArgumentParser(description='R-HGNN模型 ogbn-mag数据集')
+    parser.add_argument('--seed', type=int, default=0, help='随机数种子')
+    parser.add_argument('--device', type=int, default=0, help='GPU设备')
+    parser.add_argument('--num-hidden', type=int, default=64, help='隐藏层维数')
+    parser.add_argument('--num-rel-hidden', type=int, default=8, help='关系表示的隐藏层维数')
+    parser.add_argument('--num-heads', type=int, default=8, help='注意力头数')
+    parser.add_argument('--num-layers', type=int, default=2, help='层数')
+    parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
+    parser.add_argument('--no-residual', action='store_false', help='不使用残差连接', dest='residual')
+    parser.add_argument('--epochs', type=int, default=200, help='训练epoch数')
+    parser.add_argument('--batch-size', type=int, default=4096, help='批大小')
+    parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
+    parser.add_argument('--lr', type=float, default=0.001, help='学习率')
+    parser.add_argument('--weight-decay', type=float, default=0.0, help='权重衰减')
+    parser.add_argument('--save-path', help='模型保存路径')
+    parser.add_argument('node_embed_path', help='预训练顶点嵌入路径')
     args = parser.parse_args()
     print(args)
     train(args)
