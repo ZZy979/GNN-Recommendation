@@ -39,6 +39,10 @@
 1. 预训练R-HGNN `python -m gnnrec.hge.rhgnn.run_ogbn_mag --save-path=/home/zzy/output/rhgnn.pt data/word2vec/ogbn_mag.model`
 2. Smooth `python -m gnnrec.hge.rhgnn.smooth data/word2vec/ogbn_mag.model /home/zzy/output/rhgnn.pt /home/zzy/output/pos_graph_10.bin`
 
+#### HeCo+Smooth+正样本图
+1. 预训练HeCo `python -m gnnrec.hge.mygnn.run_ogbn_mag --save-path=/home/zzy/output/heco.pt data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin`
+2. Smooth `python -m gnnrec.hge.mygnn.smooth data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin /home/zzy/output/heco.pt`
+
 ### MyGNN
 在HeCo的基础上改进：
 * 使用预训练的HGT计算的注意力权重选择正样本
@@ -68,4 +72,4 @@
 | HeCo+正样本图+无监督 | 0.2649 | 0.2448 | 0.2467 |
 | HeCo+正样本图+半监督 | 0.2804 | 0.2618 | 0.2632 |
 | R-HGNN+Smooth+正样本图 | 0.5777 | 0.5306 | 0.5124 -> 0.5200 |
-| HeCo+Smooth+正样本图 | | | |
+| HeCo+Smooth+正样本图 | 0.2804 | 0.2618 | 0.2632 -> 0.2770 |

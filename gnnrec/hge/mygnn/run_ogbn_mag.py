@@ -62,11 +62,14 @@ def train(args):
             optimizer.step()
             torch.cuda.empty_cache()
         print('Epoch {:d} | Train Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
-        if (epoch + 1) % args.eval_every == 0:
+        if (epoch + 1) % args.eval_every == 0 or epoch == args.epochs - 1:
             print('Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(*evaluate(
                 model, pos_g, pos_g.ndata['feat'], device, labels, num_classes,
                 train_idx, val_idx, test_idx, evaluator
             )))
+    if args.save_path:
+        torch.save(model.cpu().state_dict(), args.save_path)
+        print('模型已保存到', args.save_path)
 
 
 def evaluate(model, pos_g, feat, device, labels, num_classes, train_idx, val_idx, test_idx, evaluator):
@@ -91,6 +94,7 @@ def main():
     parser.add_argument('--batch-size', type=int, default=4096, help='批大小')
     parser.add_argument('--lr', type=float, default=0.0008, help='学习率')
     parser.add_argument('--eval-every', type=int, default=10, help='每多少个epoch计算一次准确率')
+    parser.add_argument('--save-path', help='模型保存路径')
     parser.add_argument('node_embed_path', help='预训练顶点嵌入路径')
     parser.add_argument('pos_graph_path', help='正样本图保存路径')
     args = parser.parse_args()
