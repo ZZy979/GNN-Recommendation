@@ -49,10 +49,10 @@ def train(args):
         for batch in tqdm(train_loader):
             block = collator.collate(batch).to(device)
             pos_block = pos_collator.collate(batch).to(device)
-            pos = torch.zeros(pos_block.num_dst_nodes(), batch.shape[0], dtype=torch.int, device=device)
-            pos[pos_block.in_edges(torch.arange(batch.shape[0], device=device))] = 1
+            batch_pos = torch.zeros(pos_block.num_dst_nodes(), batch.shape[0], dtype=torch.int, device=device)
+            batch_pos[pos_block.in_edges(torch.arange(batch.shape[0], device=device))] = 1
             contrast_loss, logits = model(
-                block, block.srcdata['feat'], pos_block, pos_block.srcdata['feat'], pos.t()
+                block, block.srcdata['feat'], pos_block, pos_block.srcdata['feat'], batch_pos.t()
             )
             loss = contrast_loss + F.cross_entropy(logits, labels[batch].squeeze(dim=1))
             losses.append(loss.item())
@@ -62,19 +62,19 @@ def train(args):
             optimizer.step()
             torch.cuda.empty_cache()
         print('Epoch {:d} | Train Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
-        if (epoch + 1) % args.eval_every == 0 or epoch == args.epochs - 1:
+        if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
             print('Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(*evaluate(
-                model, pos_g, pos_g.ndata['feat'], device, labels, num_classes,
-                train_idx, val_idx, test_idx, evaluator
+                model, g, pos, args.batch_size, device,
+                labels, train_idx, val_idx, test_idx, evaluator
             )))
     if args.save_path:
         torch.save(model.cpu().state_dict(), args.save_path)
         print('模型已保存到', args.save_path)
 
 
-def evaluate(model, pos_g, feat, device, labels, num_classes, train_idx, val_idx, test_idx, evaluator):
+def evaluate(model, g, pos, batch_size, device, labels, train_idx, val_idx, test_idx, evaluator):
     model.eval()
-    embeds = model.get_embeds(pos_g.to(device), feat.to(device))
+    embeds = model.get_embeds(g, g.ndata['feat'], pos, batch_size, device)
     train_acc = accuracy(embeds[train_idx], labels[train_idx], evaluator)
     val_acc = accuracy(embeds[val_idx], labels[val_idx], evaluator)
     test_acc = accuracy(embeds[test_idx], labels[test_idx], evaluator)

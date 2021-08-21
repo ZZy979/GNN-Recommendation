@@ -47,7 +47,9 @@
 在HeCo的基础上改进：
 * 使用预训练的HGT计算的注意力权重选择正样本
 * 元路径视图编码器替换为正样本图上的GCN编码器
+* TODO 网络结构视图编码器替换为R-HGNN
 * 适配mini-batch训练
+* Loss增加分类损失
 
 1. 预训练HGT `python -m gnnrec.hge.hgt.run_ogbn_mag --node-feat=pretrained --node-embed-path=data/word2vec/ogbn_mag.model --epochs=40 --save-path=/home/zzy/output/hgt_pretrain.pt`
 2. 构造正样本图 `python -m gnnrec.hge.mygnn.build_pos_graph --num-samples=5 data/word2vec/ogbn_mag.model /home/zzy/output/hgt_pretrain.pt /home/zzy/output/pos_graph_5.bin`
@@ -69,7 +71,9 @@
 | Smooth+引用图 | 0.2602 | 0.2392 | 0.2453 -> 0.2565 |
 | HetGNN内容聚集+HGConv | 0.5919 | 0.4347 | 0.4006 |
 | HGT注意力+HGConv | 0.5502 | 0.4469 | 0.4218 |
-| HeCo+正样本图+无监督 | 0.2649 | 0.2448 | 0.2467 |
+| HeCo+正样本图（无监督） | 0.2649 | 0.2448 | 0.2467 |
 | HeCo+正样本图+半监督 | 0.2804 | 0.2618 | 0.2632 |
+| HeCo+正样本图+半监督（使用z_sc） | 0.4228 | 0.3783 | 0.3629 |
+| HeCo+Smooth+正样本图 | 0.4228 | 0.3783 | 0.3629 -> 0.3775 |
 | R-HGNN+Smooth+正样本图 | 0.5777 | 0.5306 | 0.5124 -> 0.5200 |
-| HeCo+Smooth+正样本图 | 0.2804 | 0.2618 | 0.2632 -> 0.2770 |
+| R-HGNN+HeCo |  |  |  |

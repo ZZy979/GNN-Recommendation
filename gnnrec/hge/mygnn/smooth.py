@@ -27,6 +27,7 @@ def main():
     g = g.cpu()
     load_pretrained_node_embed(g, args.node_embed_path)
     pos_g = dgl.load_graphs(args.pos_graph_path)[0][0].to(device)
+    pos = pos_g.edges()[0].view(pos_g.num_nodes(), -1)  # (N_p, T_pos) 每个paper顶点的正样本id
     relations = [
         ('author', 'writes', 'paper'),
         ('paper', 'cites', 'paper'),
@@ -42,7 +43,7 @@ def main():
     model = model.to(device)
     model.eval()
 
-    base_pred = model.get_embeds(pos_g, feat.to(device))
+    base_pred = model.get_embeds(g, g.ndata['feat'], pos, args.batch_size, device)
     mask = torch.cat([train_idx, val_idx])
     logits = smooth(base_pred, pos_g, labels, evaluator, mask, args)
     test_acc = accuracy(logits[test_idx], labels[test_idx], evaluator)
@@ -58,6 +59,7 @@ def parse_args():
     parser.add_argument('--attn-drop', type=float, default=0.5, help='注意力dropout')
     parser.add_argument('--tau', type=float, default=0.8, help='温度参数')
     parser.add_argument('--lambda', type=float, default=0.5, dest='lambda_', help='对比损失的平衡系数')
+    parser.add_argument('--batch-size', type=int, default=4096, help='批大小')
     parser.add_argument('node_embed_path', help='预训练顶点嵌入路径')
     parser.add_argument('pos_graph_path', help='正样本图保存路径')
     parser.add_argument('model_path', help='预训练的HeCo模型保存路径')
