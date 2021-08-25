@@ -7,7 +7,8 @@ import torch.nn.functional as F
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.cs.model import LabelPropagation
 from gnnrec.hge.mygnn.model import HeCo
-from gnnrec.hge.utils import get_device, load_ogbn_mag, load_pretrained_node_embed, accuracy
+from gnnrec.hge.rhgnn.run_ogbn_mag import load_pretrained_node_embed
+from gnnrec.hge.utils import get_device, load_ogbn_mag, accuracy
 
 
 def smooth(base_pred, g, labels, evaluator, mask, args):
@@ -28,16 +29,11 @@ def main():
     load_pretrained_node_embed(g, args.node_embed_path)
     pos_g = dgl.load_graphs(args.pos_graph_path)[0][0].to(device)
     pos = pos_g.edges()[0].view(pos_g.num_nodes(), -1)  # (N_p, T_pos) 每个paper顶点的正样本id
-    relations = [
-        ('author', 'writes', 'paper'),
-        ('paper', 'cites', 'paper'),
-        ('field_of_study', 'has_topic_rev', 'paper')
-    ]
 
     model = HeCo(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
-        args.num_hidden, num_classes, args.feat_drop, args.attn_drop,
-        relations, args.tau, args.lambda_
+        args.num_hidden, num_classes, args.num_rel_hidden, args.num_heads,
+        g.ntypes, g.canonical_etypes, 'paper', args.dropout, args.tau, args.lambda_
     )
     model.load_state_dict(torch.load(args.model_path))
     model = model.to(device)
@@ -55,8 +51,9 @@ def parse_args():
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
     # HeCo
     parser.add_argument('--num-hidden', type=int, default=64, help='隐藏层维数')
-    parser.add_argument('--feat-drop', type=float, default=0.3, help='特征dropout')
-    parser.add_argument('--attn-drop', type=float, default=0.5, help='注意力dropout')
+    parser.add_argument('--num-rel-hidden', type=int, default=8, help='关系表示的隐藏层维数')
+    parser.add_argument('--num-heads', type=int, default=8, help='注意力头数')
+    parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
     parser.add_argument('--tau', type=float, default=0.8, help='温度参数')
     parser.add_argument('--lambda', type=float, default=0.5, dest='lambda_', help='对比损失的平衡系数')
     parser.add_argument('--batch-size', type=int, default=4096, help='批大小')

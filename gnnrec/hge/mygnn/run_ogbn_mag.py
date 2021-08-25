@@ -11,8 +11,8 @@ from tqdm import tqdm
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.mygnn.collator import PositiveSampleCollator
 from gnnrec.hge.mygnn.model import HeCo
-from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, \
-    load_pretrained_node_embed, accuracy
+from gnnrec.hge.rhgnn.run_ogbn_mag import load_pretrained_node_embed
+from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, accuracy
 
 
 def train(args):
@@ -23,11 +23,6 @@ def train(args):
         load_ogbn_mag(DATA_DIR, True, device, False)
     g = g.cpu()
     load_pretrained_node_embed(g, args.node_embed_path)
-    relations = [
-        ('author', 'writes', 'paper'),
-        ('paper', 'cites', 'paper'),
-        ('field_of_study', 'has_topic_rev', 'paper')
-    ]
 
     pos_g = dgl.load_graphs(args.pos_graph_path)[0][0]
     pos_g.ndata['feat'] = g.nodes['paper'].data['feat']
@@ -39,10 +34,11 @@ def train(args):
 
     model = HeCo(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
-        args.num_hidden, num_classes, args.feat_drop, args.attn_drop,
-        relations, args.tau, args.lambda_
+        args.num_hidden, num_classes, args.num_rel_hidden, args.num_heads,
+        g.ntypes, g.canonical_etypes, 'paper', args.dropout, args.tau, args.lambda_
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    alpha = args.contrast_weight
     for epoch in range(args.epochs):
         model.train()
         losses = []
@@ -54,7 +50,8 @@ def train(args):
             contrast_loss, logits = model(
                 block, block.srcdata['feat'], pos_block, pos_block.srcdata['feat'], batch_pos.t()
             )
-            loss = contrast_loss + F.cross_entropy(logits, labels[batch].squeeze(dim=1))
+            clf_loss = F.cross_entropy(logits, labels[batch].squeeze(dim=1))
+            loss = alpha * contrast_loss + (1 - alpha) * clf_loss
             losses.append(loss.item())
 
             optimizer.zero_grad()
@@ -86,13 +83,15 @@ def main():
     parser.add_argument('--seed', type=int, default=0, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
     parser.add_argument('--num-hidden', type=int, default=64, help='隐藏层维数')
-    parser.add_argument('--feat-drop', type=float, default=0.3, help='特征dropout')
-    parser.add_argument('--attn-drop', type=float, default=0.5, help='注意力dropout')
+    parser.add_argument('--num-rel-hidden', type=int, default=8, help='关系表示的隐藏层维数')
+    parser.add_argument('--num-heads', type=int, default=8, help='注意力头数')
+    parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
     parser.add_argument('--tau', type=float, default=0.8, help='温度参数')
     parser.add_argument('--lambda', type=float, default=0.5, dest='lambda_', help='对比损失的平衡系数')
     parser.add_argument('--epochs', type=int, default=200, help='训练epoch数')
     parser.add_argument('--batch-size', type=int, default=4096, help='批大小')
     parser.add_argument('--lr', type=float, default=0.0008, help='学习率')
+    parser.add_argument('--contrast-weight', type=float, default=0.5, help='对比损失权重')
     parser.add_argument('--eval-every', type=int, default=10, help='每多少个epoch计算一次准确率')
     parser.add_argument('--save-path', help='模型保存路径')
     parser.add_argument('node_embed_path', help='预训练顶点嵌入路径')
