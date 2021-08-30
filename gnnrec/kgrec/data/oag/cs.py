@@ -28,7 +28,7 @@ class OAGCSDataset(DGLDataset):
     边
 
     * 4830908 author-writes->paper
-    * 1478783 paper-published_at->paper
+    * 1478783 paper-published_at->venue
     * 2872948 paper-has_field->field
     * 5377236 paper-cites->paper
     * 1528195 author-affiliated_with->institution

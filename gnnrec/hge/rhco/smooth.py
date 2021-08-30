@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.cs.model import LabelPropagation
-from gnnrec.hge.mygnn.model import HeCo
+from gnnrec.hge.rhco.model import RHCO
 from gnnrec.hge.rhgnn.run_ogbn_mag import load_pretrained_node_embed
 from gnnrec.hge.utils import get_device, load_ogbn_mag, accuracy
 
@@ -30,7 +30,7 @@ def main():
     pos_g = dgl.load_graphs(args.pos_graph_path)[0][0].to(device)
     pos = pos_g.edges()[0].view(pos_g.num_nodes(), -1)  # (N_p, T_pos) 每个paper顶点的正样本id
 
-    model = HeCo(
+    model = RHCO(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
         args.num_hidden, num_classes, args.num_rel_hidden, args.num_heads,
         g.ntypes, g.canonical_etypes, 'paper', args.dropout, args.tau, args.lambda_
@@ -47,9 +47,9 @@ def main():
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='HeCo+C&S（仅Smooth步骤） ogbn-mag数据集')
+    parser = argparse.ArgumentParser(description='RHCO+C&S（仅Smooth步骤） ogbn-mag数据集')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
-    # HeCo
+    # RHCO
     parser.add_argument('--num-hidden', type=int, default=64, help='隐藏层维数')
     parser.add_argument('--num-rel-hidden', type=int, default=8, help='关系表示的隐藏层维数')
     parser.add_argument('--num-heads', type=int, default=8, help='注意力头数')
@@ -59,7 +59,7 @@ def parse_args():
     parser.add_argument('--batch-size', type=int, default=4096, help='批大小')
     parser.add_argument('node_embed_path', help='预训练顶点嵌入路径')
     parser.add_argument('pos_graph_path', help='正样本图保存路径')
-    parser.add_argument('model_path', help='预训练的HeCo模型保存路径')
+    parser.add_argument('model_path', help='预训练的模型保存路径')
     # C&S
     parser.add_argument('--num-smooth-layers', type=int, default=50, help='Smooth步骤传播层数')
     parser.add_argument('--smooth-alpha', type=float, default=0.5, help='Smooth步骤α值')

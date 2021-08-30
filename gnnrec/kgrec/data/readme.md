@@ -85,14 +85,14 @@ Epoch 3 | Train Loss 0.0525 | Train Mirco F1 0.7901 | Val Mirco F1 0.6606
 Epoch 4 | Train Loss 0.0468 | Train Mirco F1 0.8170 | Val Mirco F1 0.6585
 ```
 
-抽取出的原始数据及预训练的论文向量下载地址：<https://pan.baidu.com/s/1qTth5C_WDxuhJo4yurpITg>，提取码：tz1b
-
-大小：1.38 GB，解压后大小：2.78 GB
+抽取出的原始数据及预训练的论文向量
 
 ## 第3步：构造图数据集
-将上一步得到的4个txt和论文向量pkl文件压缩为oag-cs.zip（或者直接下载），放到`$DGL_DOWNLOAD_DIR`目录下
+将上一步得到的4个txt和论文向量pkl文件压缩为oag-cs.zip
 
-环境变量`DGL_DOWNLOAD_DIR`默认为`~/.dgl/`
+下载地址：<https://pan.baidu.com/s/1qTth5C_WDxuhJo4yurpITg>，提取码：tz1b
+
+大小：1.38 GB，解压后大小：2.78 GB，zip文件放到`$DGL_DOWNLOAD_DIR`目录下（环境变量`DGL_DOWNLOAD_DIR`默认为`~/.dgl/`）
 
 ```python
 from gnnrec.kgrec.data import OAGCSDataset

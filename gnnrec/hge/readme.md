@@ -1,5 +1,5 @@
 # ogbn-mag数据集
-## 运行命令
+## Baseline
 ### R-GCN (full batch)
 `python -m gnnrec.hge.rgcn.run_ogbn_mag_full`
 
@@ -32,29 +32,30 @@
 `python -m gnnrec.hge.rhgnn.run_ogbn_mag data/word2vec/ogbn_mag.model`
 
 ### C&S
-#### Baseline: Smooth+正样本图
+#### Linear+Smooth+正样本图
 `python -m gnnrec.hge.cs.run_ogbn_mag /home/zzy/output/pos_graph_5.bin`
 
 #### R-HGNN+Smooth+正样本图
 1. 预训练R-HGNN `python -m gnnrec.hge.rhgnn.run_ogbn_mag --save-path=/home/zzy/output/rhgnn.pt data/word2vec/ogbn_mag.model`
 2. Smooth `python -m gnnrec.hge.rhgnn.smooth data/word2vec/ogbn_mag.model /home/zzy/output/rhgnn.pt /home/zzy/output/pos_graph_10.bin`
 
-#### HeCo+Smooth+正样本图
-1. 预训练HeCo `python -m gnnrec.hge.mygnn.run_ogbn_mag --save-path=/home/zzy/output/heco.pt data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin`
-2. Smooth `python -m gnnrec.hge.mygnn.smooth data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin /home/zzy/output/heco.pt`
+### HeCo
+`python -m gnnrec.hge.heco.run_ogbn_mag data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin`
 
-### MyGNN
+## RHCO
+基于对比学习的关系感知异构图神经网络(Relation-aware Heterogeneous Graph Neural Network with Contrastive Learning, RHCO)
+
 在HeCo的基础上改进：
-* 使用预训练的HGT计算的注意力权重选择正样本
-* 元路径视图编码器替换为正样本图上的GCN编码器
-* 网络结构视图编码器替换为R-HGNN
-* 适配mini-batch训练
-* Loss增加分类损失
+* 网络结构编码器中的注意力向量改为关系的表示（类似于R-HGNN）
+* 正样本选择方式由元路径条数改为预训练的HGT计算的注意力权重
+* 元路径视图编码器改为正样本图编码器，适配mini-batch训练
+* Loss增加分类损失，训练方式由无监督改为半监督
+* 在最后增加C&S后处理步骤
 
 1. 预训练HGT `python -m gnnrec.hge.hgt.run_ogbn_mag --node-feat=pretrained --node-embed-path=data/word2vec/ogbn_mag.model --epochs=40 --save-path=/home/zzy/output/hgt_pretrain.pt`
-2. 构造正样本图 `python -m gnnrec.hge.mygnn.build_pos_graph --num-samples=5 data/word2vec/ogbn_mag.model /home/zzy/output/hgt_pretrain.pt /home/zzy/output/pos_graph_5.bin`
-3. 训练模型 `python -m gnnrec.hge.mygnn.run_ogbn_mag --save-path=/home/zzy/output/heco_rhgnn.pt data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin`
-4. Smooth `python -m gnnrec.hge.mygnn.smooth data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin /home/zzy/output/heco_rhgnn.pt`
+2. 构造正样本图 `python -m gnnrec.hge.heco.build_pos_graph --num-samples=5 data/word2vec/ogbn_mag.model /home/zzy/output/hgt_pretrain.pt /home/zzy/output/pos_graph_5.bin`
+3. 训练模型 `python -m gnnrec.hge.rhco.run_ogbn_mag --save-path=/home/zzy/output/heco_rhgnn.pt data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin`
+4. Smooth `python -m gnnrec.hge.rhco.smooth data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin /home/zzy/output/heco_rhgnn.pt`
 
 ## 结果
 | 模型 | Train Acc | Valid Acc | Test Acc |
@@ -77,7 +78,7 @@
 | HeCo+正样本图+半监督（使用z_sc） | 0.4228 | 0.3783 | 0.3629 |
 | HeCo+Smooth+正样本图 | 0.4228 | 0.3783 | 0.3629 -> 0.3775 |
 | R-HGNN+Smooth+正样本图 | 0.5777 | 0.5306 | 0.5124 -> 0.5200 |
-| R-HGNN+HeCo+Smooth (α=0.0) | 0.4239 | 0.4051 | 0.3850 -> 0.3911 |
-| R-HGNN+HeCo+Smooth (α=0.2) | 0.4237 | 0.3987 | 0.3767 -> 0.3839 |
-| R-HGNN+HeCo+Smooth (α=0.5) | 0.4320 | 0.3970 | 0.3798 -> 0.3865 |
-| R-HGNN+HeCo+Smooth (α=0.8) | 0.4240 | 0.3937 | 0.3791 -> 0.3853 |
+| RHCO (α=0.0) | 0.4239 | 0.4051 | 0.3850 -> 0.3911 |
+| RHCO (α=0.2) | 0.4237 | 0.3987 | 0.3767 -> 0.3839 |
+| RHCO (α=0.5) | 0.4320 | 0.3970 | 0.3798 -> 0.3865 |
+| RHCO (α=0.8) | 0.4240 | 0.3937 | 0.3791 -> 0.3853 |
