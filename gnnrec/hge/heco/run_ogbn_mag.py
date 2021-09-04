@@ -48,13 +48,11 @@ def train(args):
         model.train()
         losses = []
         for batch in tqdm(train_loader):
-            block = collator.collate(batch).to(device)
-            pos_block = pos_collator.collate(batch).to(device)
+            block = collator.collate(batch)[0].to(device)
+            pos_block = pos_collator.collate(batch)[0].to(device)
             pos = torch.zeros(pos_block.num_dst_nodes(), batch.shape[0], dtype=torch.int, device=device)
             pos[pos_block.in_edges(torch.arange(batch.shape[0], device=device))] = 1
-            loss, _ = model(
-                block, block.srcdata['feat'], pos_block, pos_block.srcdata['feat'], pos.t()
-            )
+            loss, _ = model(block, block.srcdata['feat'], pos_block, pos_block.srcdata['feat'], pos.t())
             losses.append(loss.item())
 
             optimizer.zero_grad()

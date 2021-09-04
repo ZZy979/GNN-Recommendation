@@ -26,16 +26,18 @@ def train(args):
 
     pos_g = dgl.load_graphs(args.pos_graph_path)[0][0]
     pos_g.ndata['feat'] = g.nodes['paper'].data['feat']
-    pos = pos_g.edges()[0].view(pos_g.num_nodes(), -1)  # (N_p, T_pos) 每个paper顶点的正样本id
+    pos = pos_g.in_edges(pos_g.nodes())[0].view(pos_g.num_nodes(), -1)  # (N_p, T_pos) 每个paper顶点的正样本id
+    # 不能用pos_g.edges()，必须按终点id排序
 
-    collator = PositiveSampleCollator(g, MultiLayerNeighborSampler([None]), pos, 'paper')
+    sampler = MultiLayerNeighborSampler([args.neighbor_size] * args.num_layers)
+    collator = PositiveSampleCollator(g, sampler, pos, 'paper')
     pos_collator = PositiveSampleCollator(pos_g, MultiLayerFullNeighborSampler(1), pos)
     train_loader = DataLoader(train_idx.cpu(), batch_size=args.batch_size)
 
     model = RHCO(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
         args.num_hidden, num_classes, args.num_rel_hidden, args.num_heads,
-        g.ntypes, g.canonical_etypes, 'paper', args.dropout, args.tau, args.lambda_
+        g.ntypes, g.canonical_etypes, 'paper', args.num_layers, args.dropout, args.tau, args.lambda_
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     alpha = args.contrast_weight
@@ -43,12 +45,13 @@ def train(args):
         model.train()
         losses = []
         for batch in tqdm(train_loader):
-            block = collator.collate(batch).to(device)
-            pos_block = pos_collator.collate(batch).to(device)
+            blocks = [b.to(device) for b in collator.collate(batch)]
+            pos_block = pos_collator.collate(batch)[0].to(device)
             batch_pos = torch.zeros(pos_block.num_dst_nodes(), batch.shape[0], dtype=torch.int, device=device)
             batch_pos[pos_block.in_edges(torch.arange(batch.shape[0], device=device))] = 1
             contrast_loss, logits = model(
-                block, block.srcdata['feat'], pos_block, pos_block.srcdata['feat'], batch_pos.t()
+                blocks, blocks[0].srcdata['feat'],
+                pos_block, pos_block.srcdata['feat'], batch_pos.t()
             )
             clf_loss = F.cross_entropy(logits, labels[batch].squeeze(dim=1))
             loss = alpha * contrast_loss + (1 - alpha) * clf_loss
@@ -61,7 +64,7 @@ def train(args):
         print('Epoch {:d} | Train Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
             print('Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(*evaluate(
-                model, g, pos, args.batch_size, device,
+                model, g, pos, args.neighbor_size, args.batch_size, device,
                 labels, train_idx, val_idx, test_idx, evaluator
             )))
     if args.save_path:
@@ -69,9 +72,9 @@ def train(args):
         print('模型已保存到', args.save_path)
 
 
-def evaluate(model, g, pos, batch_size, device, labels, train_idx, val_idx, test_idx, evaluator):
+def evaluate(model, g, pos, neighbor_size, batch_size, device, labels, train_idx, val_idx, test_idx, evaluator):
     model.eval()
-    embeds = model.get_embeds(g, g.ndata['feat'], pos, batch_size, device)
+    embeds = model.get_embeds(g, g.ndata['feat'], pos, neighbor_size, batch_size, device)
     train_acc = accuracy(embeds[train_idx], labels[train_idx], evaluator)
     val_acc = accuracy(embeds[val_idx], labels[val_idx], evaluator)
     test_acc = accuracy(embeds[test_idx], labels[test_idx], evaluator)
@@ -85,11 +88,13 @@ def main():
     parser.add_argument('--num-hidden', type=int, default=64, help='隐藏层维数')
     parser.add_argument('--num-rel-hidden', type=int, default=8, help='关系表示的隐藏层维数')
     parser.add_argument('--num-heads', type=int, default=8, help='注意力头数')
+    parser.add_argument('--num-layers', type=int, default=2, help='层数')
     parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
     parser.add_argument('--tau', type=float, default=0.8, help='温度参数')
     parser.add_argument('--lambda', type=float, default=0.5, dest='lambda_', help='对比损失的平衡系数')
     parser.add_argument('--epochs', type=int, default=200, help='训练epoch数')
-    parser.add_argument('--batch-size', type=int, default=4096, help='批大小')
+    parser.add_argument('--batch-size', type=int, default=1024, help='批大小')
+    parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
     parser.add_argument('--lr', type=float, default=0.0008, help='学习率')
     parser.add_argument('--contrast-weight', type=float, default=0.5, help='对比损失权重')
     parser.add_argument('--eval-every', type=int, default=10, help='每多少个epoch计算一次准确率')

@@ -14,7 +14,7 @@ class RHCO(nn.Module):
 
     def __init__(
             self, in_dims, hidden_dim, out_dim, rel_hidden_dim, num_heads,
-            ntypes, etypes, predict_ntype, dropout, tau, lambda_):
+            ntypes, etypes, predict_ntype, num_layers, dropout, tau, lambda_):
         """基于对比学习的关系感知异构图神经网络RHCO
 
         :param in_dims: Dict[str, int] 顶点类型到输入特征维数的映射
@@ -25,6 +25,7 @@ class RHCO(nn.Module):
         :param ntypes: List[str] 顶点类型列表
         :param etypes – List[(str, str, str)] 规范边类型列表
         :param predict_ntype: str 目标顶点类型
+        :param num_layers: int 网络结构编码器层数
         :param dropout: float 输入特征dropout
         :param tau: float 温度参数τ
         :param lambda_: float 0~1之间，网络结构视图损失的系数λ（元路径视图损失的系数为1-λ）
@@ -39,7 +40,7 @@ class RHCO(nn.Module):
         self.sc_encoder = RHGNN(
             dict.fromkeys(in_dims, hidden_dim), hidden_dim, hidden_dim,
             rel_hidden_dim, rel_hidden_dim, num_heads,
-            ntypes, etypes, predict_ntype, 1, dropout
+            ntypes, etypes, predict_ntype, num_layers, dropout
         )
         self.mp_encoder = GraphConv(hidden_dim, hidden_dim, norm='right', activation=nn.PReLU())
         self.contrast = Contrast(hidden_dim, tau, lambda_)
@@ -52,9 +53,9 @@ class RHCO(nn.Module):
             nn.init.xavier_normal_(self.fcs[ntype].weight, gain)
         nn.init.xavier_normal_(self.predict.weight, gain)
 
-    def forward(self, block, feats, pos_g, pos_feat, pos):
+    def forward(self, blocks, feats, pos_g, pos_feat, pos):
         """
-        :param block: DGLBlock
+        :param blocks: List[DGLBlock]
         :param feats: Dict[str, tensor(N_i, d_in)] 顶点类型到输入特征的映射
         :param pos_g: DGLGraph 正样本图
         :param pos_feat: tensor(N_pos_src, d_in) 正样本图源顶点的输入特征
@@ -64,18 +65,19 @@ class RHCO(nn.Module):
         """
         h = {ntype: F.elu(self.feat_drop(self.fcs[ntype](feat))) for ntype, feat in feats.items()}
         pos_h = F.elu(self.feat_drop(self.fcs[self.dtype](pos_feat)))
-        z_sc = self.sc_encoder([block], h)  # (N, d_hid)
+        z_sc = self.sc_encoder(blocks, h)  # (N, d_hid)
         z_mp = self.mp_encoder(pos_g, pos_h)  # (N, d_hid)
         loss = self.contrast(z_sc, z_mp, pos)
         return loss, self.predict(z_sc[:pos.shape[0]])
 
     @torch.no_grad()
-    def get_embeds(self, g, feats, pos, batch_size, device):
+    def get_embeds(self, g, feats, pos, neighbor_size, batch_size, device):
         """计算目标顶点的最终嵌入(z_sc)
 
         :param g: DGLGraph 异构图
         :param feats: Dict[str, tensor(N_i, d_in)] 顶点类型到输入特征的映射
         :param pos: tensor(N_tgt, T_pos) 每个目标顶点的正样本id
+        :param neighbor_size: int 邻居采样数
         :param batch_size: int 批大小
         :param device torch.device GPU设备
         :return: tensor(N_tgt, d_out) 目标顶点的最终嵌入
@@ -85,11 +87,12 @@ class RHCO(nn.Module):
                 ntype: F.elu(fc(feats[ntype].to(device))).cpu()
                 for ntype, fc in self.fcs.items()
             }
-            collator = PositiveSampleCollator(g, MultiLayerNeighborSampler([None]), pos, self.dtype)
+            sampler = MultiLayerNeighborSampler([neighbor_size] * len(self.sc_encoder.layers))
+            collator = PositiveSampleCollator(g, sampler, pos, self.dtype)
             loader = DataLoader(g.nodes(self.dtype), batch_size=batch_size)
             embeds = torch.zeros(g.num_nodes(self.dtype), self.hidden_dim, device=device)
             for batch in loader:
-                block = collator.collate(batch).to(device)
-                z_sc = self.sc_encoder([block], block.srcdata['feat'])
+                blocks = [b.to(device) for b in collator.collate(batch)]
+                z_sc = self.sc_encoder(blocks, blocks[0].srcdata['feat'])
                 embeds[batch] = z_sc[:batch.shape[0]]
             return self.predict(embeds)

@@ -54,8 +54,8 @@
 
 1. 预训练HGT `python -m gnnrec.hge.hgt.run_ogbn_mag --node-feat=pretrained --node-embed-path=data/word2vec/ogbn_mag.model --epochs=40 --save-path=/home/zzy/output/hgt_pretrain.pt`
 2. 构造正样本图 `python -m gnnrec.hge.heco.build_pos_graph --num-samples=5 data/word2vec/ogbn_mag.model /home/zzy/output/hgt_pretrain.pt /home/zzy/output/pos_graph_5.bin`
-3. 训练模型 `python -m gnnrec.hge.rhco.run_ogbn_mag --save-path=/home/zzy/output/heco_rhgnn.pt data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin`
-4. Smooth `python -m gnnrec.hge.rhco.smooth data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin /home/zzy/output/heco_rhgnn.pt`
+3. 训练模型 `python -m gnnrec.hge.rhco.run_ogbn_mag --contrast-weight=0.5 --save-path=/home/zzy/output/rhco.pt data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin`
+4. Smooth `python -m gnnrec.hge.rhco.smooth data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin /home/zzy/output/rhco.pt`
 
 ## 结果
 | 模型 | Train Acc | Valid Acc | Test Acc |
@@ -67,6 +67,7 @@
 | HGT+pretrained | 0.6507 | 0.4807 | 0.4491 |
 | HGConv+average | 0.5032 | 0.4626 | 0.4507 |
 | HGConv+pretrained | 0.5669 | 0.5039 | 0.4882 |
+| R-HGNN （1层） | 0.5277 | 0.4921 | 0.4793 |
 | R-HGNN | 0.5777 | 0.5321 | 0.5142 |
 | C&S+正样本图 | 0.2602 | 0.2392 | 0.2453 -> 0.2334 |
 | Smooth+正样本图 | 0.2602 | 0.2392 | 0.2453 -> 0.3090 |
@@ -78,7 +79,8 @@
 | HeCo+正样本图+半监督（使用z_sc） | 0.4228 | 0.3783 | 0.3629 |
 | HeCo+Smooth+正样本图 | 0.4228 | 0.3783 | 0.3629 -> 0.3775 |
 | R-HGNN+Smooth+正样本图 | 0.5777 | 0.5306 | 0.5124 -> 0.5200 |
-| RHCO (α=0.0) | 0.4239 | 0.4051 | 0.3850 -> 0.3911 |
-| RHCO (α=0.2) | 0.4237 | 0.3987 | 0.3767 -> 0.3839 |
-| RHCO (α=0.5) | 0.4320 | 0.3970 | 0.3798 -> 0.3865 |
-| RHCO (α=0.8) | 0.4240 | 0.3937 | 0.3791 -> 0.3853 |
+| RHCO（1层）+旧正样本图 | 0.4320 | 0.3970 | 0.3798 -> 0.3865 |
+| RHCO+旧正样本图 | 0.4885 | 0.4492 | 0.4286 -> 0.4301 |
+| RHCO+正样本图 (α=0.2) | 0.4953 | 0.4479 | 0.4271 -> 0.4343 |
+| RHCO+正样本图 (α=0.5) | 0.4952 | 0.4534 | 0.4296 -> 0.4363 |
+| RHCO+正样本图 (α=0.8) | 0.4894 | 0.4489 | 0.4289 -> 0.4358 |
