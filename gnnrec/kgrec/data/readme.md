@@ -62,21 +62,43 @@
 
 二级领域列表：[CS_FIELD_L2](oag/config.py)
 
-| 类型 | 文件 | 数量 |
-| --- | --- | --- |
-| author | mag_authors.txt | 1478783 |
-| paper | mag_papers.txt | 1973365 |
-| venue | mag_venues.txt | 10806 |
-| affiliation | mag_institutions.txt | 13138 |
+输出4个文件：
+
+（1）学者：mag_authors.txt
+
+`{"id": aid, "name": "author name", "org": oid}`
+
+（2）论文：mag_papers.txt
+
+```
+{
+  "id": pid,
+  "title": "paper title",
+  "authors": [aid],
+  "venue": vid,
+  "year": publish_year,
+  "abstract": "abstract",
+  "fos": ["field"],
+  "references": [pid]
+}
+```
+
+（3）期刊：mag_venues.txt
+
+`{"id": vid, "name": "venue name"}`
+
+（4）机构：mag_institutions.txt
+
+`{"id": oid, "name": "org name"}`
 
 ## 第2步：预训练论文向量
-fine-tune: `python -m gnnrec.kgrec.data.oag.preprocess.fine_tune train data/oag/cs/mag_papers.txt data/model/scibert.pkl`
-
-推断： `python -m gnnrec.kgrec.data.oag.preprocess.fine_tune infer data/oag/cs/mag_papers.txt data/model/scibert.pkl data/oag/cs/paper_feat.pkl`
-
-通过论文二级领域分类任务fine-tune SciBERT模型，之后将隐藏层输出的128维向量作为paper顶点的输入特征
+通过论文二级领域分类任务对预训练的SciBERT模型进行fine-tune，之后将隐藏层输出的128维向量作为paper顶点的输入特征
 
 预训练的SciBERT模型来自Transformers [allenai/scibert_scivocab_uncased](https://huggingface.co/allenai/scibert_scivocab_uncased)
+
+1. fine-tune: `python -m gnnrec.kgrec.data.oag.preprocess.fine_tune train data/oag/cs/mag_papers.txt data/model/scibert.pkl`
+2. 推断： `python -m gnnrec.kgrec.data.oag.preprocess.fine_tune infer data/oag/cs/mag_papers.txt data/model/scibert.pkl data/oag/cs/paper_feat.pkl`
+
 ```
 Epoch 0 | Train Loss 0.0920 | Train Mirco F1 0.6259 | Val Mirco F1 0.6459
 Epoch 1 | Train Loss 0.0660 | Train Mirco F1 0.7247 | Val Mirco F1 0.6558
@@ -85,14 +107,12 @@ Epoch 3 | Train Loss 0.0525 | Train Mirco F1 0.7901 | Val Mirco F1 0.6606
 Epoch 4 | Train Loss 0.0468 | Train Mirco F1 0.8170 | Val Mirco F1 0.6585
 ```
 
-抽取出的原始数据及预训练的论文向量
+预训练的论文向量保存到paper_feat.pkl文件
 
 ## 第3步：构造图数据集
-将上一步得到的4个txt和论文向量pkl文件压缩为oag-cs.zip
+将以上4个txt和1个pkl文件压缩为oag-cs.zip，得到oag-cs数据集的原始数据
 
-下载地址：<https://pan.baidu.com/s/1qTth5C_WDxuhJo4yurpITg>，提取码：tz1b
-
-大小：1.38 GB，解压后大小：2.78 GB，zip文件放到`$DGL_DOWNLOAD_DIR`目录下（环境变量`DGL_DOWNLOAD_DIR`默认为`~/.dgl/`）
+将oag-cs.zip文件放到`$DGL_DOWNLOAD_DIR`目录下（环境变量`DGL_DOWNLOAD_DIR`默认为`~/.dgl/`）
 
 ```python
 from gnnrec.kgrec.data import OAGCSDataset
@@ -100,3 +120,10 @@ from gnnrec.kgrec.data import OAGCSDataset
 data = OAGCSDataset()
 g = data[0]
 ```
+
+统计数据见 [OAGCSDataset](oag/cs.py) 的文档字符串
+
+## 下载地址
+下载地址：<https://pan.baidu.com/s/1qTth5C_WDxuhJo4yurpITg>，提取码：tz1b
+
+大小：1.38 GB，解压后大小：2.78 GB

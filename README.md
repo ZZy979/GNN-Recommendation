@@ -5,7 +5,7 @@
 ### 数据集
 [ogbn-mag](https://ogb.stanford.edu/docs/nodeprop/#ogbn-mag) - OGB提供的微软学术数据集
 
-### Baseline
+### Baselines
 * [R-GCN](https://arxiv.org/pdf/1703.06103)
 * [HAN](https://arxiv.org/pdf/1903.07293)
 * [HetGNN](https://dl.acm.org/doi/pdf/10.1145/3292500.3330961)
@@ -17,4 +17,4 @@
 
 ## kgrec：基于知识图谱的推荐算法模块
 ### 数据集
-[OAG v2](https://www.aminer.cn/oag-2-1) - Open Academic Graph微软学术数据集
+oag-cs - 使用OAG微软学术数据构造的计算机领域的学术网络
