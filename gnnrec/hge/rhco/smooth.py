@@ -28,7 +28,7 @@ def main():
     g = g.cpu()
     load_pretrained_node_embed(g, args.node_embed_path)
     pos_g = dgl.load_graphs(args.pos_graph_path)[0][0].to(device)
-    pos = pos_g.edges()[0].view(pos_g.num_nodes(), -1)  # (N_p, T_pos) 每个paper顶点的正样本id
+    pos = pos_g.in_edges(pos_g.nodes())[0].view(pos_g.num_nodes(), -1)  # (N_p, T_pos) 每个paper顶点的正样本id
 
     model = RHCO(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},

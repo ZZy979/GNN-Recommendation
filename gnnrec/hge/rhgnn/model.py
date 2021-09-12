@@ -56,6 +56,7 @@ class RelationGraphConv(nn.Module):
             g.apply_edges(fn.u_add_v('el', 'er', 'e'))
             e = self.leaky_relu(g.edata.pop('e'))
             g.edata['a'] = edge_softmax(g, e)  # (E, K, 1)
+            self.attn = g.edata['a'].squeeze(dim=-1).detach().cpu()
 
             # 消息传递
             g.update_all(fn.u_mul_e('ft', 'a', 'm'), fn.sum('m', 'ft'))

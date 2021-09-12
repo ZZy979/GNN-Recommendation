@@ -8,8 +8,9 @@ from dgl.dataloading import MultiLayerNeighborSampler, NodeDataLoader
 from tqdm import tqdm
 
 from gnnrec.config import DATA_DIR
-from gnnrec.hge.hgt.model import HGT
-from gnnrec.hge.utils import get_device, load_pretrained_node_embed, load_ogbn_mag
+from gnnrec.hge.rhgnn.model import RHGNN
+from gnnrec.hge.rhgnn.run_ogbn_mag import load_pretrained_node_embed
+from gnnrec.hge.utils import get_device, load_ogbn_mag
 
 
 def main():
@@ -20,7 +21,7 @@ def main():
     g, _, labels, num_classes, train_idx, val_idx, test_idx, _ = \
         load_ogbn_mag(DATA_DIR, True)
     labels = labels.squeeze(dim=1).tolist()
-    test_idx = torch.cat([val_idx, test_idx])
+    train_idx = torch.cat([train_idx, val_idx])
     load_pretrained_node_embed(g, args.node_embed_path)
 
     neigh = sample_label_neighbors(labels, args.num_samples)  # (N_paper, T_pos)
@@ -35,10 +36,10 @@ def main():
 
 
 def calc_pos(g, num_classes, args, device):
-    """使用预训练的HGT模型计算的注意力权重选择每个顶点的正样本。"""
+    """使用预训练的R-HGNN模型计算的注意力权重选择每个顶点的正样本。"""
     num_neighbors = [
-        # 第1层：只保留PA, PP, PF边，其中PF边需要采样
-        {'writes_rev': -1, 'cites': -1, 'has_topic': 5},
+        # 第1层：只保留AP, PA, PP, FP, PF边，其中PF边需要采样
+        {'writes': -1, 'writes_rev': -1, 'cites': -1, 'cites_rev': -1, 'has_topic': 5, 'has_topic_rev': -1},
         # 第2层：只保留AP, PP, FP边
         {'writes': -1, 'cites': -1, 'has_topic_rev': -1},
     ]
@@ -49,12 +50,12 @@ def calc_pos(g, num_classes, args, device):
     sampler = MultiLayerNeighborSampler(num_neighbors)
     loader = NodeDataLoader(g, {'paper': g.nodes('paper')}, sampler, batch_size=args.batch_size)
 
-    model = HGT(
+    model = RHGNN(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
-        args.num_hidden, num_classes, args.num_heads, g.ntypes, g.canonical_etypes,
-        'paper', args.num_layers, args.dropout
+        args.num_hidden, num_classes, args.num_rel_hidden, args.num_rel_hidden, args.num_heads,
+        g.ntypes, g.canonical_etypes, 'paper', args.num_layers, args.dropout, residual=args.residual
     )
-    model.load_state_dict(torch.load(args.hgt_model_path, map_location=torch.device('cpu')))
+    model.load_state_dict(torch.load(args.pretrained_model_path, map_location=torch.device('cpu')))
     model = model.to(device)
 
     pos = torch.zeros(g.num_nodes('paper'), args.num_samples, dtype=torch.long)
@@ -76,9 +77,9 @@ def calc_attn(model, blocks):
     for e0, e1 in relations:
         s, _, d = blocks[0].to_canonical_etype(e0)  # s == 'paper', d是中间顶点类型
         a0 = torch.zeros(blocks[0].num_src_nodes(s), blocks[0].num_dst_nodes(d))
-        a0[blocks[0].edges(etype=e0)] = model.layers[0].conv.mods[e0].attn.mean(dim=1)
+        a0[blocks[0].edges(etype=e0)] = model.layers[0].rel_graph_conv[e0].attn.mean(dim=1)
         a1 = torch.zeros(blocks[1].num_src_nodes(d), blocks[1].num_dst_nodes(s))
-        a1[blocks[1].edges(etype=e1)] = model.layers[1].conv.mods[e1].attn.mean(dim=1)
+        a1[blocks[1].edges(etype=e1)] = model.layers[1].rel_graph_conv[e1].attn.mean(dim=1)
         attn += torch.matmul(a0, a1)  # (N_src_paper, N_dst_paper)
     return attn
 
@@ -92,16 +93,18 @@ def sample_label_neighbors(labels, num_samples):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='使用预训练的HGT计算的注意力权重构造paper顶点的正样本图')
+    parser = argparse.ArgumentParser(description='使用预训练的R-HGNN计算的注意力权重构造paper顶点的正样本图')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
-    parser.add_argument('--num-hidden', type=int, default=512, help='隐藏层维数')
+    parser.add_argument('--num-hidden', type=int, default=64, help='隐藏层维数')
+    parser.add_argument('--num-rel-hidden', type=int, default=8, help='关系表示的隐藏层维数')
     parser.add_argument('--num-heads', type=int, default=8, help='注意力头数')
     parser.add_argument('--num-layers', type=int, default=2, help='层数')
     parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
+    parser.add_argument('--no-residual', action='store_false', help='不使用残差连接', dest='residual')
     parser.add_argument('--batch-size', type=int, default=256, help='批大小')
     parser.add_argument('--num-samples', type=int, default=5, help='每个顶点采样的正样本数量')
     parser.add_argument('node_embed_path', help='预训练顶点嵌入路径')
-    parser.add_argument('hgt_model_path', help='预训练的HGT模型保存路径')
+    parser.add_argument('pretrained_model_path', help='预训练的R-HGNN模型保存路径')
     parser.add_argument('save_graph_path', help='正样本图保存路径')
     args = parser.parse_args()
     return args

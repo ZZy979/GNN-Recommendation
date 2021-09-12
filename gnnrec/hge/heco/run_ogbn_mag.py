@@ -32,7 +32,7 @@ def train(args):
 
     pos_g = dgl.load_graphs(args.pos_graph_path)[0][0]
     pos_g.ndata['feat'] = g.nodes['paper'].data['feat']
-    pos = pos_g.edges()[0].view(pos_g.num_nodes(), -1)  # (N_p, T_pos) 每个paper顶点的正样本id
+    pos = pos_g.in_edges(pos_g.nodes())[0].view(pos_g.num_nodes(), -1)  # (N_p, T_pos) 每个paper顶点的正样本id
 
     collator = PositiveSampleCollator(g, MultiLayerNeighborSampler([None]), pos, 'paper')
     pos_collator = PositiveSampleCollator(pos_g, MultiLayerFullNeighborSampler(1), pos)

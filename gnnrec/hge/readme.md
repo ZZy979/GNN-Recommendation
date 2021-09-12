@@ -1,5 +1,26 @@
-# ogbn-mag数据集
-## Baseline
+# 异构图表示学习
+## 数据集
+[ogbn-mag](https://ogb.stanford.edu/docs/nodeprop/#ogbn-mag) - OGB提供的微软学术数据集
+
+| 顶点类型 | 数量 |
+| --- | --- |
+| author | 1134649 |
+| paper | 736389 |
+| field_of_study | 59965 |
+| institution | 8740 |
+
+| 边类型 | 数量 |
+| --- | --- |
+| (author, writes, paper) | 7145660 |
+| (paper, cites, paper) | 5416271 |
+| (paper, has_topic, field_of_study) | 7505078 |
+| (author, affiliated_with, institution) | 1043998 |
+
+* 预测任务：顶点分类，预测论文所属期刊
+* 类别数：349
+* 评价指标：分类准确率
+
+## Baselines
 ### R-GCN (full batch)
 `python -m gnnrec.hge.rgcn.run_ogbn_mag_full`
 
@@ -11,6 +32,7 @@
 2. 训练模型（有监督） `python -m gnnrec.hge.hetgnn.run_ogbn_mag data/hetgnn`
 
 ### 预训练顶点嵌入
+使用metapath2vec（随机游走+word2vec）预训练顶点嵌入，作为GNN模型的顶点输入特征
 1. 随机游走 `python -m gnnrec.hge.metapath2vec.random_walk data/word2vec/ogbn_mag_corpus.txt`
 2. 训练词向量 `python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 data/word2vec/ogbn_mag_corpus.txt data/word2vec/ogbn_mag.model`
 
@@ -47,17 +69,17 @@
 
 在HeCo的基础上改进：
 * 网络结构编码器中的注意力向量改为关系的表示（类似于R-HGNN）
-* 正样本选择方式由元路径条数改为预训练的HGT计算的注意力权重
+* 正样本选择方式由元路径条数改为预训练的R-HGNN计算的注意力权重
 * 元路径视图编码器改为正样本图编码器，适配mini-batch训练
 * Loss增加分类损失，训练方式由无监督改为半监督
 * 在最后增加C&S后处理步骤
 
-1. 预训练HGT `python -m gnnrec.hge.hgt.run_ogbn_mag --node-feat=pretrained --node-embed-path=data/word2vec/ogbn_mag.model --epochs=40 --save-path=/home/zzy/output/hgt_pretrain.pt`
-2. 构造正样本图 `python -m gnnrec.hge.heco.build_pos_graph --num-samples=5 data/word2vec/ogbn_mag.model /home/zzy/output/hgt_pretrain.pt /home/zzy/output/pos_graph_5.bin`
+1. 预训练R-HGNN `python -m gnnrec.hge.rhgnn.run_ogbn_mag --save-path=/home/zzy/output/rhgnn.pt data/word2vec/ogbn_mag.model`
+2. 构造正样本图 `python -m gnnrec.hge.rhco.build_pos_graph --num-samples=5 data/word2vec/ogbn_mag.model /home/zzy/output/rhgnn.pt /home/zzy/output/pos_graph_5.bin`
 3. 训练模型 `python -m gnnrec.hge.rhco.run_ogbn_mag --contrast-weight=0.5 --save-path=/home/zzy/output/rhco.pt data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin`
 4. Smooth `python -m gnnrec.hge.rhco.smooth data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin /home/zzy/output/rhco.pt`
 
-## 结果
+## 实验结果
 | 模型 | Train Acc | Valid Acc | Test Acc |
 | --- | --- | --- | --- |
 | R-GCN (full batch) | 0.3500 | 0.4043 | 0.3858 |
@@ -81,6 +103,5 @@
 | R-HGNN+Smooth+正样本图 | 0.5777 | 0.5306 | 0.5124 -> 0.5200 |
 | RHCO（1层）+旧正样本图 | 0.4320 | 0.3970 | 0.3798 -> 0.3865 |
 | RHCO+旧正样本图 | 0.4885 | 0.4492 | 0.4286 -> 0.4301 |
-| RHCO+正样本图 (α=0.2) | 0.4953 | 0.4479 | 0.4271 -> 0.4343 |
-| RHCO+正样本图 (α=0.5) | 0.4952 | 0.4534 | 0.4296 -> 0.4363 |
-| RHCO+正样本图 (α=0.8) | 0.4894 | 0.4489 | 0.4289 -> 0.4358 |
+| RHCO+正样本图 (α=0.0) | 0.4872 | 0.4504 | 0.4270 -> 0.4330 |
+| RHCO+正样本图 (α=0.5) | 0.4758 | 0.4305 | 0.4000 -> 0.4098 |
