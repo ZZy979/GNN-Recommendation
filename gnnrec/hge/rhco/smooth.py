@@ -34,12 +34,11 @@ def main():
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
         args.num_hidden, num_classes, args.num_rel_hidden, args.num_heads,
         g.ntypes, g.canonical_etypes, 'paper', args.num_layers, args.dropout, args.tau, args.lambda_
-    )
-    model.load_state_dict(torch.load(args.model_path))
-    model = model.to(device)
+    ).to(device)
+    model.load_state_dict(torch.load(args.model_path, map_location=device))
     model.eval()
 
-    base_pred = model.get_embeds(g, g.ndata['feat'], pos, args.neighbor_size, args.batch_size, device)
+    base_pred = model.get_embeds(g, pos, args.neighbor_size, args.batch_size, device)
     mask = torch.cat([train_idx, val_idx])
     logits = smooth(base_pred, pos_g, labels, evaluator, mask, args)
     test_acc = accuracy(logits[test_idx], labels[test_idx], evaluator)

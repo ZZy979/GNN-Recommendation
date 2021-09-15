@@ -69,14 +69,14 @@
 
 在HeCo的基础上改进：
 * 网络结构编码器中的注意力向量改为关系的表示（类似于R-HGNN）
-* 正样本选择方式由元路径条数改为预训练的R-HGNN计算的注意力权重
+* 正样本选择方式由元路径条数改为预训练的HGT计算的注意力权重、训练集使用真实标签
 * 元路径视图编码器改为正样本图编码器，适配mini-batch训练
 * Loss增加分类损失，训练方式由无监督改为半监督
 * 在最后增加C&S后处理步骤
 
-1. 预训练R-HGNN `python -m gnnrec.hge.rhgnn.run_ogbn_mag --save-path=/home/zzy/output/rhgnn.pt data/word2vec/ogbn_mag.model`
-2. 构造正样本图 `python -m gnnrec.hge.rhco.build_pos_graph --num-samples=5 data/word2vec/ogbn_mag.model /home/zzy/output/rhgnn.pt /home/zzy/output/pos_graph_5.bin`
-3. 训练模型 `python -m gnnrec.hge.rhco.run_ogbn_mag --contrast-weight=0.5 --save-path=/home/zzy/output/rhco.pt data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin`
+1. 预训练HGT `python -m gnnrec.hge.hgt.run_ogbn_mag --node-feat=pretrained --node-embed-path=data/word2vec/ogbn_mag.model --epochs=40 --save-path=/home/zzy/output/hgt_pretrain.pt`
+2. 构造正样本图 `python -m gnnrec.hge.rhco.build_pos_graph --num-samples=5 data/word2vec/ogbn_mag.model /home/zzy/output/hgt_pretrain.pt /home/zzy/output/pos_graph_5.bin`
+3. 训练模型 `python -m gnnrec.hge.rhco.run_ogbn_mag --contrast-weight=0.5 data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin /home/zzy/output/rhco.pt`
 4. Smooth `python -m gnnrec.hge.rhco.smooth data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin /home/zzy/output/rhco.pt`
 
 ## 实验结果
@@ -103,5 +103,5 @@
 | R-HGNN+Smooth+正样本图 | 0.5777 | 0.5306 | 0.5124 -> 0.5200 |
 | RHCO（1层）+旧正样本图 | 0.4320 | 0.3970 | 0.3798 -> 0.3865 |
 | RHCO+旧正样本图 | 0.4885 | 0.4492 | 0.4286 -> 0.4301 |
-| RHCO+正样本图 (α=0.0) | 0.4872 | 0.4504 | 0.4270 -> 0.4330 |
-| RHCO+正样本图 (α=0.5) | 0.4758 | 0.4305 | 0.4000 -> 0.4098 |
+| RHCO+正样本图 (α=0.0) | 0.5751 | 0.5100 | 0.4860 -> 0.4930 |
+| RHCO+正样本图 (α=0.5) |  |  |  |

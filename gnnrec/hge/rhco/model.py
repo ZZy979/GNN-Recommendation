@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from dgl.dataloading import MultiLayerNeighborSampler
 from dgl.nn import GraphConv
 from torch.utils.data import DataLoader
@@ -32,25 +31,20 @@ class RHCO(nn.Module):
         """
         super().__init__()
         self.hidden_dim = hidden_dim
-        self.dtype = predict_ntype
-        self.fcs = nn.ModuleDict({
-            ntype: nn.Linear(in_dim, hidden_dim) for ntype, in_dim in in_dims.items()
-        })
-        self.feat_drop = nn.Dropout(dropout)
+        self.predict_ntype = predict_ntype
         self.sc_encoder = RHGNN(
-            dict.fromkeys(in_dims, hidden_dim), hidden_dim, hidden_dim,
-            rel_hidden_dim, rel_hidden_dim, num_heads,
+            in_dims, hidden_dim, hidden_dim, rel_hidden_dim, rel_hidden_dim, num_heads,
             ntypes, etypes, predict_ntype, num_layers, dropout
         )
-        self.mp_encoder = GraphConv(hidden_dim, hidden_dim, norm='right', activation=nn.PReLU())
+        self.mp_encoder = GraphConv(
+            in_dims[predict_ntype], hidden_dim, norm='right', activation=nn.PReLU()
+        )
         self.contrast = Contrast(hidden_dim, tau, lambda_)
         self.predict = nn.Linear(hidden_dim, out_dim)
         self.reset_parameters()
 
     def reset_parameters(self):
         gain = nn.init.calculate_gain('relu')
-        for ntype in self.fcs:
-            nn.init.xavier_normal_(self.fcs[ntype].weight, gain)
         nn.init.xavier_normal_(self.predict.weight, gain)
 
     def forward(self, blocks, feats, pos_g, pos_feat, pos):
@@ -63,19 +57,16 @@ class RHCO(nn.Module):
             （B是batch大小，真正的目标顶点；N是B个目标顶点加上其正样本后的顶点数）
         :return: float, tensor(B, d_out) 对比损失，目标顶点输出特征
         """
-        h = {ntype: F.elu(self.feat_drop(self.fcs[ntype](feat))) for ntype, feat in feats.items()}
-        pos_h = F.elu(self.feat_drop(self.fcs[self.dtype](pos_feat)))
-        z_sc = self.sc_encoder(blocks, h)  # (N, d_hid)
-        z_mp = self.mp_encoder(pos_g, pos_h)  # (N, d_hid)
+        z_sc = self.sc_encoder(blocks, feats)  # (N, d_hid)
+        z_mp = self.mp_encoder(pos_g, pos_feat)  # (N, d_hid)
         loss = self.contrast(z_sc, z_mp, pos)
         return loss, self.predict(z_sc[:pos.shape[0]])
 
     @torch.no_grad()
-    def get_embeds(self, g, feats, pos, neighbor_size, batch_size, device):
+    def get_embeds(self, g, pos, neighbor_size, batch_size, device):
         """计算目标顶点的最终嵌入(z_sc)
 
         :param g: DGLGraph 异构图
-        :param feats: Dict[str, tensor(N_i, d_in)] 顶点类型到输入特征的映射
         :param pos: tensor(N_tgt, T_pos) 每个目标顶点的正样本id
         :param neighbor_size: int 邻居采样数
         :param batch_size: int 批大小
@@ -83,14 +74,10 @@ class RHCO(nn.Module):
         :return: tensor(N_tgt, d_out) 目标顶点的最终嵌入
         """
         with g.local_scope():
-            g.ndata['feat'] = {
-                ntype: F.elu(fc(feats[ntype].to(device))).cpu()
-                for ntype, fc in self.fcs.items()
-            }
             sampler = MultiLayerNeighborSampler([neighbor_size] * len(self.sc_encoder.layers))
-            collator = PositiveSampleCollator(g, sampler, pos, self.dtype)
-            loader = DataLoader(g.nodes(self.dtype), batch_size=batch_size)
-            embeds = torch.zeros(g.num_nodes(self.dtype), self.hidden_dim, device=device)
+            collator = PositiveSampleCollator(g, sampler, pos, self.predict_ntype)
+            loader = DataLoader(g.nodes(self.predict_ntype), batch_size=batch_size)
+            embeds = torch.zeros(g.num_nodes(self.predict_ntype), self.hidden_dim, device=device)
             for batch in loader:
                 blocks = [b.to(device) for b in collator.collate(batch)]
                 z_sc = self.sc_encoder(blocks, blocks[0].srcdata['feat'])

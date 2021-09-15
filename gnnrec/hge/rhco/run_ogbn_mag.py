@@ -39,7 +39,12 @@ def train(args):
         args.num_hidden, num_classes, args.num_rel_hidden, args.num_heads,
         g.ntypes, g.canonical_etypes, 'paper', args.num_layers, args.dropout, args.tau, args.lambda_
     ).to(device)
+    if args.load_path:
+        model.load_state_dict(torch.load(args.load_path, map_location=device))
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=len(train_loader) * args.epochs, eta_min=args.lr / 100
+    )
     alpha = args.contrast_weight
     for epoch in range(args.epochs):
         model.train()
@@ -60,21 +65,24 @@ def train(args):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            scheduler.step()
             torch.cuda.empty_cache()
         print('Epoch {:d} | Train Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
+        torch.save(model.state_dict(), args.save_path)
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
             print('Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(*evaluate(
                 model, g, pos, args.neighbor_size, args.batch_size, device,
                 labels, train_idx, val_idx, test_idx, evaluator
             )))
-    if args.save_path:
-        torch.save(model.cpu().state_dict(), args.save_path)
-        print('模型已保存到', args.save_path)
+    torch.save(model.state_dict(), args.save_path)
+    print('模型已保存到', args.save_path)
 
 
-def evaluate(model, g, pos, neighbor_size, batch_size, device, labels, train_idx, val_idx, test_idx, evaluator):
+def evaluate(
+        model, g, pos, neighbor_size, batch_size, device, labels,
+        train_idx, val_idx, test_idx, evaluator):
     model.eval()
-    embeds = model.get_embeds(g, g.ndata['feat'], pos, neighbor_size, batch_size, device)
+    embeds = model.get_embeds(g, pos, neighbor_size, batch_size, device)
     train_acc = accuracy(embeds[train_idx], labels[train_idx], evaluator)
     val_acc = accuracy(embeds[val_idx], labels[val_idx], evaluator)
     test_acc = accuracy(embeds[test_idx], labels[test_idx], evaluator)
@@ -95,12 +103,13 @@ def main():
     parser.add_argument('--epochs', type=int, default=200, help='训练epoch数')
     parser.add_argument('--batch-size', type=int, default=1024, help='批大小')
     parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
-    parser.add_argument('--lr', type=float, default=0.0008, help='学习率')
+    parser.add_argument('--lr', type=float, default=0.001, help='学习率')
     parser.add_argument('--contrast-weight', type=float, default=0.5, help='对比损失权重')
     parser.add_argument('--eval-every', type=int, default=10, help='每多少个epoch计算一次准确率')
-    parser.add_argument('--save-path', help='模型保存路径')
+    parser.add_argument('--load-path', help='模型加载路径，用于继续训练')
     parser.add_argument('node_embed_path', help='预训练顶点嵌入路径')
-    parser.add_argument('pos_graph_path', help='正样本图保存路径')
+    parser.add_argument('pos_graph_path', help='正样本图路径')
+    parser.add_argument('save_path', help='模型保存路径')
     args = parser.parse_args()
     print(args)
     train(args)
