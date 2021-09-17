@@ -54,7 +54,7 @@ def calc_attn_pos(g, num_classes, num_samples, args, test_idx, device):
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
         args.num_hidden, num_classes, args.num_heads, g.ntypes, g.canonical_etypes,
         'paper', args.num_layers, args.dropout
-    )
+    ).to(device)
     model.load_state_dict(torch.load(args.hgt_model_path, map_location=device))
 
     # 只计算测试集顶点的注意力权重

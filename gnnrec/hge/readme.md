@@ -76,8 +76,8 @@
 
 1. 预训练HGT `python -m gnnrec.hge.hgt.run_ogbn_mag --node-feat=pretrained --node-embed-path=model/word2vec/ogbn_mag.model --epochs=40 --save-path=model/hgt_pretrain.pt`
 2. 构造正样本图 `python -m gnnrec.hge.rhco.build_pos_graph --num-samples=5 model/word2vec/ogbn_mag.model model/hgt_pretrain.pt data/graph/pos_graph_5_label.bin`
-3. 训练模型 `python -m gnnrec.hge.rhco.run_ogbn_mag --contrast-weight=0.5 model/word2vec/ogbn_mag.model data/graph/pos_graph_5_label.bin model/rhco_0.5_label.pt`
-4. Smooth `python -m gnnrec.hge.rhco.smooth model/word2vec/ogbn_mag.model data/graph/pos_graph_5_label.bin model/rhco_0.5_label.pt`
+3. 训练模型（如果中断可使用--load-path参数继续训练） `python -m gnnrec.hge.rhco.run_ogbn_mag --contrast-weight=0.5 model/word2vec/ogbn_mag.model data/graph/pos_graph_5_label.bin model/rhco_0.5_label.pt`
+4. Smooth `python -m gnnrec.hge.rhco.smooth model/word2vec/ogbn_mag.model data/graph/pos_graph_5_label_c.bin model/rhco_0.5_label.pt`
 
 ## 实验结果
 | 模型 | Train Acc | Valid Acc | Test Acc |
@@ -103,5 +103,5 @@
 | R-HGNN+Smooth+正样本图 | 0.5777 | 0.5306 | 0.5124 -> 0.5200 |
 | RHCO（1层）+旧正样本图 | 0.4320 | 0.3970 | 0.3798 -> 0.3865 |
 | RHCO+旧正样本图 | 0.4885 | 0.4492 | 0.4286 -> 0.4301 |
-| RHCO+正样本图 (α=0.0) | 0.5751 | 0.5100 | 0.4860 -> 0.4930 |
-| RHCO+正样本图 (α=0.5) | 0.6086 | 0.5159 | 0.4878 -> 0.4947 |
+| RHCO+正样本图 (α=0.0) | 0.5751 | 0.5100 | 0.4860 -> 0.5352 |
+| RHCO+正样本图 (α=0.5) | 0.6086 | 0.5159 | 0.4878 -> 0.5346 |
