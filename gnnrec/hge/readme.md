@@ -28,41 +28,41 @@
 `python -m gnnrec.hge.han.run_ogbn_mag`
 
 ### HetGNN
-1. 预处理 `python -m gnnrec.hge.hetgnn.preprocess data/word2vec/ogbn_mag.model data/word2vec/ogbn_mag_corpus.txt data/hetgnn`
-2. 训练模型（有监督） `python -m gnnrec.hge.hetgnn.run_ogbn_mag data/hetgnn`
+1. 预处理 `python -m gnnrec.hge.hetgnn.preprocess model/word2vec/ogbn_mag.model model/word2vec/ogbn_mag_corpus.txt model/hetgnn`
+2. 训练模型（有监督） `python -m gnnrec.hge.hetgnn.run_ogbn_mag model/hetgnn`
 
 ### 预训练顶点嵌入
 使用metapath2vec（随机游走+word2vec）预训练顶点嵌入，作为GNN模型的顶点输入特征
-1. 随机游走 `python -m gnnrec.hge.metapath2vec.random_walk data/word2vec/ogbn_mag_corpus.txt`
-2. 训练词向量 `python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 data/word2vec/ogbn_mag_corpus.txt data/word2vec/ogbn_mag.model`
+1. 随机游走 `python -m gnnrec.hge.metapath2vec.random_walk model/word2vec/ogbn_mag_corpus.txt`
+2. 训练词向量 `python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 model/word2vec/ogbn_mag_corpus.txt model/word2vec/ogbn_mag.model`
 
 ### HGT
 #### 邻居平均(average)
 `python -m gnnrec.hge.hgt.run_ogbn_mag`
 
 #### 预训练顶点嵌入(pretrained)
-`python -m gnnrec.hge.hgt.run_ogbn_mag --node-feat=pretrained --node-embed-path=data/word2vec/ogbn_mag.model --epochs=40`
+`python -m gnnrec.hge.hgt.run_ogbn_mag --node-feat=pretrained --node-embed-path=model/word2vec/ogbn_mag.model --epochs=40`
 
 ### HGConv
 #### 邻居平均(average)
 `python -m gnnrec.hge.hgconv.run_ogbn_mag`
 
 #### 预训练顶点嵌入(pretrained)
-`python -m gnnrec.hge.hgconv.run_ogbn_mag --node-feat=pretrained --node-embed-path=data/word2vec/ogbn_mag.model`
+`python -m gnnrec.hge.hgconv.run_ogbn_mag --node-feat=pretrained --node-embed-path=model/word2vec/ogbn_mag.model`
 
 ### R-HGNN
-`python -m gnnrec.hge.rhgnn.run_ogbn_mag data/word2vec/ogbn_mag.model`
+`python -m gnnrec.hge.rhgnn.run_ogbn_mag model/word2vec/ogbn_mag.model`
 
 ### C&S
 #### Linear+Smooth+正样本图
-`python -m gnnrec.hge.cs.run_ogbn_mag /home/zzy/output/pos_graph_5.bin`
+`python -m gnnrec.hge.cs.run_ogbn_mag data/graph/pos_graph_5.bin`
 
 #### R-HGNN+Smooth+正样本图
-1. 预训练R-HGNN `python -m gnnrec.hge.rhgnn.run_ogbn_mag --save-path=/home/zzy/output/rhgnn.pt data/word2vec/ogbn_mag.model`
-2. Smooth `python -m gnnrec.hge.rhgnn.smooth data/word2vec/ogbn_mag.model /home/zzy/output/rhgnn.pt /home/zzy/output/pos_graph_10.bin`
+1. 预训练R-HGNN `python -m gnnrec.hge.rhgnn.run_ogbn_mag --save-path=model/rhgnn.pt model/word2vec/ogbn_mag.model`
+2. Smooth `python -m gnnrec.hge.rhgnn.smooth model/word2vec/ogbn_mag.model model/rhgnn.pt data/graph/pos_graph_5.bin`
 
 ### HeCo
-`python -m gnnrec.hge.heco.run_ogbn_mag data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin`
+`python -m gnnrec.hge.heco.run_ogbn_mag model/word2vec/ogbn_mag.model data/graph/pos_graph_5.bin`
 
 ## RHCO
 基于对比学习的关系感知异构图神经网络(Relation-aware Heterogeneous Graph Neural Network with Contrastive Learning, RHCO)
@@ -74,10 +74,10 @@
 * Loss增加分类损失，训练方式由无监督改为半监督
 * 在最后增加C&S后处理步骤
 
-1. 预训练HGT `python -m gnnrec.hge.hgt.run_ogbn_mag --node-feat=pretrained --node-embed-path=data/word2vec/ogbn_mag.model --epochs=40 --save-path=/home/zzy/output/hgt_pretrain.pt`
-2. 构造正样本图 `python -m gnnrec.hge.rhco.build_pos_graph --num-samples=5 data/word2vec/ogbn_mag.model /home/zzy/output/hgt_pretrain.pt /home/zzy/output/pos_graph_5.bin`
-3. 训练模型 `python -m gnnrec.hge.rhco.run_ogbn_mag --contrast-weight=0.5 data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin /home/zzy/output/rhco.pt`
-4. Smooth `python -m gnnrec.hge.rhco.smooth data/word2vec/ogbn_mag.model /home/zzy/output/pos_graph_5.bin /home/zzy/output/rhco.pt`
+1. 预训练HGT `python -m gnnrec.hge.hgt.run_ogbn_mag --node-feat=pretrained --node-embed-path=model/word2vec/ogbn_mag.model --epochs=40 --save-path=model/hgt_pretrain.pt`
+2. 构造正样本图 `python -m gnnrec.hge.rhco.build_pos_graph --num-samples=5 model/word2vec/ogbn_mag.model model/hgt_pretrain.pt data/graph/pos_graph_5_label.bin`
+3. 训练模型 `python -m gnnrec.hge.rhco.run_ogbn_mag --contrast-weight=0.5 model/word2vec/ogbn_mag.model data/graph/pos_graph_5_label.bin model/rhco_0.5_label.pt`
+4. Smooth `python -m gnnrec.hge.rhco.smooth model/word2vec/ogbn_mag.model data/graph/pos_graph_5_label.bin model/rhco_0.5_label.pt`
 
 ## 实验结果
 | 模型 | Train Acc | Valid Acc | Test Acc |
@@ -104,4 +104,4 @@
 | RHCO（1层）+旧正样本图 | 0.4320 | 0.3970 | 0.3798 -> 0.3865 |
 | RHCO+旧正样本图 | 0.4885 | 0.4492 | 0.4286 -> 0.4301 |
 | RHCO+正样本图 (α=0.0) | 0.5751 | 0.5100 | 0.4860 -> 0.4930 |
-| RHCO+正样本图 (α=0.5) |  |  |  |
+| RHCO+正样本图 (α=0.5) | 0.6086 | 0.5159 | 0.4878 -> 0.4947 |

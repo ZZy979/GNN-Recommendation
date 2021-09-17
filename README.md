@@ -1,7 +1,14 @@
 # GNN-Recommendation
 毕业设计：基于图神经网络的异构图表示学习和推荐算法研究
 
-## hge：异构图表示学习模块
+## 目录结构
+* gnnrec：顶级包
+    * hge：异构图表示学习模块
+    * kgrec：基于知识图谱的推荐算法模块
+* data：数据集目录（已添加.gitignore）
+* model：模型保存目录（已添加.gitignore）
+
+## 异构图表示学习
 ### 数据集
 [ogbn-mag](https://ogb.stanford.edu/docs/nodeprop/#ogbn-mag) - OGB提供的微软学术数据集
 
@@ -15,6 +22,6 @@
 * [C&S](https://arxiv.org/pdf/2010.13993)
 * [HeCo](https://arxiv.org/pdf/2105.09111)
 
-## kgrec：基于知识图谱的推荐算法模块
+## 基于知识图谱的推荐算法
 ### 数据集
 oag-cs - 使用OAG微软学术数据构造的计算机领域的学术网络

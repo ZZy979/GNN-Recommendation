@@ -1,10 +1,8 @@
-# Open Academic Graph 2.1数据集
+# oag-cs数据集
 ## 原始数据
-下载地址：<https://www.aminer.cn/oag-2-1>
+[Open Academic Graph 2.1](https://www.aminer.cn/oag-2-1>)
 
-使用其中的微软学术(MAG)数据集
-
-总大小：169 GB
+使用其中的微软学术(MAG)数据，总大小169 GB
 
 | 类型 | 文件 | 总量 |
 | --- | --- | --- |
@@ -96,8 +94,8 @@
 
 预训练的SciBERT模型来自Transformers [allenai/scibert_scivocab_uncased](https://huggingface.co/allenai/scibert_scivocab_uncased)
 
-1. fine-tune: `python -m gnnrec.kgrec.data.oag.preprocess.fine_tune train data/oag/cs/mag_papers.txt data/model/scibert.pkl`
-2. 推断： `python -m gnnrec.kgrec.data.oag.preprocess.fine_tune infer data/oag/cs/mag_papers.txt data/model/scibert.pkl data/oag/cs/paper_feat.pkl`
+1. fine-tune: `python -m gnnrec.kgrec.data.oag.preprocess.fine_tune train data/oag/cs/mag_papers.txt model/scibert.pkl`
+2. 推断： `python -m gnnrec.kgrec.data.oag.preprocess.fine_tune infer data/oag/cs/mag_papers.txt model/scibert.pkl data/oag/cs/paper_feat.pkl`
 
 ```
 Epoch 0 | Train Loss 0.0920 | Train Mirco F1 0.6259 | Val Mirco F1 0.6459

@@ -4,5 +4,8 @@
 # Python
 __pycache__/
 
-# Dataset
+# 数据集
 /data/
+
+# 保存的模型
+/model/
