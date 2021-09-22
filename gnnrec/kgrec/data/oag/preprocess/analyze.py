@@ -1,7 +1,7 @@
 import argparse
 from collections import Counter
 
-from gnnrec.kgrec.data.oag.preprocess.iter_raw import iter_lines
+from gnnrec.kgrec.data.oag.preprocess.utils import iter_lines
 
 
 def analyze(args):

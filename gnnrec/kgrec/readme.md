@@ -10,5 +10,3 @@ oag-cs - 使用OAG微软学术数据构造的计算机领域的学术网络（�
 
 ### 获取顶点表示向量
 训练GNN模型，获取顶点的表示向量，GNN模型使用异构图表示学习模块改进的RHCO模型
-
-`python -m gnnrec.kgrec.preprocess.get_embeds`

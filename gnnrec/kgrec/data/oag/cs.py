@@ -5,9 +5,7 @@ import dgl
 import pandas as pd
 import torch
 from dgl.data import DGLDataset, extract_archive
-from dgl.data.utils import save_graphs, save_info, load_graphs, load_info
-
-from .config import CS_FIELD_L2
+from dgl.data.utils import save_graphs, load_graphs
 
 
 class OAGCSDataset(DGLDataset):
@@ -19,153 +17,143 @@ class OAGCSDataset(DGLDataset):
     -----
     顶点
 
-    * 1973365 author
-    * 1478783 paper
-    * 10806 venue
-    * 13138 institution
+    * 2582915 author
+    * 2117527 paper
+    * 11771 venue
+    * 14187 institution
     * 34 field
 
     边
 
-    * 4830908 author-writes->paper
-    * 1478783 paper-published_at->venue
-    * 2872948 paper-has_field->field
-    * 5377236 paper-cites->paper
-    * 1528195 author-affiliated_with->institution
+    * 6874093 author-writes->paper
+    * 2117527 paper-published_at->venue
+    * 4106254 paper-has_field->field
+    * 10600253 paper-cites->paper
+    * 1955483 author-affiliated_with->institution
 
-    不包含标签
-
-    属性
+    author顶点属性
     -----
-    * author_names: List[str] 学者姓名
-    * paper_titles: List[str] 论文标题
-    * venue_names: List[str] 期刊名称
-    * inst_names: List[str] 机构名称
-    * field_names: List[str] 领域名称
+    * id: tensor(N_author) 原始id
 
     paper顶点属性
     -----
-    * feat: tensor(1478783, 128) 预训练的标题和摘要词向量
-    * year: tensor(1478783) 发表年份（1944~2021）
+    * id: tensor(N_paper) 原始id
+    * feat: tensor(N_paper, 128) 预训练的标题和摘要词向量
+    * year: tensor(N_paper) 发表年份（1937~2021）
+    * 不包含标签
+
+    venue顶点属性
+    -----
+    * id: tensor(N_venue) 原始id
+
+    institution顶点属性
+    -----
+    * id: tensor(N_inst) 原始id
     """
 
     def __init__(self):
-        super().__init__('oag-cs', 'https://pan.baidu.com/s/1qTth5C_WDxuhJo4yurpITg')
+        super().__init__('oag-cs', 'https://pan.baidu.com/s/1nBht4CVP7HTHFcAWJ-363A')
 
     def download(self):
         zip_file_path = os.path.join(self.raw_dir, 'oag-cs.zip')
         if not os.path.exists(zip_file_path):
-            raise FileNotFoundError('请手动下载文件 {} 提取码：tz1b 并保存为 {}'.format(
+            raise FileNotFoundError('请手动下载文件 {} 提取码：c8my 并保存为 {}'.format(
                 self.url, zip_file_path
             ))
         extract_archive(zip_file_path, self.raw_path)
 
     def save(self):
         save_graphs(os.path.join(self.save_path, self.name + '_dgl_graph.bin'), [self.g])
-        save_info(os.path.join(self.save_path, self.name + '_info.pkl'), {
-            'author_names': self.author_names,
-            'paper_titles': self.paper_titles,
-            'venue_names': self.venue_names,
-            'inst_names': self.inst_names,
-            'field_names': self.field_names
-        })
 
     def load(self):
-        graphs, _ = load_graphs(os.path.join(self.save_path, self.name + '_dgl_graph.bin'))
-        self.g = graphs[0]
-        info = load_info(os.path.join(self.save_path, self.name + '_info.pkl'))
-        self.author_names = info['author_names']
-        self.paper_titles = info['paper_titles']
-        self.venue_names = info['venue_names']
-        self.inst_names = info['inst_names']
-        self.field_names = info['field_names']
+        self.g = load_graphs(os.path.join(self.save_path, self.name + '_dgl_graph.bin'))[0][0]
 
     def process(self):
-        self._venue_ids, self.venue_names = self._read_venue()
-        self._inst_ids, self.inst_names = self._read_institutions()
-        self._author_ids, self.author_names, author_inst = self._read_authors()
-        paper_author, paper_venue, paper_field, paper_paper, \
-            self.paper_titles, paper_abstracts, paper_years = self._read_papers()
-        self.field_names = CS_FIELD_L2
-
-        self.g = self._build_graph(paper_author, paper_venue, paper_field, paper_paper, author_inst)
-        self.g.nodes['paper'].data['feat'] = torch.load(os.path.join(self.raw_path, 'paper_feat.pkl'))
-        self.g.nodes['paper'].data['year'] = torch.tensor(paper_years)
+        self._venue_ids = self._read_venues()  # [原始id]
+        self._inst_ids = self._read_institutions()  # [原始id]
+        self._field_ids = self._read_fields()  # {领域名称: 顶点id}
+        self._author_ids, author_inst = self._read_authors()  # [原始id], R(aid, oid)
+        # [原始id], R(pid, aid), R(pid, vid), R(pid, fid), R(pid, rid), [年份]
+        self._paper_ids, paper_author, paper_venue, paper_field, paper_ref, paper_years = self._read_papers()
+        self.g = self._build_graph(paper_author, paper_venue, paper_field, paper_ref, author_inst, paper_years)
 
     def _iter_json(self, filename):
         with open(os.path.join(self.raw_path, filename), encoding='utf8') as f:
             for line in f:
                 yield json.loads(line)
 
-    def _read_venue(self):
+    def _read_venues(self):
         print('正在读取期刊数据...')
-        venue_ids, venue_names = {}, []
-        for i, v in enumerate(self._iter_json('mag_venues.txt')):
-            venue_ids[v['id']] = i
-            venue_names.append(v['name'])
-        return venue_ids, venue_names
+        # 行号=索引=顶点id
+        return [v['id'] for v in self._iter_json('mag_venues.txt')]
 
     def _read_institutions(self):
         print('正在读取机构数据...')
-        inst_ids, inst_names = {}, []
-        for i, o in enumerate(self._iter_json('mag_institutions.txt')):
-            inst_ids[o['id']] = i
-            inst_names.append(o['name'])
-        return inst_ids, inst_names
+        return [o['id'] for o in self._iter_json('mag_institutions.txt')]
+
+    def _read_fields(self):
+        print('正在读取领域数据...')
+        return {f['name']: f['id'] for f in self._iter_json('mag_fields.txt')}
 
     def _read_authors(self):
         print('正在读取学者数据...')
-        author_ids, author_names, author_inst = {}, [], []
+        author_ids, author_inst = [], []
+        oid_map = {o: i for i, o in enumerate(self._inst_ids)}
         for i, a in enumerate(self._iter_json('mag_authors.txt')):
-            author_ids[a['id']] = i
-            author_names.append(a['name'])
+            author_ids.append(a['id'])
             if a['org'] is not None:
-                author_inst.append([i, self._inst_ids[a['org']]])
-        return author_ids, author_names, pd.DataFrame(author_inst, columns=['aid', 'oid'])
+                author_inst.append([i, oid_map[a['org']]])
+        return author_ids, pd.DataFrame(author_inst, columns=['aid', 'oid'])
 
     def _read_papers(self):
         print('正在读取论文数据...')
-        paper_ids, paper_author, paper_venue = {}, [], []
-        paper_titles, paper_abstracts, paper_years = [], [], []
+        paper_ids, paper_author, paper_venue, paper_field, paper_years = [], [], [], [], []
+        aid_map = {a: i for i, a in enumerate(self._author_ids)}
+        vid_map = {v: i for i, v in enumerate(self._venue_ids)}
         for i, p in enumerate(self._iter_json('mag_papers.txt')):
-            paper_ids[p['id']] = i
-            paper_author.extend([i, self._author_ids[a]] for a in p['authors'])
-            paper_venue.append([i, self._venue_ids[p['venue']]])
-            paper_titles.append(p['title'])
-            paper_abstracts.append(p['abstract'])
+            paper_ids.append(p['id'])
+            paper_author.extend([i, aid_map[a]] for a in p['authors'])
+            paper_venue.append([i, vid_map[p['venue']]])
+            paper_field.extend([i, self._field_ids[f]] for f in p['fos'])
             paper_years.append(p['year'])
 
-        field_ids = {f: i for i, f in enumerate(CS_FIELD_L2)}
-        paper_field, paper_paper = [], []
+        paper_ref = []
+        pid_map = {p: i for i, p in enumerate(paper_ids)}
         for i, p in enumerate(self._iter_json('mag_papers.txt')):
-            paper_field.extend([i, field_ids[f]] for f in p['fos'])
-            paper_paper.extend([i, paper_ids[r]] for r in p['references'] if r in paper_ids)
+            paper_ref.extend([i, pid_map[r]] for r in p['references'] if r in pid_map)
         return (
+            paper_ids,
             pd.DataFrame(paper_author, columns=['pid', 'aid']),
             pd.DataFrame(paper_venue, columns=['pid', 'vid']),
             pd.DataFrame(paper_field, columns=['pid', 'fid']),
-            pd.DataFrame(paper_paper, columns=['pid', 'rid']),
-            paper_titles, paper_abstracts, paper_years
+            pd.DataFrame(paper_ref, columns=['pid', 'rid']),
+            paper_years
         )
 
-    def _build_graph(self, paper_author, paper_venue, paper_field, paper_paper, author_inst):
+    def _build_graph(self, paper_author, paper_venue, paper_field, paper_ref, author_inst, paper_years):
         print('正在构造异构图...')
         pa_p, pa_a = paper_author['pid'].to_list(), paper_author['aid'].to_list()
         pv_p, pv_v = paper_venue['pid'].to_list(), paper_venue['vid'].to_list()
         pf_p, pf_f = paper_field['pid'].to_list(), paper_field['fid'].to_list()
-        pp_p, pp_r = paper_paper['pid'].to_list(), paper_paper['rid'].to_list()
+        pp_p, pp_r = paper_ref['pid'].to_list(), paper_ref['rid'].to_list()
         ai_a, ai_i = author_inst['aid'].to_list(), author_inst['oid'].to_list()
-        return dgl.heterograph({
+        g = dgl.heterograph({
             ('author', 'writes', 'paper'): (pa_a, pa_p),
             ('paper', 'published_at', 'venue'): (pv_p, pv_v),
             ('paper', 'has_field', 'field'): (pf_p, pf_f),
             ('paper', 'cites', 'paper'): (pp_p, pp_r),
             ('author', 'affiliated_with', 'institution'): (ai_a, ai_i)
         })
+        g.nodes['author'].data['id'] = torch.tensor(self._author_ids)
+        g.nodes['paper'].data['id'] = torch.tensor(self._paper_ids)
+        g.nodes['paper'].data['feat'] = torch.load(os.path.join(self.raw_path, 'paper_feat.pkl'))
+        g.nodes['paper'].data['year'] = torch.tensor(paper_years)
+        g.nodes['venue'].data['id'] = torch.tensor(self._venue_ids)
+        g.nodes['institution'].data['id'] = torch.tensor(self._inst_ids)
+        return g
 
     def has_cache(self):
-        return os.path.exists(os.path.join(self.save_path, self.name + '_dgl_graph.bin')) \
-               and os.path.exists(os.path.join(self.save_path, self.name + '_info.pkl'))
+        return os.path.exists(os.path.join(self.save_path, self.name + '_dgl_graph.bin'))
 
     def __getitem__(self, idx):
         if idx != 0:
