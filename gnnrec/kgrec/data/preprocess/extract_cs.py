@@ -2,8 +2,8 @@ import argparse
 import json
 import os
 
-from gnnrec.kgrec.data.oag.config import CS, CS_FIELD_L2
-from gnnrec.kgrec.data.oag.preprocess.utils import iter_lines
+from gnnrec.kgrec.data.config import CS, CS_FIELD_L2
+from gnnrec.kgrec.data.preprocess.utils import iter_lines
 
 
 def extract_papers(raw_path):

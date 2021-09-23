@@ -14,7 +14,7 @@
 ## 字段分析
 假设原始zip文件所在目录为data/oag/mag/
 
-`python -m gnnrec.kgrec.data.oag.preprocess.analyze {author, paper, vanue, affiliation} data/oag/mag/`
+`python -m gnnrec.kgrec.data.preprocess.analyze {author, paper, venue, affiliation} data/oag/mag/`
 
 ```
 数据类型： venue
@@ -63,12 +63,12 @@
 ```
 
 ## 第1步：抽取计算机领域的子集
-`python -m gnnrec.kgrec.data.oag.preprocess.extract_cs data/oag/mag/ data/oag/cs/`
+`python -m gnnrec.kgrec.data.preprocess.extract_cs data/oag/mag/ data/oag/cs/`
 
 过滤掉主要字段为空以及标题和摘要过短或过长的论文，
 从微软学术抓取了计算机科学下的34个二级领域作为领域字段过滤条件
 
-二级领域列表：[CS_FIELD_L2](oag/config.py)
+二级领域列表：[CS_FIELD_L2](config.py)
 
 输出5个文件：
 
@@ -111,7 +111,7 @@
 
 预训练的SciBERT模型来自Transformers [allenai/scibert_scivocab_uncased](https://huggingface.co/allenai/scibert_scivocab_uncased)
 
-1. fine-tune: `python -m gnnrec.kgrec.data.oag.preprocess.fine_tune train data/oag/cs/mag_papers.txt model/scibert.pt`
+1. fine-tune: `python -m gnnrec.kgrec.data.preprocess.fine_tune train data/oag/cs/mag_papers.txt model/scibert.pt`
 
 ```
 Epoch 0 | Train Loss 0.4384 | Train Acc 0.8936 | Val Acc 0.9325
@@ -121,9 +121,9 @@ Epoch 3 | Train Loss 0.1094 | Train Acc 0.9783 | Val Acc 0.9499
 Epoch 4 | Train Loss 0.0872 | Train Acc 0.9840 | Val Acc 0.9508
 ```
 
-2. 推断： `python -m gnnrec.kgrec.data.oag.preprocess.fine_tune infer data/oag/cs/mag_papers.txt model/scibert.pt data/oag/cs/paper_feat.pkl`
+2. 推断： `python -m gnnrec.kgrec.data.preprocess.fine_tune infer data/oag/cs/mag_papers.txt model/scibert.pt data/oag/cs/paper_feat.pkl`
 
-预训练的论文向量保存到paper_feat.pkl文件，该向量既可用于GNN模型的输入特征，也可用于计算相似度召回论文
+预训练的论文向量保存到paper_feat.pkl文件（已归一化），该向量既可用于GNN模型的输入特征，也可用于计算相似度召回论文
 
 ## 第3步：构造图数据集
 将以上5个txt和1个pkl文件压缩为oag-cs.zip，得到oag-cs数据集的原始数据
@@ -137,9 +137,9 @@ data = OAGCSDataset()
 g = data[0]
 ```
 
-统计数据见 [OAGCSDataset](oag/cs.py) 的文档字符串
+统计数据见 [OAGCSDataset](oagcs.py) 的文档字符串
 
 ## 下载地址
-下载地址：<https://pan.baidu.com/s/1nBht4CVP7HTHFcAWJ-363A>，提取码：c8my
+下载地址：<https://pan.baidu.com/s/1YhLBbVQGsNPMu9FOb19usQ>，提取码：95u1
 
 大小：2.08 GB，解压后大小：4.38 GB

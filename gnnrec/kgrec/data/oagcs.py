@@ -52,12 +52,12 @@ class OAGCSDataset(DGLDataset):
     """
 
     def __init__(self):
-        super().__init__('oag-cs', 'https://pan.baidu.com/s/1nBht4CVP7HTHFcAWJ-363A')
+        super().__init__('oag-cs', 'https://pan.baidu.com/s/1YhLBbVQGsNPMu9FOb19usQ')
 
     def download(self):
         zip_file_path = os.path.join(self.raw_dir, 'oag-cs.zip')
         if not os.path.exists(zip_file_path):
-            raise FileNotFoundError('请手动下载文件 {} 提取码：c8my 并保存为 {}'.format(
+            raise FileNotFoundError('请手动下载文件 {} 提取码：95u1 并保存为 {}'.format(
                 self.url, zip_file_path
             ))
         extract_archive(zip_file_path, self.raw_path)

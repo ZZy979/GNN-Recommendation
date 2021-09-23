@@ -1,99 +1,14 @@
 import argparse
-import json
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 from tqdm import tqdm
-from transformers import AutoTokenizer, AutoModel, get_linear_schedule_with_warmup
+from transformers import get_linear_schedule_with_warmup
 
 from gnnrec.hge.utils import set_random_seed, get_device
-
-
-class ContrastiveSciBERT(nn.Module):
-
-    def __init__(self, out_dim, tau, device):
-        """用于对比学习的SciBERT模型
-
-        :param out_dim: int 输出特征维数
-        :param tau: float 温度参数τ
-        :param device: torch.device
-        """
-        super().__init__()
-        self.tau = tau
-        self.device = device
-        self.tokenizer = AutoTokenizer.from_pretrained('allenai/scibert_scivocab_uncased')
-        self.model = AutoModel.from_pretrained('allenai/scibert_scivocab_uncased').to(device)
-        self.linear = nn.Linear(self.model.config.hidden_size, out_dim)
-
-    def get_embeds(self, texts, max_length=64):
-        """将文本编码为向量
-
-        :param texts: List[str] 输入文本列表，长度为N
-        :param max_length: int, optional padding最大长度，默认为64
-        :return: tensor(N, d_out)
-        """
-        encoded = self.tokenizer(
-            texts, padding='max_length', truncation=True, max_length=max_length, return_tensors='pt'
-        ).to(self.device)
-        return self.linear(self.model(**encoded).pooler_output)
-
-    def calc_sim(self, texts_a, texts_b):
-        """计算两组文本的相似度
-
-        :param texts_a: List[str] 输入文本A列表，长度为N
-        :param texts_b: List[str] 输入文本B列表，长度为N
-        :return: tensor(N, N) 相似度矩阵，S[i, j] = cos(a[i], b[j]) / τ
-        """
-        embeds_a = self.get_embeds(texts_a)  # (N, d_out)
-        embeds_b = self.get_embeds(texts_b)  # (N, d_out)
-        embeds_a = embeds_a / embeds_a.norm(dim=1, keepdim=True)
-        embeds_b = embeds_b / embeds_b.norm(dim=1, keepdim=True)
-        return embeds_a @ embeds_b.t() / self.tau
-
-    def forward(self, texts_a, texts_b):
-        """计算两组文本的对比损失
-
-        :param texts_a: List[str] 输入文本A列表，长度为N
-        :param texts_b: List[str] 输入文本B列表，长度为N
-        :return: tensor(N, N), float A对B的相似度矩阵，对比损失
-        """
-        # logits_ab等价于预测概率，对比损失等价于交叉熵损失
-        logits_ab = self.calc_sim(texts_a, texts_b)
-        logits_ba = logits_ab.t()
-        labels = torch.arange(len(texts_a), device=self.device)
-        loss_ab = F.cross_entropy(logits_ab, labels)
-        loss_ba = F.cross_entropy(logits_ba, labels)
-        return logits_ab, (loss_ab + loss_ba) / 2
-
-
-class OAGCSPaperTitleKeywordsDataset(Dataset):
-    SPLIT_YEAR = 2016
-
-    def __init__(self, raw_file, split='train'):
-        """oag-cs论文标题和关键词数据集
-
-        :param raw_file: str 原始论文数据文件
-        :param split: str "train", "valid", "all"
-        """
-        self.titles = []
-        self.keywords = []
-        with open(raw_file, encoding='utf8') as f:
-            for line in f:
-                p = json.loads(line)
-                if split == 'train' and p['year'] <= self.SPLIT_YEAR \
-                        or split == 'valid' and p['year'] > self.SPLIT_YEAR \
-                        or split == 'all':
-                    self.titles.append(p['title'])
-                    self.keywords.append(p['keywords'])
-
-    def __getitem__(self, item):
-        return self.titles[item], self.keywords[item]
-
-    def __len__(self):
-        return len(self.titles)
+from gnnrec.kgrec.data import OAGCSContrastDataset
+from gnnrec.kgrec.scibert import ContrastiveSciBERT
 
 
 def collate(samples):
@@ -104,9 +19,9 @@ def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
 
-    train_dataset = OAGCSPaperTitleKeywordsDataset(args.raw_file, split='train')
+    train_dataset = OAGCSContrastDataset(args.raw_file, split='train')
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=collate)
-    valid_dataset = OAGCSPaperTitleKeywordsDataset(args.raw_file, split='valid')
+    valid_dataset = OAGCSContrastDataset(args.raw_file, split='valid')
     valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=collate)
 
     model = ContrastiveSciBERT(args.num_hidden, args.tau, device).to(device)
@@ -158,7 +73,7 @@ def accuracy(logits, labels):
 @torch.no_grad()
 def infer(args):
     device = get_device(args.device)
-    dataset = OAGCSPaperTitleKeywordsDataset(args.raw_file, split='all')
+    dataset = OAGCSContrastDataset(args.raw_file, split='all')
     loader = DataLoader(dataset, batch_size=args.batch_size, collate_fn=collate)
     model = ContrastiveSciBERT(args.num_hidden, args.tau, device).to(device)
     model.load_state_dict(torch.load(args.model_path, map_location=device))
@@ -167,7 +82,9 @@ def infer(args):
     h = []
     for titles, _ in tqdm(loader):
         h.append(model.get_embeds(titles).detach().cpu())
-    torch.save(torch.cat(h), args.vec_save_path)
+    h = torch.cat(h)  # (N_paper, d_hid)
+    h = h / h.norm(dim=1, keepdim=True)
+    torch.save(h, args.vec_save_path)
     print('结果已保存到', args.vec_save_path)
 
 
