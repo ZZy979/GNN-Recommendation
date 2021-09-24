@@ -6,12 +6,12 @@ from transformers import AutoTokenizer, AutoModel
 
 class ContrastiveSciBERT(nn.Module):
 
-    def __init__(self, out_dim, tau, device):
+    def __init__(self, out_dim, tau, device='cpu'):
         """用于对比学习的SciBERT模型
 
         :param out_dim: int 输出特征维数
         :param tau: float 温度参数τ
-        :param device: torch.device
+        :param device: torch.device, optional 默认为CPU
         """
         super().__init__()
         self.tau = tau
