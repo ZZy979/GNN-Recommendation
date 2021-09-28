@@ -15,18 +15,17 @@ def extract_papers(raw_path):
         fos = {f['name'] for f in p['fos']}
         abstract = parse_abstract(p['indexed_abstract'])
         if CS in fos and not fos.isdisjoint(cs_fields) \
-                and 50 <= len(p['title']) <= 200 and 500 <= len(abstract) <= 1500 \
+                and 50 <= len(p['title']) <= 100 and 500 <= len(abstract) <= 1000 \
                 and 1 <= len(p['authors']) <= 20 and 1 <= len(p['references']) <= 100:
             try:
                 yield {
                     'id': p['id'],
                     'title': p['title'],
-                    'keywords': '; '.join(fos),
                     'authors': [a['id'] for a in p['authors']],
                     'venue': p['venue']['id'],
                     'year': p['year'],
                     'abstract': abstract,
-                    'fos': list(fos & cs_fields),
+                    'fos': list(fos),
                     'references': p['references'],
                 }
             except KeyError:
@@ -69,16 +68,17 @@ def extract_institutions(raw_path, institution_ids):
 
 def extract(args):
     print('正在抽取计算机领域的论文...')
-    paper_ids, author_ids, venue_ids = set(), set(), set()
+    paper_ids, author_ids, venue_ids, fields = set(), set(), set(), set()
     with open(os.path.join(args.output_path, 'mag_papers.txt'), 'w', encoding='utf8') as f:
         for p in extract_papers(args.raw_path):
             paper_ids.add(p['id'])
             author_ids.update(p['authors'])
             venue_ids.add(p['venue'])
+            fields.update(p['fos'])
             json.dump(p, f, ensure_ascii=False)
             f.write('\n')
     print(f'论文抽取完成，已保存到{f.name}')
-    print(f'论文数{len(paper_ids)}，学者数{len(author_ids)}，期刊数{len(venue_ids)}')
+    print(f'论文数{len(paper_ids)}，学者数{len(author_ids)}，期刊数{len(venue_ids)}，领域数{len(fields)}')
 
     print('正在抽取学者...')
     institution_ids = set()
@@ -106,8 +106,10 @@ def extract(args):
     print(f'机构抽取完成，已保存到{f.name}')
 
     print('正在抽取领域...')
+    fields.remove(CS)
+    fields = sorted(fields)
     with open(os.path.join(args.output_path, 'mag_fields.txt'), 'w', encoding='utf8') as f:
-        for i, field in enumerate(CS_FIELD_L2):
+        for i, field in enumerate(fields):
             json.dump({'id': i, 'name': field}, f, ensure_ascii=False)
             f.write('\n')
     print(f'领域抽取完成，已保存到{f.name}')

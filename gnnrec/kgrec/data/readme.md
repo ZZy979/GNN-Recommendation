@@ -82,7 +82,6 @@
 {
   "id": pid,
   "title": "paper title",
-  "keywords": "keyword; keyword",
   "authors": [aid],
   "venue": vid,
   "year": year,
@@ -91,8 +90,6 @@
   "references": [pid]
 }
 ```
-
-注：由于原始数据不包含关键词，因此使用研究领域作为关键词，fos字段只包含计算机科学下的二级领域
 
 （3）期刊：mag_venues.txt
 
@@ -111,14 +108,16 @@
 
 预训练的SciBERT模型来自Transformers [allenai/scibert_scivocab_uncased](https://huggingface.co/allenai/scibert_scivocab_uncased)
 
+注：由于原始数据不包含关键词，因此使用研究领域（fos字段）作为关键词
+
 1. fine-tune: `python -m gnnrec.kgrec.data.preprocess.fine_tune train data/oag/cs/mag_papers.txt model/scibert.pt`
 
 ```
-Epoch 0 | Train Loss 0.4384 | Train Acc 0.8936 | Val Acc 0.9325
-Epoch 1 | Train Loss 0.2035 | Train Acc 0.9524 | Val Acc 0.9425
-Epoch 2 | Train Loss 0.1453 | Train Acc 0.9682 | Val Acc 0.9480
-Epoch 3 | Train Loss 0.1094 | Train Acc 0.9783 | Val Acc 0.9499
-Epoch 4 | Train Loss 0.0872 | Train Acc 0.9840 | Val Acc 0.9508
+Epoch 0 | Train Loss 0.3501 | Train Acc 0.9091 | Val Acc 0.9374
+Epoch 1 | Train Loss 0.1567 | Train Acc 0.9611 | Val Acc 0.9506
+Epoch 2 | Train Loss 0.1024 | Train Acc 0.9767 | Val Acc 0.9547
+Epoch 3 | Train Loss 0.0718 | Train Acc 0.9853 | Val Acc 0.9579
+Epoch 4 | Train Loss 0.0535 | Train Acc 0.9903 | Val Acc 0.9589
 ```
 
 2. 推断： `python -m gnnrec.kgrec.data.preprocess.fine_tune infer data/oag/cs/mag_papers.txt model/scibert.pt data/oag/cs/paper_feat.pkl`
@@ -140,6 +139,6 @@ g = data[0]
 统计数据见 [OAGCSDataset](oagcs.py) 的文档字符串
 
 ## 下载地址
-下载地址：<https://pan.baidu.com/s/1YhLBbVQGsNPMu9FOb19usQ>，提取码：95u1
+下载地址：<https://pan.baidu.com/s/14S7BXeTCw5C8d3P9zSbLYw>，提取码：3wym
 
-大小：2.08 GB，解压后大小：4.38 GB
+大小：1.01 GB，解压后大小：2.05 GB

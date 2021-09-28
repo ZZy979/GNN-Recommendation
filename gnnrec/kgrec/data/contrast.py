@@ -9,6 +9,8 @@ class OAGCSContrastDataset(Dataset):
     def __init__(self, raw_file, split='train'):
         """oag-cs论文标题-关键词对比学习数据集
 
+        由于原始数据不包含关键词，因此使用研究领域（fos字段）作为关键词
+
         :param raw_file: str 原始论文数据文件
         :param split: str "train", "valid", "all"
         """
@@ -21,7 +23,7 @@ class OAGCSContrastDataset(Dataset):
                         or split == 'valid' and p['year'] > self.SPLIT_YEAR \
                         or split == 'all':
                     self.titles.append(p['title'])
-                    self.keywords.append(p['keywords'])
+                    self.keywords.append('; '.join(p['fos']))
 
     def __getitem__(self, item):
         return self.titles[item], self.keywords[item]

@@ -20,44 +20,30 @@ TODO 训练GNN模型，获取顶点的表示向量，GNN模型使用异构图表
 
 graph neural network
 ```
-0.959662914276123 On the choice of graph neural network architectures
-0.9582182168960571 Neural Graph Machines: Learning Neural Networks Using Graphs
-0.9409174919128418 Neural Graph Learning: Training Neural Networks Using Graphs
-0.9358110427856445 Measuring and Improving the Use of Graph Information in Graph Neural Networks
-0.9337150454521179 Supervised Neural Network Models for Processing Graphs
-0.9323418140411377 Computational Capabilities of Graph Neural Networks
-0.9271646738052368 Challenging the generalization capabilities of Graph Neural Networks for network modeling
-0.9247722625732422 Geometrically Principled Connections in Graph Neural Networks
-0.9156403541564941 Hyper-SAGNN: a self-attention based graph neural network for hypergraphs
-0.9113651514053345 What graph neural networks cannot learn: depth vs width
+0.9506421685218811 Measuring and Improving the Use of Graph Information in Graph Neural Networks
+0.9398489594459534 A new approach for finding the weights in neural network using graphs
+0.9157300591468811 Research on the neural networks and the geodetic number of the graph
+0.9094847440719604 Challenging the generalization capabilities of Graph Neural Networks for network modeling
+0.8933190703392029 What graph neural networks cannot learn: depth vs width
+0.8866228461265564 Graph partitioning via recurrent multivalued neural networks
+0.8738224506378174 Self-Organizing Graphs - A Neural Network Perspective of Graph Layout
+0.8724679946899414 Proving properties of neural networks with graph transformations
+0.8723626136779785 A Fair Comparison of Graph Neural Networks for Graph Classification
+0.8553498983383179 Architectural Implications of Graph Neural Networks
 ```
 
 recommendation algorithm based on knowledge graph
 ```
-0.91325843334198 Research on Video Recommendation Algorithm Based on Knowledge Reasoning of Knowledge Graph
-0.8992738723754883 An Improved Recommendation Algorithm in Knowledge Network
-0.8892782330513 A personalized recommendation algorithm based on interest graph
-0.876215398311615 An Improved Recommendation Algorithm Based on Graph Model
-0.8555296659469604 Recommendation Algorithm Based on Graph-Model Considering User Background Information
-0.8538336753845215 The Research of Recommendation Algorithm based on Complete Tripartite Graph Model
-0.8433443307876587 Studying Recommendation Algorithms by Graph Analysis
-0.8413041830062866 WMR--A Graph-Based Algorithm for Friend Recommendation
-0.8361994028091431 Evaluating Recommendation Algorithms by Graph Analysis
-0.8265330791473389 A Tripartite Graph Recommendation Algorithm Based on Item Information and User Preference
-```
-
-Drone swarm
-```
-0.9370608925819397 Design and simulation of the emergent behavior of small drones swarming for distributed target localization
-0.9356381893157959 An innovative tri-rotor drone and associated distributed aerial drone swarm control
-0.9218730926513672 Cooperative comodule discovery for swarm-intelligent drone arrays
-0.9094085693359375 Intelligent Drone Swarm for Search and Rescue Operations at Sea.
-0.9033511877059937 A new approach to realize drone swarm using ad-hoc network
-0.8862361907958984 Control of a Remote Swarm of Drones/Robots Through a Local (Possibly Model) Swarm: Qualitative and Quantitative Issues
-0.8621711730957031 Investigating the survivability of drone swarms with flocking and swarming flight patterns using Virtual Reality
-0.8603955507278442 Using Optimization, Learning, and Drone Reflexes to Maximize Safety of Swarms of Drones
-0.8571282625198364 Autonomous UAV Swarm: Behavior Generation and Simulation
-0.855229377746582 Swarm of Networked Drones for Video Detection of Intrusions
+0.9133602976799011 An Improved Recommendation Algorithm in Knowledge Network
+0.8990814089775085 An Improved Recommendation Algorithm Based on Graph Model
+0.8990590572357178 A personalized recommendation algorithm based on interest graph
+0.8830466270446777 Recommendation Algorithm Based on Graph-Model Considering User Background Information
+0.8829700946807861 The Research of Recommendation Algorithm based on Complete Tripartite Graph Model
+0.8767168521881104 Evaluating Recommendation Algorithms by Graph Analysis
+0.8700104355812073 Studying Recommendation Algorithms by Graph Analysis
+0.8473331332206726 An Algorithm Base on Knowledge Recommendation in Blog System
+0.8361771106719971 Conjunction Graph-Based Frequent-Sets Fast Discovering Algorithm
+0.8245646953582764 A recommendation algorithm for Knowledge Objects based on a trust model
 ```
 
 没有微调的SciBERT召回结果：

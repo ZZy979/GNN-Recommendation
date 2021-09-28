@@ -9,55 +9,40 @@ from dgl.data.utils import save_graphs, load_graphs
 
 
 class OAGCSDataset(DGLDataset):
-    """OAG MAG数据集计算机领域的子集，只有一个异构图
-
-    https://www.aminer.cn/oag-2-1
+    """OAG MAG数据集(https://www.aminer.cn/oag-2-1)计算机领域的子集，只有一个异构图
 
     统计数据
     -----
     顶点
 
-    * 2582915 author
-    * 2117527 paper
-    * 11771 venue
-    * 14187 institution
-    * 34 field
+    * 1598084 author
+    * 1108605 paper
+    * 9958 venue
+    * 12248 institution
+    * 99879 field
 
     边
 
-    * 6874093 author-writes->paper
-    * 2117527 paper-published_at->venue
-    * 4106254 paper-has_field->field
-    * 10600253 paper-cites->paper
-    * 1955483 author-affiliated_with->institution
-
-    author顶点属性
-    -----
-    * id: tensor(N_author) 原始id
+    * 3448316 author-writes->paper
+    * 1108605 paper-published_at->venue
+    * 10352775 paper-has_field->field
+    * 2440117 paper-cites->paper
+    * 1231953 author-affiliated_with->institution
 
     paper顶点属性
     -----
-    * id: tensor(N_paper) 原始id
     * feat: tensor(N_paper, 128) 预训练的标题和摘要词向量
     * year: tensor(N_paper) 发表年份（1937~2021）
     * 不包含标签
-
-    venue顶点属性
-    -----
-    * id: tensor(N_venue) 原始id
-
-    institution顶点属性
-    -----
-    * id: tensor(N_inst) 原始id
     """
 
     def __init__(self):
-        super().__init__('oag-cs', 'https://pan.baidu.com/s/1YhLBbVQGsNPMu9FOb19usQ')
+        super().__init__('oag-cs', 'https://pan.baidu.com/s/14S7BXeTCw5C8d3P9zSbLYw')
 
     def download(self):
         zip_file_path = os.path.join(self.raw_dir, 'oag-cs.zip')
         if not os.path.exists(zip_file_path):
-            raise FileNotFoundError('请手动下载文件 {} 提取码：95u1 并保存为 {}'.format(
+            raise FileNotFoundError('请手动下载文件 {} 提取码：3wym 并保存为 {}'.format(
                 self.url, zip_file_path
             ))
         extract_archive(zip_file_path, self.raw_path)
@@ -69,12 +54,12 @@ class OAGCSDataset(DGLDataset):
         self.g = load_graphs(os.path.join(self.save_path, self.name + '_dgl_graph.bin'))[0][0]
 
     def process(self):
-        self._venue_ids = self._read_venues()  # [原始id]
-        self._inst_ids = self._read_institutions()  # [原始id]
-        self._field_ids = self._read_fields()  # {领域名称: 顶点id}
-        self._author_ids, author_inst = self._read_authors()  # [原始id], R(aid, oid)
+        self._vid_map = self._read_venues()  # {原始id: 顶点id}
+        self._oid_map = self._read_institutions()  # {原始id: 顶点id}
+        self._fid_map = self._read_fields()  # {领域名称: 顶点id}
+        self._aid_map, author_inst = self._read_authors()  # {原始id: 顶点id}, R(aid, oid)
         # [原始id], R(pid, aid), R(pid, vid), R(pid, fid), R(pid, rid), [年份]
-        self._paper_ids, paper_author, paper_venue, paper_field, paper_ref, paper_years = self._read_papers()
+        paper_author, paper_venue, paper_field, paper_ref, paper_years = self._read_papers()
         self.g = self._build_graph(paper_author, paper_venue, paper_field, paper_ref, author_inst, paper_years)
 
     def _iter_json(self, filename):
@@ -85,11 +70,11 @@ class OAGCSDataset(DGLDataset):
     def _read_venues(self):
         print('正在读取期刊数据...')
         # 行号=索引=顶点id
-        return [v['id'] for v in self._iter_json('mag_venues.txt')]
+        return {v['id']: i for i, v in enumerate(self._iter_json('mag_venues.txt'))}
 
     def _read_institutions(self):
         print('正在读取机构数据...')
-        return [o['id'] for o in self._iter_json('mag_institutions.txt')]
+        return {o['id']: i for i, o in enumerate(self._iter_json('mag_institutions.txt'))}
 
     def _read_fields(self):
         print('正在读取领域数据...')
@@ -97,32 +82,27 @@ class OAGCSDataset(DGLDataset):
 
     def _read_authors(self):
         print('正在读取学者数据...')
-        author_ids, author_inst = [], []
-        oid_map = {o: i for i, o in enumerate(self._inst_ids)}
+        author_id_map, author_inst = {}, []
         for i, a in enumerate(self._iter_json('mag_authors.txt')):
-            author_ids.append(a['id'])
+            author_id_map[a['id']] = i
             if a['org'] is not None:
-                author_inst.append([i, oid_map[a['org']]])
-        return author_ids, pd.DataFrame(author_inst, columns=['aid', 'oid'])
+                author_inst.append([i, self._oid_map[a['org']]])
+        return author_id_map, pd.DataFrame(author_inst, columns=['aid', 'oid'])
 
     def _read_papers(self):
         print('正在读取论文数据...')
-        paper_ids, paper_author, paper_venue, paper_field, paper_years = [], [], [], [], []
-        aid_map = {a: i for i, a in enumerate(self._author_ids)}
-        vid_map = {v: i for i, v in enumerate(self._venue_ids)}
+        paper_id_map, paper_author, paper_venue, paper_field, paper_years = {}, [], [], [], []
         for i, p in enumerate(self._iter_json('mag_papers.txt')):
-            paper_ids.append(p['id'])
-            paper_author.extend([i, aid_map[a]] for a in p['authors'])
-            paper_venue.append([i, vid_map[p['venue']]])
-            paper_field.extend([i, self._field_ids[f]] for f in p['fos'])
+            paper_id_map[p['id']] = i
+            paper_author.extend([i, self._aid_map[a]] for a in p['authors'])
+            paper_venue.append([i, self._vid_map[p['venue']]])
+            paper_field.extend([i, self._fid_map[f]] for f in p['fos'] if f in self._fid_map)
             paper_years.append(p['year'])
 
         paper_ref = []
-        pid_map = {p: i for i, p in enumerate(paper_ids)}
         for i, p in enumerate(self._iter_json('mag_papers.txt')):
-            paper_ref.extend([i, pid_map[r]] for r in p['references'] if r in pid_map)
+            paper_ref.extend([i, paper_id_map[r]] for r in p['references'] if r in paper_id_map)
         return (
-            paper_ids,
             pd.DataFrame(paper_author, columns=['pid', 'aid']),
             pd.DataFrame(paper_venue, columns=['pid', 'vid']),
             pd.DataFrame(paper_field, columns=['pid', 'fid']),
@@ -144,12 +124,8 @@ class OAGCSDataset(DGLDataset):
             ('paper', 'cites', 'paper'): (pp_p, pp_r),
             ('author', 'affiliated_with', 'institution'): (ai_a, ai_i)
         })
-        g.nodes['author'].data['id'] = torch.tensor(self._author_ids)
-        g.nodes['paper'].data['id'] = torch.tensor(self._paper_ids)
         g.nodes['paper'].data['feat'] = torch.load(os.path.join(self.raw_path, 'paper_feat.pkl'))
         g.nodes['paper'].data['year'] = torch.tensor(paper_years)
-        g.nodes['venue'].data['id'] = torch.tensor(self._venue_ids)
-        g.nodes['institution'].data['id'] = torch.tensor(self._inst_ids)
         return g
 
     def has_cache(self):
