@@ -20,6 +20,7 @@ def main():
 
     g, _, labels, num_classes, train_idx, val_idx, test_idx, _ = \
         load_ogbn_mag(DATA_DIR, True)
+    g = g.to(device)
     labels = labels.squeeze(dim=1).tolist()
     train_idx = torch.cat([train_idx, val_idx])
     load_pretrained_node_embed(g, args.node_embed_path)
@@ -48,7 +49,7 @@ def calc_attn_pos(g, num_classes, num_samples, args, test_idx, device):
         d.update(num_neighbors[i])
         num_neighbors[i] = d
     sampler = MultiLayerNeighborSampler(num_neighbors)
-    loader = NodeDataLoader(g, {'paper': test_idx}, sampler, batch_size=args.batch_size)
+    loader = NodeDataLoader(g, {'paper': test_idx.to(device)}, sampler, device=device, batch_size=args.batch_size)
 
     model = HGT(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
@@ -58,16 +59,15 @@ def calc_attn_pos(g, num_classes, num_samples, args, test_idx, device):
     model.load_state_dict(torch.load(args.hgt_model_path, map_location=device))
 
     # 只计算测试集顶点的注意力权重
-    pos = torch.zeros(g.num_nodes('paper'), num_samples, dtype=torch.long)
+    pos = torch.zeros(g.num_nodes('paper'), num_samples, dtype=torch.long, device=device)
     with torch.no_grad():
         for input_nodes, output_nodes, blocks in tqdm(loader):
-            blocks = [b.to(device) for b in blocks]
             _ = model(blocks, blocks[0].srcdata['feat'])
             attn = calc_attn(model, blocks).t()  # (N_dst_paper, N_src_paper)
             _, nid = torch.topk(attn, num_samples)  # (N_dst_paper, T_pos)
             # nid是blocks[0]中的paper源顶点id，将其转换为原异构图中的paper顶点id
             pos[output_nodes['paper']] = input_nodes['paper'][nid]
-    return pos
+    return pos.cpu()
 
 
 def calc_attn(model, blocks):

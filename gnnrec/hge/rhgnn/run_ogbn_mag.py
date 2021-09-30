@@ -15,12 +15,12 @@ from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, accurac
 
 def load_pretrained_node_embed(g, path):
     model = Word2Vec.load(path)
-    paper_embed = torch.from_numpy(model.wv[[f'paper_{i}' for i in range(g.num_nodes('paper'))]])
+    paper_embed = torch.from_numpy(model.wv[[f'paper_{i}' for i in range(g.num_nodes('paper'))]]).to(g.device)
     g.nodes['paper'].data['feat'] = torch.cat([g.nodes['paper'].data['feat'], paper_embed], dim=1)
     for ntype in ('author', 'field_of_study', 'institution'):
         g.nodes[ntype].data['feat'] = torch.from_numpy(
             model.wv[[f'{ntype}_{i}' for i in range(g.num_nodes(ntype))]]
-        )
+        ).to(g.device)
 
 
 def train(args):
@@ -28,15 +28,12 @@ def train(args):
     device = get_device(args.device)
     g, _, labels, num_classes, train_idx, val_idx, test_idx, evaluator = \
         load_ogbn_mag(DATA_DIR, True, device)
-    g = g.cpu()
     load_pretrained_node_embed(g, args.node_embed_path)
 
-    sampler = MultiLayerNeighborSampler(
-        list(range(args.neighbor_size, args.neighbor_size + args.num_layers))
-    )
-    train_loader = NodeDataLoader(g, {'paper': train_idx}, sampler, batch_size=args.batch_size)
-    val_loader = NodeDataLoader(g, {'paper': val_idx}, sampler, batch_size=args.batch_size)
-    test_loader = NodeDataLoader(g, {'paper': test_idx}, sampler, batch_size=args.batch_size)
+    sampler = MultiLayerNeighborSampler(list(range(args.neighbor_size, args.neighbor_size + args.num_layers)))
+    train_loader = NodeDataLoader(g, {'paper': train_idx}, sampler, device=device, batch_size=args.batch_size)
+    val_loader = NodeDataLoader(g, {'paper': val_idx}, sampler, device=device, batch_size=args.batch_size)
+    test_loader = NodeDataLoader(g, {'paper': test_idx}, sampler, device=device, batch_size=args.batch_size)
 
     model = RHGNN(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
@@ -52,7 +49,6 @@ def train(args):
         model.train()
         logits, train_labels, losses = [], [], []
         for input_nodes, output_nodes, blocks in tqdm(train_loader):
-            blocks = [b.to(device) for b in blocks]
             batch_labels = labels[output_nodes['paper']]
             batch_logits = model(blocks, blocks[0].srcdata['feat'])
             loss = F.cross_entropy(batch_logits, batch_labels.squeeze(dim=1))
@@ -85,7 +81,6 @@ def evaluate(loader, device, model, labels, evaluator):
     model.eval()
     logits, eval_labels = [], []
     for input_nodes, output_nodes, blocks in loader:
-        blocks = [b.to(device) for b in blocks]
         batch_labels = labels[output_nodes['paper']]
         batch_logits = model(blocks, blocks[0].srcdata['feat'])
 
@@ -105,7 +100,7 @@ def main():
     parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
     parser.add_argument('--no-residual', action='store_false', help='不使用残差连接', dest='residual')
     parser.add_argument('--epochs', type=int, default=200, help='训练epoch数')
-    parser.add_argument('--batch-size', type=int, default=4096, help='批大小')
+    parser.add_argument('--batch-size', type=int, default=1024, help='批大小')
     parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
     parser.add_argument('--lr', type=float, default=0.001, help='学习率')
     parser.add_argument('--weight-decay', type=float, default=0.0, help='权重衰减')

@@ -1,10 +1,8 @@
 import torch
 import torch.nn as nn
-from dgl.dataloading import MultiLayerNeighborSampler
+from dgl.dataloading import MultiLayerNeighborSampler, NodeDataLoader
 from dgl.nn import GraphConv
-from torch.utils.data import DataLoader
 
-from ..heco.collator import PositiveSampleCollator
 from ..heco.model import Contrast
 from ..rhgnn.model import RHGNN
 
@@ -31,7 +29,6 @@ class RHCO(nn.Module):
         """
         super().__init__()
         self.hidden_dim = hidden_dim
-        self.predict_ntype = predict_ntype
         self.sc_encoder = RHGNN(
             in_dims, hidden_dim, hidden_dim, rel_hidden_dim, rel_hidden_dim, num_heads,
             ntypes, etypes, predict_ntype, num_layers, dropout
@@ -63,11 +60,11 @@ class RHCO(nn.Module):
         return loss, self.predict(z_sc[:pos.shape[0]])
 
     @torch.no_grad()
-    def get_embeds(self, g, pos, neighbor_size, batch_size, device):
+    def get_embeds(self, g, ntype, neighbor_size, batch_size, device):
         """计算目标顶点的最终嵌入(z_sc)
 
         :param g: DGLGraph 异构图
-        :param pos: tensor(N_tgt, T_pos) 每个目标顶点的正样本id
+        :param ntype: str 目标顶点类型
         :param neighbor_size: int 邻居采样数
         :param batch_size: int 批大小
         :param device torch.device GPU设备
@@ -75,11 +72,10 @@ class RHCO(nn.Module):
         """
         with g.local_scope():
             sampler = MultiLayerNeighborSampler([neighbor_size] * len(self.sc_encoder.layers))
-            collator = PositiveSampleCollator(g, sampler, pos, self.predict_ntype)
-            loader = DataLoader(g.nodes(self.predict_ntype), batch_size=batch_size)
-            embeds = torch.zeros(g.num_nodes(self.predict_ntype), self.hidden_dim, device=device)
-            for batch in loader:
-                blocks = [b.to(device) for b in collator.collate(batch)]
-                z_sc = self.sc_encoder(blocks, blocks[0].srcdata['feat'])
-                embeds[batch] = z_sc[:batch.shape[0]]
+            loader = NodeDataLoader(g, {ntype: g.nodes(ntype)}, sampler, device=device, batch_size=batch_size)
+            embeds = torch.zeros(g.num_nodes(ntype), self.hidden_dim, device=device)
+            for input_nodes, output_nodes, blocks in loader:
+                blocks = [b.to(device) for b in blocks]
+                z_sc = self.sc_encoder(blocks, blocks[0].srcdata['feat'], True)[ntype]
+                embeds[output_nodes[ntype]] = z_sc
             return self.predict(embeds)

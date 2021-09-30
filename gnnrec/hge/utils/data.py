@@ -66,4 +66,4 @@ def load_pretrained_node_embed(g, path):
     for ntype in ('author', 'field_of_study', 'institution'):
         g.nodes[ntype].data['feat'] = torch.from_numpy(
             model.wv[[f'{ntype}_{i}' for i in range(g.num_nodes(ntype))]]
-        )
+        ).to(g.device)

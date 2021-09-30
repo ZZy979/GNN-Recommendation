@@ -4,12 +4,12 @@ import dgl
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from dgl.dataloading import MultiLayerNeighborSampler, MultiLayerFullNeighborSampler
+from dgl.dataloading import NodeDataLoader
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from gnnrec.config import DATA_DIR
-from gnnrec.hge.heco.collator import PositiveSampleCollator
+from gnnrec.hge.heco.sampler import PositiveSampler
 from gnnrec.hge.rhco.model import RHCO
 from gnnrec.hge.rhgnn.run_ogbn_mag import load_pretrained_node_embed
 from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, accuracy
@@ -21,18 +21,21 @@ def train(args):
 
     g, _, labels, num_classes, train_idx, val_idx, test_idx, evaluator = \
         load_ogbn_mag(DATA_DIR, True, device, False)
-    g = g.cpu()
     load_pretrained_node_embed(g, args.node_embed_path)
 
-    pos_g = dgl.load_graphs(args.pos_graph_path)[0][0]
+    pos_g = dgl.load_graphs(args.pos_graph_path)[0][0].to(device)
     pos_g.ndata['feat'] = g.nodes['paper'].data['feat']
     pos = pos_g.in_edges(pos_g.nodes())[0].view(pos_g.num_nodes(), -1)  # (N_p, T_pos) 每个paper顶点的正样本id
     # 不能用pos_g.edges()，必须按终点id排序
 
-    sampler = MultiLayerNeighborSampler([args.neighbor_size] * args.num_layers)
-    collator = PositiveSampleCollator(g, sampler, pos, 'paper')
-    pos_collator = PositiveSampleCollator(pos_g, MultiLayerFullNeighborSampler(1), pos)
-    train_loader = DataLoader(train_idx.cpu(), batch_size=args.batch_size)
+    id_loader = DataLoader(train_idx, batch_size=args.batch_size)
+    loader = NodeDataLoader(
+        g, {'paper': train_idx}, PositiveSampler([args.neighbor_size] * args.num_layers, pos),
+        device=device, batch_size=args.batch_size
+    )
+    pos_loader = NodeDataLoader(
+        pos_g, train_idx, PositiveSampler([None], pos), device=device, batch_size=args.batch_size
+    )
 
     model = RHCO(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
@@ -43,15 +46,14 @@ def train(args):
         model.load_state_dict(torch.load(args.load_path, map_location=device))
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=len(train_loader) * args.epochs, eta_min=args.lr / 100
+        optimizer, T_max=len(loader) * args.epochs, eta_min=args.lr / 100
     )
     alpha = args.contrast_weight
     for epoch in range(args.epochs):
         model.train()
         losses = []
-        for batch in tqdm(train_loader):
-            blocks = [b.to(device) for b in collator.collate(batch)]
-            pos_block = pos_collator.collate(batch)[0].to(device)
+        for (batch, (_, _, blocks), (_, _, pos_blocks)) in tqdm(zip(id_loader, loader, pos_loader)):
+            pos_block = pos_blocks[0]
             batch_pos = torch.zeros(pos_block.num_dst_nodes(), batch.shape[0], dtype=torch.int, device=device)
             batch_pos[pos_block.in_edges(torch.arange(batch.shape[0], device=device))] = 1
             contrast_loss, logits = model(
@@ -71,7 +73,7 @@ def train(args):
         torch.save(model.state_dict(), args.save_path)
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
             print('Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(*evaluate(
-                model, g, pos, args.neighbor_size, args.batch_size, device,
+                model, g, args.neighbor_size, args.batch_size, device,
                 labels, train_idx, val_idx, test_idx, evaluator
             )))
     torch.save(model.state_dict(), args.save_path)
@@ -79,10 +81,10 @@ def train(args):
 
 
 def evaluate(
-        model, g, pos, neighbor_size, batch_size, device, labels,
+        model, g, neighbor_size, batch_size, device, labels,
         train_idx, val_idx, test_idx, evaluator):
     model.eval()
-    embeds = model.get_embeds(g, pos, neighbor_size, batch_size, device)
+    embeds = model.get_embeds(g, 'paper', neighbor_size, batch_size, device)
     train_acc = accuracy(embeds[train_idx], labels[train_idx], evaluator)
     val_acc = accuracy(embeds[val_idx], labels[val_idx], evaluator)
     test_acc = accuracy(embeds[test_idx], labels[test_idx], evaluator)

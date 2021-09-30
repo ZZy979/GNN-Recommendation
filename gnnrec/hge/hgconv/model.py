@@ -265,21 +265,21 @@ class HGConv(nn.Module):
         :param batch_size: int 批大小
         :return: tensor(N_i, d_out) 待预测顶点的最终嵌入
         """
-        g.ndata['emb'] = {
-            ntype: self.fc_in[ntype](feat.to(device)).cpu()
-            for ntype, feat in feats.items()
-        }
+        g.ndata['emb'] = {ntype: self.fc_in[ntype](feat) for ntype, feat in feats.items()}
         for layer in self.layers:
-            embeds = {ntype: torch.zeros(g.num_nodes(ntype), self.d) for ntype in g.ntypes}
+            embeds = {
+                ntype: torch.zeros(g.num_nodes(ntype), self.d, device=device)
+                for ntype in g.ntypes
+            }
             sampler = MultiLayerFullNeighborSampler(1)
             loader = NodeDataLoader(
-                g, {ntype: torch.arange(g.num_nodes(ntype)) for ntype in g.ntypes}, sampler,
+                g, {ntype: g.nodes(ntype) for ntype in g.ntypes}, sampler, device=device,
                 batch_size=batch_size, shuffle=True
             )
             for input_nodes, output_nodes, blocks in tqdm(loader):
-                block = blocks[0].to(device)
+                block = blocks[0]
                 h = layer(block, block.srcdata['emb'])
                 for ntype in h:
-                    embeds[ntype][output_nodes[ntype]] = h[ntype].cpu()
+                    embeds[ntype][output_nodes[ntype]] = h[ntype]
             g.ndata['emb'] = embeds
-        return self.classifier(g.nodes[self.predict_ntype].data['emb'].to(device))
+        return self.classifier(g.nodes[self.predict_ntype].data['emb'])

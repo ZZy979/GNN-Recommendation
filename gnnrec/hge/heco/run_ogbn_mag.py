@@ -5,13 +5,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from dgl.dataloading import MultiLayerNeighborSampler, MultiLayerFullNeighborSampler
+from dgl.dataloading import NodeDataLoader
 from torch.utils.data import DataLoader
 from tqdm import tqdm, trange
 
 from gnnrec.config import DATA_DIR
-from gnnrec.hge.heco.collator import PositiveSampleCollator
 from gnnrec.hge.heco.model import HeCo
+from gnnrec.hge.heco.sampler import PositiveSampler
 from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, \
     load_pretrained_node_embed, accuracy
 
@@ -22,7 +22,6 @@ def train(args):
 
     g, _, labels, num_classes, train_idx, val_idx, test_idx, evaluator = \
         load_ogbn_mag(DATA_DIR, True, device, False)
-    g = g.cpu()
     load_pretrained_node_embed(g, args.node_embed_path)
     relations = [
         ('author', 'writes', 'paper'),
@@ -30,29 +29,33 @@ def train(args):
         ('field_of_study', 'has_topic_rev', 'paper')
     ]
 
-    pos_g = dgl.load_graphs(args.pos_graph_path)[0][0]
+    pos_g = dgl.load_graphs(args.pos_graph_path)[0][0].to(device)
     pos_g.ndata['feat'] = g.nodes['paper'].data['feat']
     pos = pos_g.in_edges(pos_g.nodes())[0].view(pos_g.num_nodes(), -1)  # (N_p, T_pos) 每个paper顶点的正样本id
 
-    collator = PositiveSampleCollator(g, MultiLayerNeighborSampler([None]), pos, 'paper')
-    pos_collator = PositiveSampleCollator(pos_g, MultiLayerFullNeighborSampler(1), pos)
-    train_loader = DataLoader(train_idx.cpu(), batch_size=args.batch_size)
+    id_loader = DataLoader(train_idx, batch_size=args.batch_size)
+    loader = NodeDataLoader(
+        g, {'paper': train_idx}, PositiveSampler([None], pos),
+        device=device, batch_size=args.batch_size
+    )
+    pos_loader = NodeDataLoader(
+        pos_g, train_idx, PositiveSampler([None], pos), device=device, batch_size=args.batch_size
+    )
 
     model = HeCo(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
-        args.num_hidden, args.feat_drop, args.attn_drop,
-        relations, args.tau, args.lambda_
+        args.num_hidden, args.feat_drop, args.attn_drop, relations, args.tau, args.lambda_
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     for epoch in range(args.epochs):
         model.train()
         losses = []
-        for batch in tqdm(train_loader):
-            block = collator.collate(batch)[0].to(device)
-            pos_block = pos_collator.collate(batch)[0].to(device)
-            pos = torch.zeros(pos_block.num_dst_nodes(), batch.shape[0], dtype=torch.int, device=device)
-            pos[pos_block.in_edges(torch.arange(batch.shape[0], device=device))] = 1
-            loss, _ = model(block, block.srcdata['feat'], pos_block, pos_block.srcdata['feat'], pos.t())
+        for (batch, (_, _, blocks), (_, _, pos_blocks)) in tqdm(zip(id_loader, loader, pos_loader)):
+            block = blocks[0]
+            pos_block = pos_blocks[0]
+            batch_pos = torch.zeros(pos_block.num_dst_nodes(), batch.shape[0], dtype=torch.int, device=device)
+            batch_pos[pos_block.in_edges(torch.arange(batch.shape[0], device=device))] = 1
+            loss, _ = model(block, block.srcdata['feat'], pos_block, pos_block.srcdata['feat'], batch_pos.t())
             losses.append(loss.item())
 
             optimizer.zero_grad()
@@ -60,7 +63,7 @@ def train(args):
             optimizer.step()
             torch.cuda.empty_cache()
         print('Epoch {:d} | Train Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
-        if epoch % args.eval_every == 0:
+        if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
             train_acc, val_acc, test_acc = evaluate(
                 model, pos_g, pos_g.ndata['feat'], device, labels, num_classes,
                 train_idx, val_idx, test_idx, evaluator
@@ -103,7 +106,7 @@ def main():
     parser.add_argument('--tau', type=float, default=0.8, help='温度参数')
     parser.add_argument('--lambda', type=float, default=0.5, dest='lambda_', help='对比损失的平衡系数')
     parser.add_argument('--epochs', type=int, default=200, help='训练epoch数')
-    parser.add_argument('--batch-size', type=int, default=4096, help='批大小')
+    parser.add_argument('--batch-size', type=int, default=1024, help='批大小')
     parser.add_argument('--lr', type=float, default=0.0008, help='学习率')
     parser.add_argument('--eval-every', type=int, default=10, help='每多少个epoch计算一次准确率')
     parser.add_argument('node_embed_path', help='预训练顶点嵌入路径')

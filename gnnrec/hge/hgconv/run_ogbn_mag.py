@@ -19,13 +19,12 @@ def train(args):
 
     g, _, labels, num_classes, train_idx, val_idx, test_idx, evaluator = \
         load_ogbn_mag(DATA_DIR, True, device)
-    g = g.cpu()
     add_node_feat(g, args.node_feat, args.node_embed_path)
 
     sampler = MultiLayerNeighborSampler([args.neighbor_size] * args.num_layers)
-    train_loader = NodeDataLoader(g, {'paper': train_idx}, sampler, batch_size=args.batch_size)
-    val_loader = NodeDataLoader(g, {'paper': val_idx}, sampler, batch_size=args.batch_size)
-    test_loader = NodeDataLoader(g, {'paper': test_idx}, sampler, batch_size=args.batch_size)
+    train_loader = NodeDataLoader(g, {'paper': train_idx}, sampler, device=device, batch_size=args.batch_size)
+    val_loader = NodeDataLoader(g, {'paper': val_idx}, sampler, device=device, batch_size=args.batch_size)
+    test_loader = NodeDataLoader(g, {'paper': test_idx}, sampler, device=device, batch_size=args.batch_size)
 
     model = HGConv(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
@@ -38,7 +37,6 @@ def train(args):
         model.train()
         logits, train_labels, losses = [], [], []
         for input_nodes, output_nodes, blocks in tqdm(train_loader):
-            blocks = [b.to(device) for b in blocks]
             batch_labels = labels[output_nodes['paper']]
             batch_logits = model(blocks, blocks[0].srcdata['feat'])
             loss = F.cross_entropy(batch_logits, batch_labels.squeeze(dim=1))
@@ -75,7 +73,6 @@ def evaluate(loader, device, model, labels, evaluator):
     model.eval()
     logits, eval_labels = [], []
     for input_nodes, output_nodes, blocks in loader:
-        blocks = [b.to(device) for b in blocks]
         batch_labels = labels[output_nodes['paper']]
         batch_logits = model(blocks, blocks[0].srcdata['feat'])
 

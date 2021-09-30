@@ -22,7 +22,9 @@
 
 ## Baselines
 ### R-GCN (full batch)
-`python -m gnnrec.hge.rgcn.run_ogbn_mag_full`
+`python -m gnnrec.hge.rgcn.run_ogbn_mag --num-hidden=48 --dropout=0.8`
+
+（使用minibatch训练准确率就是只有20%多，不知道为什么）
 
 ### HAN
 `python -m gnnrec.hge.han.run_ogbn_mag`
@@ -44,22 +46,15 @@
 `python -m gnnrec.hge.hgt.run_ogbn_mag --node-feat=pretrained --node-embed-path=model/word2vec/ogbn_mag.model --epochs=40`
 
 ### HGConv
-#### 邻居平均(average)
-`python -m gnnrec.hge.hgconv.run_ogbn_mag`
-
-#### 预训练顶点嵌入(pretrained)
 `python -m gnnrec.hge.hgconv.run_ogbn_mag --node-feat=pretrained --node-embed-path=model/word2vec/ogbn_mag.model`
 
 ### R-HGNN
 `python -m gnnrec.hge.rhgnn.run_ogbn_mag model/word2vec/ogbn_mag.model`
 
 ### C&S
-#### Linear+Smooth+正样本图
-`python -m gnnrec.hge.cs.run_ogbn_mag data/graph/pos_graph_5.bin`
+Linear+Smooth+正样本图
 
-#### R-HGNN+Smooth+正样本图
-1. 预训练R-HGNN `python -m gnnrec.hge.rhgnn.run_ogbn_mag --save-path=model/rhgnn.pt model/word2vec/ogbn_mag.model`
-2. Smooth `python -m gnnrec.hge.rhgnn.smooth model/word2vec/ogbn_mag.model model/rhgnn.pt data/graph/pos_graph_5.bin`
+`python -m gnnrec.hge.cs.run_ogbn_mag data/graph/pos_graph_5.bin`
 
 ### HeCo
 `python -m gnnrec.hge.heco.run_ogbn_mag model/word2vec/ogbn_mag.model data/graph/pos_graph_5.bin`
@@ -82,27 +77,16 @@
 ## 实验结果
 | 模型 | Train Acc | Valid Acc | Test Acc |
 | --- | --- | --- | --- |
-| R-GCN (full batch) | 0.3500 | 0.4043 | 0.3858 |
+| R-GCN (full batch) | 0.8526 | 0.3906 | 0.3722 |
 | HAN | 0.2154 | 0.2215 | 0.2364 |
 | HetGNN | 0.4609 | 0.4093 | 0.4026 |
 | HGT+average | 0.5956 | 0.4386 | 0.4160 |
-| HGT+pretrained | 0.6507 | 0.4807 | 0.4491 |
-| HGConv+average | 0.5032 | 0.4626 | 0.4507 |
-| HGConv+pretrained | 0.5669 | 0.5039 | 0.4882 |
-| R-HGNN （1层） | 0.5277 | 0.4921 | 0.4793 |
-| R-HGNN | 0.5777 | 0.5321 | 0.5142 |
+| HGT+pretrained | 0.6510 | 0.4804 | 0.4504 |
+| HGConv | 0.5653 | 0.5007 | 0.4828 |
+| R-HGNN | 0.5907 | 0.5318 | 0.5196 |
 | C&S+正样本图 | 0.2602 | 0.2392 | 0.2453 -> 0.2334 |
 | Smooth+正样本图 | 0.2602 | 0.2392 | 0.2453 -> 0.3090 |
-| Smooth+引用图 | 0.2602 | 0.2392 | 0.2453 -> 0.2565 |
-| HetGNN内容聚集+HGConv | 0.5919 | 0.4347 | 0.4006 |
-| HGT注意力+HGConv | 0.5502 | 0.4469 | 0.4218 |
-| HeCo+正样本图（无监督） | 0.2649 | 0.2448 | 0.2467 |
-| HeCo+正样本图+半监督 | 0.2804 | 0.2618 | 0.2632 |
-| HeCo+正样本图+半监督（使用z_sc） | 0.4228 | 0.3783 | 0.3629 |
-| HeCo+Smooth+正样本图 | 0.4228 | 0.3783 | 0.3629 -> 0.3775 |
-| R-HGNN+Smooth+正样本图 | 0.5777 | 0.5306 | 0.5124 -> 0.5200 |
-| RHCO（1层）+旧正样本图 | 0.4320 | 0.3970 | 0.3798 -> 0.3865 |
-| RHCO+旧正样本图 | 0.4885 | 0.4492 | 0.4286 -> 0.4301 |
+| HeCo+正样本图（无监督） | 0.2696 | 0.2479 | 0.2501 |
 | RHCO+正样本图 (α=0.0) | 0.5751 | 0.5100 | 0.4860 -> 0.5352 |
 | RHCO+正样本图 (α=0.2) | 0.6165 | 0.5158 | 0.4871 -> 0.5348 |
 | RHCO+正样本图 (α=0.5) | 0.6086 | 0.5159 | 0.4878 -> 0.5346 |

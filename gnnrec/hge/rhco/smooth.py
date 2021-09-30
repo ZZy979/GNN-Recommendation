@@ -11,7 +11,7 @@ from gnnrec.hge.rhgnn.run_ogbn_mag import load_pretrained_node_embed
 from gnnrec.hge.utils import get_device, load_ogbn_mag, accuracy
 
 
-def smooth(base_pred, g, labels, evaluator, mask, args):
+def smooth(base_pred, g, labels, mask, args):
     cs = LabelPropagation(args.num_smooth_layers, args.smooth_alpha, args.smooth_norm)
     labels = F.one_hot(labels.squeeze(dim=1)).float()
     base_pred[mask] = labels[mask]
@@ -28,7 +28,6 @@ def main():
     g = g.cpu()
     load_pretrained_node_embed(g, args.node_embed_path)
     pos_g = dgl.load_graphs(args.pos_graph_path)[0][0].to(device)
-    pos = pos_g.in_edges(pos_g.nodes())[0].view(pos_g.num_nodes(), -1)  # (N_p, T_pos) 每个paper顶点的正样本id
 
     model = RHCO(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
@@ -38,9 +37,9 @@ def main():
     model.load_state_dict(torch.load(args.model_path, map_location=device))
     model.eval()
 
-    base_pred = model.get_embeds(g, pos, args.neighbor_size, args.batch_size, device)
+    base_pred = model.get_embeds(g, 'paper', args.neighbor_size, args.batch_size, device)
     mask = torch.cat([train_idx, val_idx])
-    logits = smooth(base_pred, pos_g, labels, evaluator, mask, args)
+    logits = smooth(base_pred, pos_g, labels, mask, args)
     test_acc = accuracy(logits[test_idx], labels[test_idx], evaluator)
     print('After smoothing: Test Acc {:.4f}'.format(test_acc))
 
