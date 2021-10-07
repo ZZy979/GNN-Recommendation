@@ -9,33 +9,27 @@ from dgl.dataloading import NodeDataLoader
 from torch.utils.data import DataLoader
 from tqdm import tqdm, trange
 
-from gnnrec.config import DATA_DIR
 from gnnrec.hge.heco.model import HeCo
 from gnnrec.hge.heco.sampler import PositiveSampler
-from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, \
-    load_pretrained_node_embed, accuracy
+from gnnrec.hge.utils import set_random_seed, get_device, load_data, load_pretrained_node_embed, \
+    accuracy
 
 
 def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
-
-    g, _, labels, num_classes, train_idx, val_idx, test_idx, evaluator = \
-        load_ogbn_mag(DATA_DIR, True, device, False)
+    g, _, labels, num_classes, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
+        load_data(args.dataset, device)
     load_pretrained_node_embed(g, args.node_embed_path)
-    relations = [
-        ('author', 'writes', 'paper'),
-        ('paper', 'cites', 'paper'),
-        ('field_of_study', 'has_topic_rev', 'paper')
-    ]
+    relations = [r for r in g.canonical_etypes if r[2] == predict_ntype]
 
     pos_g = dgl.load_graphs(args.pos_graph_path)[0][0].to(device)
-    pos_g.ndata['feat'] = g.nodes['paper'].data['feat']
-    pos = pos_g.in_edges(pos_g.nodes())[0].view(pos_g.num_nodes(), -1)  # (N_p, T_pos) 每个paper顶点的正样本id
+    pos_g.ndata['feat'] = g.nodes[predict_ntype].data['feat']
+    pos = pos_g.in_edges(pos_g.nodes())[0].view(pos_g.num_nodes(), -1)  # (N, T_pos) 每个目标顶点的正样本id
 
     id_loader = DataLoader(train_idx, batch_size=args.batch_size)
     loader = NodeDataLoader(
-        g, {'paper': train_idx}, PositiveSampler([None], pos),
+        g, {predict_ntype: train_idx}, PositiveSampler([None], pos),
         device=device, batch_size=args.batch_size
     )
     pos_loader = NodeDataLoader(
@@ -73,7 +67,7 @@ def train(args):
 
 def evaluate(model, pos_g, feat, device, labels, num_classes, train_idx, val_idx, test_idx, evaluator):
     model.eval()
-    embeds = model.get_embeds(pos_g.to(device), feat.to(device))
+    embeds = model.get_embeds(pos_g, feat)
 
     clf = nn.Linear(embeds.shape[1], num_classes).to(device)
     optimizer = optim.Adam(clf.parameters(), lr=0.05)
@@ -81,7 +75,7 @@ def evaluate(model, pos_g, feat, device, labels, num_classes, train_idx, val_idx
     for epoch in trange(200):
         clf.train()
         logits = clf(embeds)
-        loss = F.cross_entropy(logits[train_idx], labels[train_idx].squeeze(dim=1))
+        loss = F.cross_entropy(logits[train_idx], labels[train_idx])
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -97,9 +91,10 @@ def evaluate(model, pos_g, feat, device, labels, num_classes, train_idx, val_idx
 
 
 def main():
-    parser = argparse.ArgumentParser(description='HeCo模型 ogbn-mag数据集')
+    parser = argparse.ArgumentParser(description='训练HeCo模型')
     parser.add_argument('--seed', type=int, default=0, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
+    parser.add_argument('--dataset', choices=['ogbn-mag'], default='ogbn-mag', help='数据集')
     parser.add_argument('--num-hidden', type=int, default=64, help='隐藏层维数')
     parser.add_argument('--feat-drop', type=float, default=0.3, help='特征dropout')
     parser.add_argument('--attn-drop', type=float, default=0.5, help='注意力dropout')
@@ -110,7 +105,7 @@ def main():
     parser.add_argument('--lr', type=float, default=0.0008, help='学习率')
     parser.add_argument('--eval-every', type=int, default=10, help='每多少个epoch计算一次准确率')
     parser.add_argument('node_embed_path', help='预训练顶点嵌入路径')
-    parser.add_argument('pos_graph_path', help='正样本图保存路径')
+    parser.add_argument('pos_graph_path', help='正样本图路径')
     args = parser.parse_args()
     print(args)
     train(args)

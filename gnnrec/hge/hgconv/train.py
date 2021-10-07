@@ -7,84 +7,59 @@ import torch.optim as optim
 from dgl.dataloading import MultiLayerNeighborSampler, NodeDataLoader
 from tqdm import tqdm
 
-from gnnrec.config import DATA_DIR
 from gnnrec.hge.hgconv.model import HGConv
-from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, accuracy, \
-    average_node_feat, load_pretrained_node_embed
+from gnnrec.hge.utils import set_random_seed, get_device, load_data, load_pretrained_node_embed, \
+    average_node_feat, accuracy, evaluate
 
 
 def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
-
-    g, _, labels, num_classes, train_idx, val_idx, test_idx, evaluator = \
-        load_ogbn_mag(DATA_DIR, True, device)
-    add_node_feat(g, args.node_feat, args.node_embed_path)
+    g, _, labels, num_classes, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
+        load_data(args.dataset, device)
+    load_pretrained_node_embed(g, args.node_embed_path) if args.node_feat == 'pretrained' else \
+        average_node_feat(g)
 
     sampler = MultiLayerNeighborSampler([args.neighbor_size] * args.num_layers)
-    train_loader = NodeDataLoader(g, {'paper': train_idx}, sampler, device=device, batch_size=args.batch_size)
-    val_loader = NodeDataLoader(g, {'paper': val_idx}, sampler, device=device, batch_size=args.batch_size)
-    test_loader = NodeDataLoader(g, {'paper': test_idx}, sampler, device=device, batch_size=args.batch_size)
+    train_loader = NodeDataLoader(g, {predict_ntype: train_idx}, sampler, device=device, batch_size=args.batch_size)
+    loader = NodeDataLoader(g, {predict_ntype: g.nodes(predict_ntype)}, sampler, device=device, batch_size=args.batch_size)
 
     model = HGConv(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
-        args.num_hidden, num_classes, args.num_heads, g.ntypes, g.canonical_etypes, 'paper',
-        args.num_layers, args.dropout, args.residual
+        args.num_hidden, num_classes, args.num_heads, g.ntypes, g.canonical_etypes,
+        predict_ntype, args.num_layers, args.dropout, args.residual
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     warnings.filterwarnings('ignore', 'Setting attributes on ParameterDict is not supported')
     for epoch in range(args.epochs):
         model.train()
-        logits, train_labels, losses = [], [], []
+        losses = []
         for input_nodes, output_nodes, blocks in tqdm(train_loader):
-            batch_labels = labels[output_nodes['paper']]
             batch_logits = model(blocks, blocks[0].srcdata['feat'])
-            loss = F.cross_entropy(batch_logits, batch_labels.squeeze(dim=1))
-
-            logits.append(batch_logits.detach().cpu())
-            train_labels.append(batch_labels.detach().cpu())
+            batch_labels = labels[output_nodes[predict_ntype]]
+            loss = F.cross_entropy(batch_logits, batch_labels)
             losses.append(loss.item())
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             torch.cuda.empty_cache()
-
-        train_acc = accuracy(torch.cat(logits, dim=0), torch.cat(train_labels, dim=0), evaluator)
-        val_acc = evaluate(val_loader, device, model, labels, evaluator)
-        test_acc = evaluate(test_loader, device, model, labels, evaluator)
-        print('Epoch {:d} | Train Loss {:.4f} | Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(
-            epoch, torch.tensor(losses).mean().item(), train_acc, val_acc, test_acc
-        ))
-    embed = model.inference(g, g.ndata['feat'], device, args.batch_size)
-    test_acc = accuracy(embed[test_idx], labels[test_idx], evaluator)
+        print('Epoch {:d} | Train Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
+        if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
+            print('Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(*evaluate(
+                model, loader, g, labels, num_classes, predict_ntype,
+                train_idx, val_idx, test_idx, evaluator
+            )))
+    embeds = model.inference(g, g.ndata['feat'], device, args.batch_size)
+    test_acc = accuracy(embeds[test_idx], labels[test_idx], evaluator)
     print('Test Acc {:.4f}'.format(test_acc))
 
 
-def add_node_feat(g, method, node_embed_path):
-    if method == 'average':
-        average_node_feat(g)
-    elif method == 'pretrained':
-        load_pretrained_node_embed(g, node_embed_path)
-
-
-@torch.no_grad()
-def evaluate(loader, device, model, labels, evaluator):
-    model.eval()
-    logits, eval_labels = [], []
-    for input_nodes, output_nodes, blocks in loader:
-        batch_labels = labels[output_nodes['paper']]
-        batch_logits = model(blocks, blocks[0].srcdata['feat'])
-
-        logits.append(batch_logits.detach().cpu())
-        eval_labels.append(batch_labels.detach().cpu())
-    return accuracy(torch.cat(logits, dim=0), torch.cat(eval_labels, dim=0), evaluator)
-
-
 def main():
-    parser = argparse.ArgumentParser(description='ogbn-mag数据集 HGConv模型')
+    parser = argparse.ArgumentParser(description='训练HGConv模型')
     parser.add_argument('--seed', type=int, default=8, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
+    parser.add_argument('--dataset', choices=['ogbn-mag'], default='ogbn-mag', help='数据集')
     parser.add_argument(
         '--node-feat', choices=['average', 'pretrained'], default='average',
         help='如何获取无特征顶点的输入特征'
@@ -100,6 +75,7 @@ def main():
     parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
     parser.add_argument('--lr', type=float, default=0.001, help='学习率')
     parser.add_argument('--weight-decay', type=float, default=0.0, help='权重衰减')
+    parser.add_argument('--eval-every', type=int, default=10, help='每多少个epoch计算一次准确率')
     args = parser.parse_args()
     print(args)
     train(args)

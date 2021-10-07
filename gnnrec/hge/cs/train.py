@@ -6,9 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from gnnrec.config import DATA_DIR
 from gnnrec.hge.cs.model import CorrectAndSmooth
-from gnnrec.hge.utils import set_random_seed, get_device, load_ogbn_mag, accuracy
+from gnnrec.hge.utils import set_random_seed, get_device, load_data, accuracy
 
 
 def train_base_model(base_model, feats, labels, evaluator, train_idx, val_idx, test_idx, args):
@@ -17,7 +16,7 @@ def train_base_model(base_model, feats, labels, evaluator, train_idx, val_idx, t
     for epoch in range(args.epochs):
         base_model.train()
         logits = base_model(feats)
-        loss = F.cross_entropy(logits[train_idx], labels[train_idx].squeeze(dim=1))
+        loss = F.cross_entropy(logits[train_idx], labels[train_idx])
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -48,7 +47,7 @@ def correct_and_smooth(base_model, g, feats, labels, evaluator, train_idx, val_i
         args.num_smooth_layers, args.smooth_alpha, args.smooth_norm, args.scale
     )
     mask = torch.cat([train_idx, val_idx])
-    logits = cs(g, F.one_hot(labels.squeeze(dim=1)).float(), base_pred, mask)
+    logits = cs(g, F.one_hot(labels).float(), base_pred, mask)
     test_acc = accuracy(logits[test_idx], labels[test_idx], evaluator)
     print('Test Acc {:.4f}'.format(test_acc))
 
@@ -56,23 +55,22 @@ def correct_and_smooth(base_model, g, feats, labels, evaluator, train_idx, val_i
 def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
-    g, feat, labels, num_classes, train_idx, val_idx, test_idx, evaluator = \
-        load_ogbn_mag(DATA_DIR, device=device)
+    g, feat, labels, num_classes, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
+        load_data(args.dataset, device)
     feat = (feat - feat.mean(dim=0)) / feat.std(dim=0)
-    # 用于C&S的paper顶点同构图
-    pg = dgl.load_graphs(args.paper_graph)[0][0].to(device)
-    # pg = g['paper', 'cites', 'paper']
+    # 标签传播图
+    pg = dgl.load_graphs(args.prop_graph)[0][0].to(device)
 
-    base_model = nn.Linear(feat.shape[1], num_classes)
-    base_model = base_model.to(device)
+    base_model = nn.Linear(feat.shape[1], num_classes).to(device)
     train_base_model(base_model, feat, labels, evaluator, train_idx, val_idx, test_idx, args)
     correct_and_smooth(base_model, pg, feat, labels, evaluator, train_idx, val_idx, test_idx, args)
 
 
 def main():
-    parser = argparse.ArgumentParser(description='C&S模型 ogbn-mag数据集')
+    parser = argparse.ArgumentParser(description='训练C&S模型')
     parser.add_argument('--seed', type=int, default=0, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
+    parser.add_argument('--dataset', choices=['ogbn-mag'], default='ogbn-mag', help='数据集')
     # 基础模型
     parser.add_argument('--epochs', type=int, default=300, help='基础模型训练epoch数')
     parser.add_argument('--lr', type=float, default=0.01, help='基础模型学习率')
@@ -90,7 +88,7 @@ def main():
         help='Smooth步骤归一化方式'
     )
     parser.add_argument('--scale', type=float, default=20, help='放缩系数')
-    parser.add_argument('paper_graph', help='用于C&S的paper顶点同构图所在路径')
+    parser.add_argument('prop_graph', help='标签传播图所在路径')
     args = parser.parse_args()
     print(args)
     train(args)

@@ -56,7 +56,7 @@ class HGTAttention(nn.Module):
             g.apply_edges(fn.v_dot_u('q', 'k', 't'))  # g.edata['t']: (E, K, 1)
             attn = g.edata.pop('t').squeeze(dim=-1) * self.mu / math.sqrt(self.d_k)
             attn = edge_softmax(g, attn)  # (E, K)
-            self.attn = attn.detach().cpu()
+            self.attn = attn.detach()
             g.edata['t'] = attn.unsqueeze(dim=-1)  # (E, K, 1)
 
             g.update_all(fn.u_mul_e('v', 't', 'm'), fn.sum('m', 'h'))

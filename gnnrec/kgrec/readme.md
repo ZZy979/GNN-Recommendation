@@ -9,7 +9,8 @@ oag-cs - 使用OAG微软学术数据构造的计算机领域的学术网络（�
 2. 训练词向量 `python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 model/word2vec/oag_cs_corpus.txt model/word2vec/oag_cs.model`
 
 ### 获取顶点表示向量
-TODO 训练GNN模型，获取顶点的表示向量，GNN模型使用异构图表示学习模块改进的RHCO模型
+在oag-cs数据集上训练GNN模型，获取顶点的表示向量
+1. 训练模型 `python -m gnnrec.hge.rhgnn.train --dataset=oag-cs --epochs=50 --save-path=model/rhgnn-oag-cs.pt model/word2vec/oag_cs.model`
 
 ## 召回
 使用微调后的SciBERT模型（见 [readme](data/readme.md) 第2步）将查询词编码为向量，与预先计算好的论文标题向量计算余弦相似度，取top k

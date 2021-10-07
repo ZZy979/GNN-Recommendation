@@ -4,16 +4,14 @@ import dgl
 import torch
 import torch.nn.functional as F
 
-from gnnrec.config import DATA_DIR
 from gnnrec.hge.cs.model import LabelPropagation
 from gnnrec.hge.rhco.model import RHCO
-from gnnrec.hge.rhgnn.run_ogbn_mag import load_pretrained_node_embed
-from gnnrec.hge.utils import get_device, load_ogbn_mag, accuracy
+from gnnrec.hge.utils import get_device, load_data, load_pretrained_node_embed, accuracy
 
 
 def smooth(base_pred, g, labels, mask, args):
     cs = LabelPropagation(args.num_smooth_layers, args.smooth_alpha, args.smooth_norm)
-    labels = F.one_hot(labels.squeeze(dim=1)).float()
+    labels = F.one_hot(labels).float()
     base_pred[mask] = labels[mask]
     return cs(g, base_pred)
 
@@ -22,22 +20,21 @@ def main():
     args = parse_args()
     print(args)
     device = get_device(args.device)
-
-    g, feat, labels, num_classes, train_idx, val_idx, test_idx, evaluator = \
-        load_ogbn_mag(DATA_DIR, True, device, False)
-    g = g.cpu()
-    load_pretrained_node_embed(g, args.node_embed_path)
+    g, _, labels, num_classes, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
+        load_data(args.dataset, device)
+    load_pretrained_node_embed(g, args.node_embed_path, True)
     pos_g = dgl.load_graphs(args.pos_graph_path)[0][0].to(device)
 
     model = RHCO(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
         args.num_hidden, num_classes, args.num_rel_hidden, args.num_heads,
-        g.ntypes, g.canonical_etypes, 'paper', args.num_layers, args.dropout, args.tau, args.lambda_
+        g.ntypes, g.canonical_etypes, predict_ntype, args.num_layers, args.dropout,
+        args.tau, args.lambda_
     ).to(device)
     model.load_state_dict(torch.load(args.model_path, map_location=device))
     model.eval()
 
-    base_pred = model.get_embeds(g, 'paper', args.neighbor_size, args.batch_size, device)
+    base_pred = model.get_embeds(g, predict_ntype, args.neighbor_size, args.batch_size, device)
     mask = torch.cat([train_idx, val_idx])
     logits = smooth(base_pred, pos_g, labels, mask, args)
     test_acc = accuracy(logits[test_idx], labels[test_idx], evaluator)
@@ -45,8 +42,9 @@ def main():
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='RHCO+C&S（仅Smooth步骤） ogbn-mag数据集')
+    parser = argparse.ArgumentParser(description='RHCO+C&S（仅Smooth步骤）')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
+    parser.add_argument('--dataset', choices=['ogbn-mag'], default='ogbn-mag', help='数据集')
     # RHCO
     parser.add_argument('--num-hidden', type=int, default=64, help='隐藏层维数')
     parser.add_argument('--num-rel-hidden', type=int, default=8, help='关系表示的隐藏层维数')
