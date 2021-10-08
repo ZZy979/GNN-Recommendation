@@ -9,3 +9,7 @@ __pycache__/
 
 # 保存的模型
 /model/
+
+# Django
+/static/
+/.mylogin.cnf
