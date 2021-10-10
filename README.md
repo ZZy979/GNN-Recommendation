@@ -33,8 +33,15 @@ GNN-Recommendation/
 oag-cs - 使用OAG微软学术数据构造的计算机领域的学术网络
 
 ## Django配置
-MySQL数据库连接配置文件：根目录下.mylogin.cnf
+### MySQL数据库配置
+1. 创建数据库及用户
+```sql
+CREATE DATABASE academic_graph CHARACTER SET utf8mb4;
+CREATE USER 'academic_graph'@'%' IDENTIFIED BY 'password';
+GRANT ALL ON academic_graph.* TO 'academic_graph'@'%';
+```
 
+2. 在根目录下创建文件.mylogin.cnf
 ```ini
 [client]
 host = x.x.x.x
@@ -42,5 +49,21 @@ port = 3306
 user = username
 password = password
 database = database
-default-character-set = utf8
+default-character-set = utf8mb4
+```
+
+3. 创建数据库表
+```shell
+python manage.py makemigrations rank
+python manage.py migrate
+```
+
+4. 导入oag-cs数据集
+```shell
+python manage.py loadoagcs data/oag/cs/
+```
+
+5. 拷贝静态文件
+```shell
+python manage.py collectstatic
 ```
