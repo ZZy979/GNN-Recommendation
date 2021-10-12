@@ -23,7 +23,7 @@ class OAGCSDataset(DGLDataset):
 
     边
 
-    * 3448316 author-writes->paper
+    * 3433354 author-writes->paper
     * 1108605 paper-published_at->venue
     * 10352775 paper-has_field->field
     * 2440117 paper-cites->paper
@@ -34,15 +34,19 @@ class OAGCSDataset(DGLDataset):
     * feat: tensor(N_paper, 128) 预训练的标题和摘要词向量
     * year: tensor(N_paper) 发表年份（1937~2021）
     * 不包含标签
+
+    field顶点属性
+    -----
+    * feat: tensor(N_field, 128) 预训练的领域向量
     """
 
     def __init__(self):
-        super().__init__('oag-cs', 'https://pan.baidu.com/s/14S7BXeTCw5C8d3P9zSbLYw')
+        super().__init__('oag-cs', 'https://pan.baidu.com/s/1EjafRKBBDr96IycoNHDHuQ')
 
     def download(self):
         zip_file_path = os.path.join(self.raw_dir, 'oag-cs.zip')
         if not os.path.exists(zip_file_path):
-            raise FileNotFoundError('请手动下载文件 {} 提取码：3wym 并保存为 {}'.format(
+            raise FileNotFoundError('请手动下载文件 {} 提取码：k1v4 并保存为 {}'.format(
                 self.url, zip_file_path
             ))
         extract_archive(zip_file_path, self.raw_path)
@@ -103,7 +107,7 @@ class OAGCSDataset(DGLDataset):
         for i, p in enumerate(self._iter_json('mag_papers.txt')):
             paper_ref.extend([i, paper_id_map[r]] for r in p['references'] if r in paper_id_map)
         return (
-            pd.DataFrame(paper_author, columns=['pid', 'aid']),
+            pd.DataFrame(paper_author, columns=['pid', 'aid']).drop_duplicates(),
             pd.DataFrame(paper_venue, columns=['pid', 'vid']),
             pd.DataFrame(paper_field, columns=['pid', 'fid']),
             pd.DataFrame(paper_ref, columns=['pid', 'rid']),
@@ -126,6 +130,7 @@ class OAGCSDataset(DGLDataset):
         })
         g.nodes['paper'].data['feat'] = torch.load(os.path.join(self.raw_path, 'paper_feat.pkl'))
         g.nodes['paper'].data['year'] = torch.tensor(paper_years)
+        g.nodes['field'].data['feat'] = torch.load(os.path.join(self.raw_path, 'field_feat.pkl'))
         return g
 
     def has_cache(self):

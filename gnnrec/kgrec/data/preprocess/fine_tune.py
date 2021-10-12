@@ -1,4 +1,6 @@
 import argparse
+import json
+import os
 
 import torch
 import torch.optim as optim
@@ -73,19 +75,32 @@ def accuracy(logits, labels):
 @torch.no_grad()
 def infer(args):
     device = get_device(args.device)
-    dataset = OAGCSContrastDataset(args.raw_file, split='all')
-    loader = DataLoader(dataset, batch_size=args.batch_size, collate_fn=collate)
     model = ContrastiveSciBERT(args.num_hidden, args.tau, device).to(device)
     model.load_state_dict(torch.load(args.model_path, map_location=device))
     model.eval()
-    print('正在推断...')
+
+    dataset = OAGCSContrastDataset(os.path.join(args.raw_path, 'mag_papers.txt'), split='all')
+    loader = DataLoader(dataset, batch_size=args.batch_size, collate_fn=collate)
+    print('正在推断论文向量...')
     h = []
     for titles, _ in tqdm(loader):
         h.append(model.get_embeds(titles).detach().cpu())
     h = torch.cat(h)  # (N_paper, d_hid)
     h = h / h.norm(dim=1, keepdim=True)
-    torch.save(h, args.vec_save_path)
-    print('结果已保存到', args.vec_save_path)
+    torch.save(h, args.paper_vec_save_path)
+    print('论文向量已保存到', args.paper_vec_save_path)
+
+    with open(os.path.join(args.raw_path, 'mag_fields.txt'), encoding='utf8') as f:
+        fields = [json.loads(line)['name'] for line in f]
+    loader = DataLoader(fields, batch_size=args.batch_size)
+    print('正在推断领域向量...')
+    h = []
+    for fields in tqdm(loader):
+        h.append(model.get_embeds(fields).detach().cpu())
+    h = torch.cat(h)  # (N_field, d_hid)
+    h = h / h.norm(dim=1, keepdim=True)
+    torch.save(h, args.field_vec_save_path)
+    print('领域向量已保存到', args.field_vec_save_path)
 
 
 def main():
@@ -109,9 +124,10 @@ def main():
     infer_parser.add_argument('--num-hidden', type=int, default=128, help='隐藏层维数')
     infer_parser.add_argument('--tau', type=float, default=0.07, help='温度参数')
     infer_parser.add_argument('--batch-size', type=int, default=64, help='批大小')
-    infer_parser.add_argument('raw_file', help='原始论文数据文件')
+    infer_parser.add_argument('raw_path', help='原始数据目录')
     infer_parser.add_argument('model_path', help='模型文件路径')
-    infer_parser.add_argument('vec_save_path', help='论文向量文件保存路径')
+    infer_parser.add_argument('paper_vec_save_path', help='论文向量保存路径')
+    infer_parser.add_argument('field_vec_save_path', help='领域向量保存路径')
     infer_parser.set_defaults(func=infer)
 
     args = parser.parse_args()

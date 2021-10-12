@@ -120,12 +120,13 @@ Epoch 3 | Train Loss 0.0718 | Train Acc 0.9853 | Val Acc 0.9579
 Epoch 4 | Train Loss 0.0535 | Train Acc 0.9903 | Val Acc 0.9589
 ```
 
-2. 推断： `python -m gnnrec.kgrec.data.preprocess.fine_tune infer data/oag/cs/mag_papers.txt model/scibert.pt data/oag/cs/paper_feat.pkl`
+2. 推断： `python -m gnnrec.kgrec.data.preprocess.fine_tune infer data/oag/cs/ model/scibert.pt data/oag/cs/paper_feat.pkl data/oag/cs/field_feat.pkl`
 
-预训练的论文向量保存到paper_feat.pkl文件（已归一化），该向量既可用于GNN模型的输入特征，也可用于计算相似度召回论文
+预训练的论文和领域向量分别保存到paper_feat.pkl和field_feat.pkl文件（已归一化），
+该向量既可用于GNN模型的输入特征，也可用于计算相似度召回论文
 
 ## 第3步：构造图数据集
-将以上5个txt和1个pkl文件压缩为oag-cs.zip，得到oag-cs数据集的原始数据
+将以上5个txt和2个pkl文件压缩为oag-cs.zip，得到oag-cs数据集的原始数据
 
 将oag-cs.zip文件放到`$DGL_DOWNLOAD_DIR`目录下（环境变量`DGL_DOWNLOAD_DIR`默认为`~/.dgl/`）
 
@@ -139,6 +140,6 @@ g = data[0]
 统计数据见 [OAGCSDataset](oagcs.py) 的文档字符串
 
 ## 下载地址
-下载地址：<https://pan.baidu.com/s/14S7BXeTCw5C8d3P9zSbLYw>，提取码：3wym
+下载地址：<https://pan.baidu.com/s/1EjafRKBBDr96IycoNHDHuQ>，提取码：k1v4
 
-大小：1.01 GB，解压后大小：2.05 GB
+大小：1.05 GB，解压后大小：2.1 GB
