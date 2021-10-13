@@ -18,6 +18,13 @@ class Context:
         self.scibert_model = scibert_model
 
 
+def get_context(paper_embeds_file, scibert_model_file):
+    paper_embeds = torch.load(paper_embeds_file, map_location='cpu')
+    scibert_model = ContrastiveSciBERT(128, 0.07)
+    scibert_model.load_state_dict(torch.load(scibert_model_file, map_location='cpu'))
+    return Context(paper_embeds, scibert_model)
+
+
 def recall(ctx, query, k=1000):
     """根据输入的查询词在oag-cs数据集召回论文
 
@@ -39,11 +46,7 @@ def main():
     parser.add_argument('raw_paper_file', help='原始论文数据文件')
     args = parser.parse_args()
 
-    paper_embeds = torch.load(args.paper_embeds_file)
-    scibert_model = ContrastiveSciBERT(128, 0.07)
-    scibert_model.load_state_dict(torch.load(args.scibert_model_file, map_location='cpu'))
-    ctx = Context(paper_embeds, scibert_model)
-
+    ctx = get_context(args.paper_embeds_file, args.scibert_model_file)
     data = OAGCSContrastDataset(args.raw_paper_file, 'all')
     while True:
         query = input('query> ').strip()

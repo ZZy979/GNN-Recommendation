@@ -128,3 +128,7 @@ STATIC_ROOT = BASE_DIR / 'static'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# 自定义设置
+PAPER_EMBEDS_FILE = BASE_DIR / 'data/oag/cs/paper_feat.pkl'
+SCIBERT_MODEL_FILE = BASE_DIR / 'model/scibert.pt'

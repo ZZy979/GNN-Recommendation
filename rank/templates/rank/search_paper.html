@@ -1,0 +1,23 @@
+{% extends 'rank/base.html' %}
+
+{% block title %}搜索论文{% endblock %}
+
+{% block content %}
+    <form action="" method="get" class="form-inline justify-content-center mb-2">
+        <input id="query-input" type="search" name="q" class="form-control col-8 mr-sm-2"
+               placeholder="领域关键词" value="{{ q }}" required>
+        <input type="submit" class="btn btn-primary col-2" value="确定">
+    </form>
+    {% for paper in object_list %}
+        <div class="card my-2">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <a href="{% url 'rank:paper-detail' paper.id %}">{{ paper.title }}</a>
+                </h5>
+                <h6 class="card-subtitle text-muted mb-2">{{ paper.venue.name }}</h6>
+                <h6 class="card-subtitle text-muted mb-2">{{ paper.authors.all|join:'; ' }}</h6>
+                <p class="card-text">{{ paper.abstract }}</p>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}
