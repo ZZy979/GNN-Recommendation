@@ -3,15 +3,17 @@
 {% block title %}论文详情{% endblock %}
 
 {% block content %}
-    <h1>{{ paper.title }}</h1>
+    <h2>{{ paper.title }}</h2>
     <p>{{ paper.venue }}</p>
     <p>{{ paper.authors.all|join:'; ' }}</p>
     <div class="row">
-        <div class="col-2"><p>{{ paper.references.count }} references</p></div>
-        <div class="col-2"><p>{{ paper.citations.count }} citations</p></div>
+        <div class="col-6 col-sm-2"><p>{{ paper.references.count }} references</p></div>
+        <div class="col-6 col-sm-2"><p>{{ paper.citations.count }} citations</p></div>
     </div>
     <h3>Abstract</h3>
     <p>{{ paper.abstract }}</p>
     <h3>Fields</h3>
-    {{ paper.fos.all|join:'; ' }}
+    {% for field in paper.fos.all %}
+        <span class="badge badge-light">{{ field }}</span>
+    {% endfor %}
 {% endblock %}

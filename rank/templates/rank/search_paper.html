@@ -3,8 +3,8 @@
 {% block title %}搜索论文{% endblock %}
 
 {% block content %}
-    <form action="" method="get" class="form-inline justify-content-center mb-2">
-        <input id="query-input" type="search" name="q" class="form-control col-8 mr-sm-2"
+    <form action="" method="get" class="form-inline justify-content-center my-3">
+        <input id="query-input" type="search" name="q" class="form-control col-8 mr-2"
                placeholder="领域关键词" value="{{ q }}" required>
         <input type="submit" class="btn btn-primary col-2" value="确定">
     </form>
@@ -14,9 +14,9 @@
                 <h5 class="card-title">
                     <a href="{% url 'rank:paper-detail' paper.id %}">{{ paper.title }}</a>
                 </h5>
-                <h6 class="card-subtitle text-muted mb-2">{{ paper.venue.name }}</h6>
-                <h6 class="card-subtitle text-muted mb-2">{{ paper.authors.all|join:'; ' }}</h6>
-                <p class="card-text">{{ paper.abstract }}</p>
+                <h6 class="card-subtitle text-muted mb-3">{{ paper.venue.name }}</h6>
+                <h6 class="card-subtitle text-muted mb-3">{{ paper.authors.all|join:'; ' }}</h6>
+                <p class="card-text">{{ paper.short_abstract }}</p>
             </div>
         </div>
     {% endfor %}

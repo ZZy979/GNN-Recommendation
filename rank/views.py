@@ -76,14 +76,13 @@ recall_ctx = get_context(settings.PAPER_EMBEDS_FILE, settings.SCIBERT_MODEL_FILE
 
 class SearchPaper(LoginRequiredMixin, ListView):
     template_name = 'rank/search_paper.html'
-    ordering = ['-n_citation']
 
     def get_queryset(self):
         if not self.request.GET.get('q'):
             self.queryset = Paper.objects.none()
         else:
-            _, pid = recall(recall_ctx, self.request.GET['q'], 20)
-            self.queryset = Paper.objects.filter(id__in=pid.tolist())
+            pid = recall(recall_ctx, self.request.GET['q'], 20)[1].tolist()
+            self.queryset = sorted(Paper.objects.filter(id__in=pid), key=lambda p: pid.index(p.id))
         return super().get_queryset()
 
     def get_context_data(self, **kwargs):

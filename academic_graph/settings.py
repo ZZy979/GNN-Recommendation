@@ -25,7 +25,7 @@ SECRET_KEY = os.environ['SECRET_KEY']
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', '10.2.4.111']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', '10.2.4.100']
 
 
 # Application definition
@@ -128,6 +128,8 @@ STATIC_ROOT = BASE_DIR / 'static'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_URL = 'rank:login'
 
 # 自定义设置
 PAPER_EMBEDS_FILE = BASE_DIR / 'data/oag/cs/paper_feat.pkl'
