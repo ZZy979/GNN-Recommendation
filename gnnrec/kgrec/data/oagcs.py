@@ -15,24 +15,24 @@ class OAGCSDataset(DGLDataset):
     -----
     顶点
 
-    * 1598084 author
-    * 1108605 paper
-    * 9958 venue
-    * 12248 institution
-    * 99879 field
+    * 2248205 author
+    * 1852225 paper
+    * 11177 venue
+    * 13747 institution
+    * 120992 field
 
     边
 
-    * 3433354 author-writes->paper
-    * 1108605 paper-published_at->venue
-    * 10352775 paper-has_field->field
-    * 2440117 paper-cites->paper
-    * 1231953 author-affiliated_with->institution
+    * 6349317 author-writes->paper
+    * 1852225 paper-published_at->venue
+    * 17250107 paper-has_field->field
+    * 9194781 paper-cites->paper
+    * 1726212 author-affiliated_with->institution
 
     paper顶点属性
     -----
     * feat: tensor(N_paper, 128) 预训练的标题和摘要词向量
-    * year: tensor(N_paper) 发表年份（1937~2021）
+    * year: tensor(N_paper) 发表年份（2010~2021）
     * 不包含标签
 
     field顶点属性
@@ -41,12 +41,12 @@ class OAGCSDataset(DGLDataset):
     """
 
     def __init__(self):
-        super().__init__('oag-cs', 'https://pan.baidu.com/s/1EjafRKBBDr96IycoNHDHuQ')
+        super().__init__('oag-cs', 'https://pan.baidu.com/s/1ayH3tQxsiDDnqPoXhR0Ekg')
 
     def download(self):
         zip_file_path = os.path.join(self.raw_dir, 'oag-cs.zip')
         if not os.path.exists(zip_file_path):
-            raise FileNotFoundError('请手动下载文件 {} 提取码：k1v4 并保存为 {}'.format(
+            raise FileNotFoundError('请手动下载文件 {} 提取码：2ylp 并保存为 {}'.format(
                 self.url, zip_file_path
             ))
         extract_archive(zip_file_path, self.raw_path)

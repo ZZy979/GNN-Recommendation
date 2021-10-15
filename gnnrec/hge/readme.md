@@ -22,42 +22,70 @@
 
 ## Baselines
 ### R-GCN (full batch)
-`python -m gnnrec.hge.rgcn.train --dataset=ogbn-mag --num-hidden=48 --dropout=0.8`
-
+```shell
+python -m gnnrec.hge.rgcn.train --dataset=ogbn-mag --num-hidden=48 --dropout=0.8
+```
 （使用minibatch训练准确率就是只有20%多，不知道为什么）
 
 ### HAN
-`python -m gnnrec.hge.han.run_ogbn_mag`
+```shell
+python -m gnnrec.hge.han.run_ogbn_mag
+```
 
 ### HetGNN
-1. 预处理 `python -m gnnrec.hge.hetgnn.preprocess model/word2vec/ogbn_mag.model model/word2vec/ogbn_mag_corpus.txt model/hetgnn`
-2. 训练模型（有监督） `python -m gnnrec.hge.hetgnn.run_ogbn_mag model/hetgnn`
+1. 预处理
+```shell
+python -m gnnrec.hge.hetgnn.preprocess model/word2vec/ogbn_mag.model model/word2vec/ogbn_mag_corpus.txt model/hetgnn
+```
+
+2. 训练模型（有监督）
+```shell
+python -m gnnrec.hge.hetgnn.run_ogbn_mag model/hetgnn
+```
 
 ### 预训练顶点嵌入
 使用metapath2vec（随机游走+word2vec）预训练顶点嵌入，作为GNN模型的顶点输入特征
-1. 随机游走 `python -m gnnrec.hge.metapath2vec.random_walk model/word2vec/ogbn_mag_corpus.txt`
-2. 训练词向量 `python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 model/word2vec/ogbn_mag_corpus.txt model/word2vec/ogbn_mag.model`
+1. 随机游走
+```shell
+python -m gnnrec.hge.metapath2vec.random_walk model/word2vec/ogbn_mag_corpus.txt
+```
+
+2. 训练词向量
+```shell
+python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 model/word2vec/ogbn_mag_corpus.txt model/word2vec/ogbn_mag.model
+```
 
 ### HGT
-#### 邻居平均(average)
-`python -m gnnrec.hge.hgt.train --dataset=ogbn-mag`
+邻居平均(average)
+```shell
+python -m gnnrec.hge.hgt.train --dataset=ogbn-mag
+```
 
-#### 预训练顶点嵌入(pretrained)
-`python -m gnnrec.hge.hgt.train --dataset=ogbn-mag --node-feat=pretrained --node-embed-path=model/word2vec/ogbn_mag.model --epochs=40`
+预训练顶点嵌入(pretrained)
+```shell
+python -m gnnrec.hge.hgt.train --dataset=ogbn-mag --node-feat=pretrained --node-embed-path=model/word2vec/ogbn_mag.model --epochs=40
+```
 
 ### HGConv
-`python -m gnnrec.hge.hgconv.train --dataset=ogbn-mag --node-feat=pretrained --node-embed-path=model/word2vec/ogbn_mag.model`
+```shell
+python -m gnnrec.hge.hgconv.train --dataset=ogbn-mag --node-feat=pretrained --node-embed-path=model/word2vec/ogbn_mag.model
+```
 
 ### R-HGNN
-`python -m gnnrec.hge.rhgnn.train --dataset=ogbn-mag model/word2vec/ogbn_mag.model`
+```shell
+python -m gnnrec.hge.rhgnn.train --dataset=ogbn-mag model/word2vec/ogbn_mag.model
+```
 
 ### C&S
 Linear+Smooth+正样本图
-
-`python -m gnnrec.hge.cs.train --dataset=ogbn-mag data/graph/pos_graph_5.bin`
+```shell
+python -m gnnrec.hge.cs.train --dataset=ogbn-mag data/graph/pos_graph_5.bin
+```
 
 ### HeCo
-`python -m gnnrec.hge.heco.train --dataset=ogbn-mag model/word2vec/ogbn_mag.model data/graph/pos_graph_5.bin`
+```shell
+python -m gnnrec.hge.heco.train --dataset=ogbn-mag model/word2vec/ogbn_mag.model data/graph/pos_graph_5.bin
+```
 
 ## RHCO
 基于对比学习的关系感知异构图神经网络(Relation-aware Heterogeneous Graph Neural Network with Contrastive Learning, RHCO)
@@ -69,10 +97,25 @@ Linear+Smooth+正样本图
 * Loss增加分类损失，训练方式由无监督改为半监督
 * 在最后增加C&S后处理步骤
 
-1. 预训练HGT `python -m gnnrec.hge.hgt.train --dataset=ogbn-mag --node-feat=pretrained --node-embed-path=model/word2vec/ogbn_mag.model --epochs=40 --save-path=model/hgt_ogbn_mag.pt`
-2. 构造正样本图 `python -m gnnrec.hge.rhco.build_pos_graph --dataset=ogbn-mag --num-samples=5 --use-label model/word2vec/ogbn_mag.model model/hgt_ogbn_mag.pt data/graph/pos_graph_5_label.bin`
-3. 训练模型（如果中断可使用--load-path参数继续训练） `python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --contrast-weight=0.5 model/word2vec/ogbn_mag.model data/graph/pos_graph_5_label.bin model/rhco_0.5_label.pt`
-4. Smooth `python -m gnnrec.hge.rhco.smooth --dataset=ogbn-mag model/word2vec/ogbn_mag.model data/graph/pos_graph_5_label_c.bin model/rhco_0.5_label.pt`
+1. 预训练HGT
+```shell
+python -m gnnrec.hge.hgt.train --dataset=ogbn-mag --node-feat=pretrained --node-embed-path=model/word2vec/ogbn_mag.model --epochs=40 --save-path=model/hgt_ogbn_mag.pt
+```
+
+2. 构造正样本图
+```shell
+python -m gnnrec.hge.rhco.build_pos_graph --dataset=ogbn-mag --num-samples=5 --use-label model/word2vec/ogbn_mag.model model/hgt_ogbn_mag.pt data/graph/pos_graph_5_label.bin
+```
+
+3. 训练模型（如果中断可使用--load-path参数继续训练）
+```shell
+python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --contrast-weight=0.5 model/word2vec/ogbn_mag.model data/graph/pos_graph_5_label.bin model/rhco_0.5_label.pt
+```
+
+4. Smooth
+```shell
+python -m gnnrec.hge.rhco.smooth --dataset=ogbn-mag model/word2vec/ogbn_mag.model data/graph/pos_graph_5_label_c.bin model/rhco_0.5_label.pt
+```
 
 ## 实验结果
 | 模型 | Train Acc | Valid Acc | Test Acc |

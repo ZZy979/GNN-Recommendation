@@ -3,8 +3,9 @@ import os
 
 from django.core.management import BaseCommand
 from django.db import connection
-from tqdm import tqdm
+from tqdm import trange
 
+from gnnrec.kgrec.data import OAGCSDataset
 from rank.models import Venue, Institution, Field, Author, Paper
 
 
@@ -12,7 +13,7 @@ class Command(BaseCommand):
     help = '将oag-cs数据集导入数据库'
 
     def add_arguments(self, parser):
-        parser.add_argument('--batch-size', type=int, default=1000, help='批大小')
+        parser.add_argument('--batch-size', type=int, default=2000, help='批大小')
         parser.add_argument('raw_path', help='原始数据所在目录')
 
     def handle(self, *args, **options):
@@ -38,37 +39,41 @@ class Command(BaseCommand):
             Field(id=i, name=f['name'])
             for i, f in enumerate(iter_json(raw_path, 'mag_fields.txt'))
         ], batch_size=batch_size)
-        fid_map = {f['name']: i for i, f in enumerate(iter_json(raw_path, 'mag_fields.txt'))}
 
         print('正在导入学者数据...')
         Author.objects.bulk_create([
-            Author(id=i, name=a['name'], institution_id=oid_map[a['org']] if a['org'] is not None else None)
-            for i, a in enumerate(iter_json(raw_path, 'mag_authors.txt'))
+            Author(
+                id=i, name=a['name'],
+                institution_id=oid_map[a['org']] if a['org'] is not None else None
+            ) for i, a in enumerate(iter_json(raw_path, 'mag_authors.txt'))
         ], batch_size=batch_size)
-        aid_map = {a['id']: i for i, a in enumerate(iter_json(raw_path, 'mag_authors.txt'))}
 
         print('正在导入论文数据...')
         Paper.objects.bulk_create([
-            Paper(id=i, title=p['title'], venue_id=vid_map[p['venue']], year=p['year'], abstract=p['abstract'])
-            for i, p in enumerate(iter_json(raw_path, 'mag_papers.txt'))
+            Paper(
+                id=i, title=p['title'], venue_id=vid_map[p['venue']], year=p['year'],
+                abstract=p['abstract'], n_citation=p['n_citation']
+            ) for i, p in enumerate(iter_json(raw_path, 'mag_papers.txt'))
         ], batch_size=batch_size)
-        pid_map = {p['id']: i for i, p in enumerate(iter_json(raw_path, 'mag_papers.txt'))}
 
         print('正在导入论文关联数据（很慢）...')
-        for i, p in tqdm(enumerate(iter_json(raw_path, 'mag_papers.txt'))):
-            paper = Paper.objects.get(id=i)
-            paper.authors.set([aid_map[a] for a in p['authors']])
-            paper.fos.set([fid_map[f] for f in p['fos'] if f in fid_map])
-            paper.references.set([pid_map[r] for r in p['references'] if r in pid_map])
-            paper.save()
-
-        print('正在更新论文引用数...')
-        with connection.cursor() as cursor:
-            cursor.execute(
-                'UPDATE rank_paper, (SELECT to_paper_id, COUNT(*) AS n FROM rank_paper_references GROUP BY to_paper_id) r'
-                ' SET rank_paper.n_citation = r.n'
-                ' WHERE rank_paper.id = r.to_paper_id'
-            )
+        data = OAGCSDataset()
+        g = data[0]
+        tables = [
+            ('writes', 'rank_paper_authors(author_id, paper_id)'),
+            ('has_field', 'rank_paper_fos(paper_id, field_id)'),
+            ('cites', 'rank_paper_references(from_paper_id, to_paper_id)')
+        ]
+        for etype, table in tables:
+            print(f'{etype} -> {table}')
+            u, v = g.edges(etype=etype)
+            edges = list(zip(u.tolist(), v.tolist()))
+            with connection.cursor() as cursor:
+                for i in trange(0, len(edges), batch_size):
+                    cursor.executemany(
+                        f'INSERT INTO {table} VALUES (%s, %s)',
+                        edges[i:i + batch_size]
+                    )
         print('导入完成')
 
 

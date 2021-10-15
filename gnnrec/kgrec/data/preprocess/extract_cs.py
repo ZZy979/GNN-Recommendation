@@ -15,7 +15,8 @@ def extract_papers(raw_path):
         fos = {f['name'] for f in p['fos']}
         abstract = parse_abstract(p['indexed_abstract'])
         if CS in fos and not fos.isdisjoint(cs_fields) \
-                and 50 <= len(p['title']) <= 100 and 500 <= len(abstract) <= 1000 \
+                and 2010 <= p['year'] <= 2021 \
+                and len(p['title']) <= 200 and len(abstract) <= 4000 \
                 and 1 <= len(p['authors']) <= 20 and 1 <= len(p['references']) <= 100:
             try:
                 yield {
@@ -27,6 +28,7 @@ def extract_papers(raw_path):
                     'abstract': abstract,
                     'fos': list(fos),
                     'references': p['references'],
+                    'n_citation': p.get('n_citation', 0),
                 }
             except KeyError:
                 pass

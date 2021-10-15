@@ -13,8 +13,12 @@
 
 ## 字段分析
 假设原始zip文件所在目录为data/oag/mag/
-
-`python -m gnnrec.kgrec.data.preprocess.analyze {author, paper, venue, affiliation} data/oag/mag/`
+```shell
+python -m gnnrec.kgrec.data.preprocess.analyze author data/oag/mag/
+python -m gnnrec.kgrec.data.preprocess.analyze paper data/oag/mag/
+python -m gnnrec.kgrec.data.preprocess.analyze venue data/oag/mag/
+python -m gnnrec.kgrec.data.preprocess.analyze affiliation data/oag/mag/
+```
 
 ```
 数据类型： venue
@@ -63,10 +67,11 @@
 ```
 
 ## 第1步：抽取计算机领域的子集
-`python -m gnnrec.kgrec.data.preprocess.extract_cs data/oag/mag/ data/oag/cs/`
+```shell
+python -m gnnrec.kgrec.data.preprocess.extract_cs data/oag/mag/ data/oag/cs/
+```
 
-过滤掉主要字段为空以及标题和摘要过短或过长的论文，
-从微软学术抓取了计算机科学下的34个二级领域作为领域字段过滤条件
+筛选近10年计算机领域的论文，从微软学术抓取了计算机科学下的34个二级领域作为领域字段过滤条件，过滤掉主要字段为空的论文
 
 二级领域列表：[CS_FIELD_L2](config.py)
 
@@ -87,7 +92,8 @@
   "year": year,
   "abstract": "abstract",
   "fos": ["field"],
-  "references": [pid]
+  "references": [pid],
+  "n_citation": n_citation
 }
 ```
 
@@ -103,24 +109,30 @@
 
 `{"id": fid, "name": "field name"}`
 
-## 第2步：预训练论文向量
-通过论文标题和关键词的对比学习对预训练的SciBERT模型进行fine-tune，之后将隐藏层输出的128维向量作为paper顶点的输入特征
+## 第2步：预训练论文和领域向量
+通过论文标题和关键词的**对比学习**对预训练的SciBERT模型进行fine-tune，之后将隐藏层输出的128维向量作为paper和field顶点的输入特征
 
 预训练的SciBERT模型来自Transformers [allenai/scibert_scivocab_uncased](https://huggingface.co/allenai/scibert_scivocab_uncased)
 
 注：由于原始数据不包含关键词，因此使用研究领域（fos字段）作为关键词
 
-1. fine-tune: `python -m gnnrec.kgrec.data.preprocess.fine_tune train data/oag/cs/mag_papers.txt model/scibert.pt`
-
-```
-Epoch 0 | Train Loss 0.3501 | Train Acc 0.9091 | Val Acc 0.9374
-Epoch 1 | Train Loss 0.1567 | Train Acc 0.9611 | Val Acc 0.9506
-Epoch 2 | Train Loss 0.1024 | Train Acc 0.9767 | Val Acc 0.9547
-Epoch 3 | Train Loss 0.0718 | Train Acc 0.9853 | Val Acc 0.9579
-Epoch 4 | Train Loss 0.0535 | Train Acc 0.9903 | Val Acc 0.9589
+1. fine-tune
+```shell
+python -m gnnrec.kgrec.data.preprocess.fine_tune train data/oag/cs/mag_papers.txt model/scibert.pt
 ```
 
-2. 推断： `python -m gnnrec.kgrec.data.preprocess.fine_tune infer data/oag/cs/ model/scibert.pt data/oag/cs/paper_feat.pkl data/oag/cs/field_feat.pkl`
+```
+Epoch 0 | Train Loss 0.3470 | Train Acc 0.9105 | Val Acc 0.9426
+Epoch 1 | Train Loss 0.1609 | Train Acc 0.9599 | Val Acc 0.9535
+Epoch 2 | Train Loss 0.1065 | Train Acc 0.9753 | Val Acc 0.9573
+Epoch 3 | Train Loss 0.0741 | Train Acc 0.9846 | Val Acc 0.9606
+Epoch 4 | Train Loss 0.0551 | Train Acc 0.9898 | Val Acc 0.9614
+```
+
+2. 推断
+```shell
+python -m gnnrec.kgrec.data.preprocess.fine_tune infer data/oag/cs/ model/scibert.pt data/oag/cs/paper_feat.pkl data/oag/cs/field_feat.pkl
+```
 
 预训练的论文和领域向量分别保存到paper_feat.pkl和field_feat.pkl文件（已归一化），
 该向量既可用于GNN模型的输入特征，也可用于计算相似度召回论文
@@ -140,6 +152,6 @@ g = data[0]
 统计数据见 [OAGCSDataset](oagcs.py) 的文档字符串
 
 ## 下载地址
-下载地址：<https://pan.baidu.com/s/1EjafRKBBDr96IycoNHDHuQ>，提取码：k1v4
+下载地址：<https://pan.baidu.com/s/1ayH3tQxsiDDnqPoXhR0Ekg>，提取码：2ylp
 
-大小：1.05 GB，解压后大小：2.1 GB
+大小：1.91 GB，解压后大小：3.93 GB

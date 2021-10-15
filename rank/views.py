@@ -62,7 +62,7 @@ class RegisterView(View):
 
         if message:
             return render(request, 'rank/register.html', {'message': message})
-        user = User.objects.create_user(username, email, password, first_name=name)
+        User.objects.create_user(username, email, password, first_name=name)
         return redirect('rank:index')
 
 
@@ -71,16 +71,19 @@ def index(request):
     return render(request, 'rank/index.html')
 
 
-recall_ctx = get_context(settings.PAPER_EMBEDS_FILE, settings.SCIBERT_MODEL_FILE)
+recall_ctx = None
 
 
 class SearchPaper(LoginRequiredMixin, ListView):
     template_name = 'rank/search_paper.html'
 
     def get_queryset(self):
+        global recall_ctx
         if not self.request.GET.get('q'):
             self.queryset = Paper.objects.none()
         else:
+            if recall_ctx is None:
+                recall_ctx = get_context(settings.PAPER_EMBEDS_FILE, settings.SCIBERT_MODEL_FILE)
             pid = recall(recall_ctx, self.request.GET['q'], 20)[1].tolist()
             self.queryset = sorted(Paper.objects.filter(id__in=pid), key=lambda p: pid.index(p.id))
         return super().get_queryset()

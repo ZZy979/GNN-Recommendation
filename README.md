@@ -28,9 +28,15 @@ GNN-Recommendation/
 * [C&S](https://arxiv.org/pdf/2010.13993)
 * [HeCo](https://arxiv.org/pdf/2105.09111)
 
+### 实验
+见 [readme](gnnrec/hge/readme.md)
+
 ## 基于知识图谱的推荐算法
 ### 数据集
 oag-cs - 使用OAG微软学术数据构造的计算机领域的学术网络
+
+### 实验
+见 [readme](gnnrec/kgrec/readme.md)
 
 ## Django配置
 ### MySQL数据库配置
@@ -63,7 +69,12 @@ python manage.py migrate
 python manage.py loadoagcs data/oag/cs/
 ```
 
-5. 拷贝静态文件
+### 拷贝静态文件
 ```shell
 python manage.py collectstatic
+```
+
+### 启动Web服务器
+```shell
+python manage.py runserver 0.0.0.0:8000
 ```
