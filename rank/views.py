@@ -1,3 +1,4 @@
+import logging
 import re
 
 from django.conf import settings
@@ -9,8 +10,10 @@ from django.shortcuts import render, redirect
 from django.views import View
 from django.views.generic import ListView, DetailView
 
-from gnnrec.kgrec.recall import get_context, recall
+import gnnrec.kgrec.recall as recall
 from .models import Paper
+
+logger = logging.getLogger(__name__)
 
 
 class LoginView(View):
@@ -63,7 +66,7 @@ class RegisterView(View):
         if message:
             return render(request, 'rank/register.html', {'message': message})
         User.objects.create_user(username, email, password, first_name=name)
-        return redirect('rank:index')
+        return redirect('rank:login')
 
 
 @login_required
@@ -83,8 +86,9 @@ class SearchPaper(LoginRequiredMixin, ListView):
             self.queryset = Paper.objects.none()
         else:
             if recall_ctx is None:
-                recall_ctx = get_context(settings.PAPER_EMBEDS_FILE, settings.SCIBERT_MODEL_FILE)
-            pid = recall(recall_ctx, self.request.GET['q'], 20)[1].tolist()
+                logger.info('正在加载模型和论文向量...')
+                recall_ctx = recall.get_context(settings.PAPER_EMBEDS_FILE, settings.SCIBERT_MODEL_FILE)
+            pid = recall.recall(recall_ctx, self.request.GET['q'], settings.PAGE_SIZE)[1].tolist()
             self.queryset = sorted(Paper.objects.filter(id__in=pid), key=lambda p: pid.index(p.id))
         return super().get_queryset()
 
