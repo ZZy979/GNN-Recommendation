@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 # Quick-start development settings - unsuitable for production
@@ -134,3 +134,4 @@ LOGIN_URL = 'rank:login'
 # 自定义设置
 PAPER_EMBEDS_FILE = BASE_DIR / 'data/oag/cs/paper_feat.pkl'
 SCIBERT_MODEL_FILE = BASE_DIR / 'model/scibert.pt'
+PAGE_SIZE = 20
