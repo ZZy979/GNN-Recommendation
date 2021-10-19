@@ -6,12 +6,22 @@
 GNN-Recommendation/
     gnnrec/             算法模块顶级包
         hge/            异构图表示学习模块
-        kgrec/          基于知识图谱的推荐算法模块
+        kgrec/          基于图神经网络的推荐算法模块
     data/               数据集目录（已添加.gitignore）
     model/              模型保存目录（已添加.gitignore）
     academic_graph/     Django项目模块
     rank/               Django应用
     manage.py           Django管理脚本
+```
+
+## 安装依赖
+* Python 3.7
+* CUDA 11.0
+
+```shell
+pip install torch==1.7.1+cu110 -f https://download.pytorch.org/whl/torch_stable.html
+pip install dgl==0.7.0-cu110 -f https://data.dgl.ai/wheels/repo.html
+pip install -r requirements.txt
 ```
 
 ## 异构图表示学习
@@ -31,7 +41,7 @@ GNN-Recommendation/
 ### 实验
 见 [readme](gnnrec/hge/readme.md)
 
-## 基于知识图谱的推荐算法
+## 基于图神经网络的推荐算法
 ### 数据集
 oag-cs - 使用OAG微软学术数据构造的计算机领域的学术网络
 
@@ -60,21 +70,22 @@ default-character-set = utf8mb4
 
 3. 创建数据库表
 ```shell
-python manage.py makemigrations rank
-python manage.py migrate
+python manage.py makemigrations --settings=academic_graph.settings.prod rank
+python manage.py migrate --settings=academic_graph.settings.prod
 ```
 
 4. 导入oag-cs数据集
 ```shell
-python manage.py loadoagcs data/oag/cs/
+python manage.py loadoagcs --settings=academic_graph.settings.prod data/oag/cs/
 ```
 
 ### 拷贝静态文件
 ```shell
-python manage.py collectstatic
+python manage.py collectstatic --settings=academic_graph.settings.prod
 ```
 
 ### 启动Web服务器
 ```shell
-python manage.py runserver 0.0.0.0:8000
+export SECRET_KEY=xxx
+python manage.py runserver --settings=academic_graph.settings.prod 0.0.0.0:8000
 ```
