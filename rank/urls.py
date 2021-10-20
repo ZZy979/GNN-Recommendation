@@ -11,4 +11,5 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('search-paper/', views.SearchPaper.as_view(), name='search-paper'),
     path('paper/<int:pk>/', views.PaperDetail.as_view(), name='paper-detail'),
+    path('author/<int:pk>/', views.AuthorDetailView.as_view(), name='author-detail'),
 ]

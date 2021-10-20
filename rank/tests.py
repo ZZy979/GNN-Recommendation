@@ -14,7 +14,7 @@ def create_test_data():
     User.objects.create_user('alice', 'alice@example.com', '1234')
     Author.objects.bulk_create([Author(id=i, name=f'A{i}') for i in range(3)])
     papers = Paper.objects.bulk_create([
-        Paper(id=i, title=f'P{i}', year=2021, abstract='')
+        Paper(id=i, title=f'P{i}', year=2021, abstract='', n_citation=2 - i)
         for i in range(3)
     ])
     for i, a in enumerate([[0], [0, 1], [1, 2]]):
@@ -130,11 +130,33 @@ class PaperDetailViewTests(TestCase):
         self.client.post(reverse('rank:login'), data={'username': 'alice', 'password': '1234'})
 
     def test_ok(self):
-        paper = Paper.objects.get(pk=1)
         response = self.client.get(reverse('rank:paper-detail', args=(1,)))
         self.assertEqual(200, response.status_code)
-        self.assertContains(response, paper.title)
+        self.assertTemplateUsed(response, 'rank/paper_detail.html')
+        self.assertContains(response, 'P1')
 
     def test_not_found(self):
         response = self.client.get(reverse('rank:paper-detail', args=(999,)))
+        self.assertEqual(404, response.status_code)
+
+
+class AuthorDetailViewTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        create_test_data()
+
+    def setUp(self):
+        self.client.post(reverse('rank:login'), data={'username': 'alice', 'password': '1234'})
+
+    def test_ok(self):
+        response = self.client.get(reverse('rank:author-detail', args=(0,)))
+        self.assertEqual(200, response.status_code)
+        self.assertTemplateUsed(response, 'rank/author_detail.html')
+        self.assertContains(response, 'A0')
+        self.assertEqual(3, response.context['n_citation'])
+        self.assertQuerysetEqual(response.context['object_list'], ['P0', 'P1'], transform=str)
+
+    def test_not_found(self):
+        response = self.client.get(reverse('rank:author-detail', args=(999,)))
         self.assertEqual(404, response.status_code)

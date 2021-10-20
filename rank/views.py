@@ -6,12 +6,14 @@ from django.contrib.auth import authenticate, login, logout, REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
+from django.db.models import Sum
 from django.shortcuts import render, redirect
 from django.views import View
 from django.views.generic import ListView, DetailView
+from django.views.generic.detail import SingleObjectMixin
 
 import gnnrec.kgrec.recall as recall
-from .models import Paper
+from .models import Author, Paper
 
 logger = logging.getLogger(__name__)
 
@@ -83,14 +85,13 @@ class SearchPaper(LoginRequiredMixin, ListView):
     def get_queryset(self):
         global recall_ctx
         if not self.request.GET.get('q'):
-            self.queryset = Paper.objects.none()
+            return Paper.objects.none()
         else:
             if recall_ctx is None:
                 logger.info('正在加载模型和论文向量...')
                 recall_ctx = recall.get_context(settings.PAPER_EMBEDS_FILE, settings.SCIBERT_MODEL_FILE)
             pid = recall.recall(recall_ctx, self.request.GET['q'], settings.PAGE_SIZE)[1].tolist()
-            self.queryset = sorted(Paper.objects.filter(id__in=pid), key=lambda p: pid.index(p.id))
-        return super().get_queryset()
+            return sorted(Paper.objects.filter(id__in=pid), key=lambda p: pid.index(p.id))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -100,3 +101,22 @@ class SearchPaper(LoginRequiredMixin, ListView):
 
 class PaperDetail(LoginRequiredMixin, DetailView):
     model = Paper
+
+
+# 参考 https://docs.djangoproject.com/en/3.2/topics/class-based-views/mixins/#using-singleobjectmixin-with-listview
+class AuthorDetailView(LoginRequiredMixin, SingleObjectMixin, ListView):
+    template_name = 'rank/author_detail.html'
+    paginate_by = settings.PAGE_SIZE
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object(queryset=Author.objects.all())
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return self.object.papers.order_by('-n_citation')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['author'] = self.object
+        context['n_citation'] = self.object.papers.aggregate(Sum('n_citation'))['n_citation__sum']
+        return context

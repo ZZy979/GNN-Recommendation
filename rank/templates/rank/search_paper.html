@@ -8,16 +8,5 @@
                placeholder="领域关键词" value="{{ q }}" required>
         <input type="submit" class="btn btn-primary col-2" value="确定">
     </form>
-    {% for paper in object_list %}
-        <div class="card my-2">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <a href="{% url 'rank:paper-detail' paper.id %}">{{ paper.title }}</a>
-                </h5>
-                <h6 class="card-subtitle text-muted mb-3">{{ paper.venue.name }}</h6>
-                <h6 class="card-subtitle text-muted mb-3">{{ paper.authors.all|join:'; ' }}</h6>
-                <p class="card-text">{{ paper.short_abstract }}</p>
-            </div>
-        </div>
-    {% endfor %}
+    {% include 'rank/_paper_list.html' %}
 {% endblock %}
