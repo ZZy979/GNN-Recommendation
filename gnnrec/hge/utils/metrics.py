@@ -1,8 +1,7 @@
 import torch
 
 
-@torch.no_grad()
-def accuracy(logits, labels, evaluator):
+def accuracy(logits, labels, evaluator=None):
     """计算准确率
 
     :param logits: tensor(N, C) 预测概率
@@ -42,4 +41,24 @@ def evaluate(
     train_acc = accuracy(logits[train_idx], labels[train_idx], evaluator)
     val_acc = accuracy(logits[val_idx], labels[val_idx], evaluator)
     test_acc = accuracy(logits[test_idx], labels[test_idx], evaluator)
+    return train_acc, val_acc, test_acc
+
+
+@torch.no_grad()
+def evaluate_full(model, g, labels, train_idx, val_idx, test_idx):
+    """评估模型性能(full-batch)
+
+    :param model: nn.Module GNN模型
+    :param g: DGLGraph 图
+    :param labels: tensor(N) 顶点标签
+    :param train_idx: tensor(N_train) 训练集顶点id
+    :param val_idx: tensor(N_val) 验证集顶点id
+    :param test_idx: tensor(N_test) 测试集顶点id
+    :return: train_acc, val_acc, test_acc
+    """
+    model.eval()
+    logits = model(g, g.ndata['feat'])
+    train_acc = accuracy(logits[train_idx], labels[train_idx])
+    val_acc = accuracy(logits[val_idx], labels[val_idx])
+    test_acc = accuracy(logits[test_idx], labels[test_idx])
     return train_acc, val_acc, test_acc

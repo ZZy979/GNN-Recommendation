@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 from gnnrec.hge.cs.model import LabelPropagation
 from gnnrec.hge.rhco.model import RHCO
-from gnnrec.hge.utils import get_device, load_data, load_pretrained_node_embed, accuracy
+from gnnrec.hge.utils import get_device, load_data, add_node_feat, accuracy
 
 
 def smooth(base_pred, g, labels, mask, args):
@@ -20,14 +20,14 @@ def main():
     args = parse_args()
     print(args)
     device = get_device(args.device)
-    g, _, labels, num_classes, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
+    data, g, _, labels, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
         load_data(args.dataset, device)
-    load_pretrained_node_embed(g, args.node_embed_path, True)
+    add_node_feat(g, 'pretrained', args.node_embed_path, True)
     pos_g = dgl.load_graphs(args.pos_graph_path)[0][0].to(device)
 
     model = RHCO(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
-        args.num_hidden, num_classes, args.num_rel_hidden, args.num_heads,
+        args.num_hidden, data.num_classes, args.num_rel_hidden, args.num_heads,
         g.ntypes, g.canonical_etypes, predict_ntype, args.num_layers, args.dropout,
         args.tau, args.lambda_
     ).to(device)

@@ -11,11 +11,11 @@ from gnnrec.hge.utils import set_random_seed, get_device, load_data, accuracy
 def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
-    g, features, labels, num_classes, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
+    data, g, features, labels, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
         load_data(args.dataset, device)
 
     model = RGCN(
-        features.shape[1], args.num_hidden, num_classes, [predict_ntype],
+        features.shape[1], args.num_hidden, data.num_classes, [predict_ntype],
         {ntype: g.num_nodes(ntype) for ntype in g.ntypes}, g.etypes,
         predict_ntype, args.num_layers, args.dropout
     ).to(device)
@@ -46,10 +46,10 @@ def main():
     parser = argparse.ArgumentParser(description='训练R-GCN模型')
     parser.add_argument('--seed', type=int, default=8, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
-    parser.add_argument('--dataset', choices=['ogbn-mag'], default='ogbn-mag', help='数据集')
+    parser.add_argument('--dataset', choices=['acm', 'dblp', 'ogbn-mag'], default='ogbn-mag', help='数据集')
     parser.add_argument('--num-hidden', type=int, default=32, help='隐藏层维数')
     parser.add_argument('--num-layers', type=int, default=2, help='模型层数')
-    parser.add_argument('--dropout', type=float, default=0.6, help='Dropout概率')
+    parser.add_argument('--dropout', type=float, default=0.8, help='Dropout概率')
     parser.add_argument('--epochs', type=int, default=50, help='训练epoch数')
     parser.add_argument('--lr', type=float, default=0.01, help='学习率')
     args = parser.parse_args()

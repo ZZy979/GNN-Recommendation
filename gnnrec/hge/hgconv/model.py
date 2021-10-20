@@ -283,3 +283,9 @@ class HGConv(nn.Module):
                     embeds[ntype][output_nodes[ntype]] = h[ntype]
             g.ndata['emb'] = embeds
         return self.classifier(g.nodes[self.predict_ntype].data['emb'])
+
+
+class HGConvFull(HGConv):
+
+    def forward(self, g, feats):
+        return super().forward([g] * len(self.layers), feats)

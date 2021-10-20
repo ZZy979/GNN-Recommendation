@@ -8,17 +8,16 @@ from dgl.dataloading import MultiLayerNeighborSampler, NodeDataLoader
 from tqdm import tqdm
 
 from gnnrec.hge.hgconv.model import HGConv
-from gnnrec.hge.utils import set_random_seed, get_device, load_data, load_pretrained_node_embed, \
-    average_node_feat, accuracy, evaluate
+from gnnrec.hge.utils import set_random_seed, get_device, load_data, add_node_feat, accuracy, \
+    evaluate
 
 
 def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
-    g, _, labels, num_classes, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
+    data, g, _, labels, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
         load_data(args.dataset, device)
-    load_pretrained_node_embed(g, args.node_embed_path) if args.node_feat == 'pretrained' else \
-        average_node_feat(g)
+    add_node_feat(g, args.node_feat, args.node_embed_path)
 
     sampler = MultiLayerNeighborSampler([args.neighbor_size] * args.num_layers)
     train_loader = NodeDataLoader(g, {predict_ntype: train_idx}, sampler, device=device, batch_size=args.batch_size)
@@ -26,7 +25,7 @@ def train(args):
 
     model = HGConv(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
-        args.num_hidden, num_classes, args.num_heads, g.ntypes, g.canonical_etypes,
+        args.num_hidden, data.num_classes, args.num_heads, g.ntypes, g.canonical_etypes,
         predict_ntype, args.num_layers, args.dropout, args.residual
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
@@ -47,7 +46,7 @@ def train(args):
         print('Epoch {:d} | Train Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
             print('Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(*evaluate(
-                model, loader, g, labels, num_classes, predict_ntype,
+                model, loader, g, labels, data.num_classes, predict_ntype,
                 train_idx, val_idx, test_idx, evaluator
             )))
     embeds = model.inference(g, g.ndata['feat'], device, args.batch_size)
@@ -61,7 +60,7 @@ def main():
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
     parser.add_argument('--dataset', choices=['ogbn-mag'], default='ogbn-mag', help='数据集')
     parser.add_argument(
-        '--node-feat', choices=['average', 'pretrained'], default='average',
+        '--node-feat', choices=['average', 'pretrained'], default='pretrained',
         help='如何获取无特征顶点的输入特征'
     )
     parser.add_argument('--node-embed-path', help='预训练顶点嵌入路径')

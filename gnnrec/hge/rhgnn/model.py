@@ -367,3 +367,9 @@ class RHGNN(nn.Module):
             return {ntype: self.classifier(out_feat) for ntype, out_feat in out_feats.items()}
         else:
             return self.classifier(out_feats[self.predict_ntype])
+
+
+class RHGNNFull(RHGNN):
+
+    def forward(self, g, feats, return_dict=False):
+        return super().forward([g] * len(self.layers), feats, return_dict)

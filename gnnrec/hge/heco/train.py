@@ -18,7 +18,7 @@ from gnnrec.hge.utils import set_random_seed, get_device, load_data, load_pretra
 def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
-    g, _, labels, num_classes, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
+    data, g, _, labels, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
         load_data(args.dataset, device)
     load_pretrained_node_embed(g, args.node_embed_path)
     relations = [r for r in g.canonical_etypes if r[2] == predict_ntype]
@@ -59,7 +59,7 @@ def train(args):
         print('Epoch {:d} | Train Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
             train_acc, val_acc, test_acc = evaluate(
-                model, pos_g, pos_g.ndata['feat'], device, labels, num_classes,
+                model, pos_g, pos_g.ndata['feat'], device, labels, data.num_classes,
                 train_idx, val_idx, test_idx, evaluator
             )
             print('Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(train_acc, val_acc, test_acc))

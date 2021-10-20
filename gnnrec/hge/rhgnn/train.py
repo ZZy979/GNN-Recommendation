@@ -8,16 +8,15 @@ from dgl.dataloading import MultiLayerNeighborSampler, NodeDataLoader
 from tqdm import tqdm
 
 from gnnrec.hge.rhgnn.model import RHGNN
-from gnnrec.hge.utils import set_random_seed, get_device, load_data, load_pretrained_node_embed, \
-    evaluate
+from gnnrec.hge.utils import set_random_seed, get_device, load_data, add_node_feat, evaluate
 
 
 def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
-    g, _, labels, num_classes, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
+    data, g, _, labels, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
         load_data(args.dataset, device)
-    load_pretrained_node_embed(g, args.node_embed_path, True)
+    add_node_feat(g, 'pretrained', args.node_embed_path, True)
 
     sampler = MultiLayerNeighborSampler(list(range(args.neighbor_size, args.neighbor_size + args.num_layers)))
     train_loader = NodeDataLoader(g, {predict_ntype: train_idx}, sampler, device=device, batch_size=args.batch_size)
@@ -25,7 +24,7 @@ def train(args):
 
     model = RHGNN(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
-        args.num_hidden, num_classes, args.num_rel_hidden, args.num_rel_hidden, args.num_heads,
+        args.num_hidden, data.num_classes, args.num_rel_hidden, args.num_rel_hidden, args.num_heads,
         g.ntypes, g.canonical_etypes, predict_ntype, args.num_layers, args.dropout
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
@@ -50,7 +49,7 @@ def train(args):
         print('Epoch {:d} | Train Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
             print('Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(*evaluate(
-                model, loader, g, labels, num_classes, predict_ntype,
+                model, loader, g, labels, data.num_classes, predict_ntype,
                 train_idx, val_idx, test_idx, evaluator
             )))
     if args.save_path:

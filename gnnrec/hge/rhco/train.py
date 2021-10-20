@@ -10,16 +10,15 @@ from tqdm import tqdm
 
 from gnnrec.hge.heco.sampler import PositiveSampler
 from gnnrec.hge.rhco.model import RHCO
-from gnnrec.hge.utils import set_random_seed, get_device, load_data, load_pretrained_node_embed, \
-    accuracy
+from gnnrec.hge.utils import set_random_seed, get_device, load_data, add_node_feat, accuracy
 
 
 def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
-    g, _, labels, num_classes, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
+    data, g, _, labels, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
         load_data(args.dataset, device)
-    load_pretrained_node_embed(g, args.node_embed_path, True)
+    add_node_feat(g, 'pretrained', args.node_embed_path, True)
 
     pos_g = dgl.load_graphs(args.pos_graph_path)[0][0].to(device)
     pos_g.ndata['feat'] = g.nodes[predict_ntype].data['feat']
@@ -37,7 +36,7 @@ def train(args):
 
     model = RHCO(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
-        args.num_hidden, num_classes, args.num_rel_hidden, args.num_heads,
+        args.num_hidden, data.num_classes, args.num_rel_hidden, args.num_heads,
         g.ntypes, g.canonical_etypes, predict_ntype, args.num_layers, args.dropout,
         args.tau, args.lambda_
     ).to(device)

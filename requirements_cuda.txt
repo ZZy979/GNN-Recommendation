@@ -1,5 +1,5 @@
 -f https://data.dgl.ai/wheels/repo.html
-dgl==0.7.0
+dgl==0.7.0-cu110
 django>=3.2.8
 gensim>=3.8.3
 mysqlclient>=2.0.3
@@ -9,6 +9,6 @@ pandas>=1.2.2
 scikit-learn>=0.24.1
 scipy>=1.6.1
 -f https://download.pytorch.org/whl/torch_stable.html
-torch==1.7.1+cpu
+torch==1.7.1+cu110
 tqdm>=4.57.0
 transformers>=4.2.2

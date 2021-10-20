@@ -15,23 +15,26 @@ GNN-Recommendation/
 ```
 
 ## 安装依赖
-* Python 3.7
-* CUDA 11.0
+Python 3.7
 
+### CUDA 11.0
 ```shell
-pip install torch==1.7.1+cu110 -f https://download.pytorch.org/whl/torch_stable.html
-pip install dgl==0.7.0-cu110 -f https://data.dgl.ai/wheels/repo.html
+pip install -r requirements_cuda.txt
+```
+
+### CPU
+```shell
 pip install -r requirements.txt
 ```
 
 ## 异构图表示学习
 ### 数据集
-[ogbn-mag](https://ogb.stanford.edu/docs/nodeprop/#ogbn-mag) - OGB提供的微软学术数据集
+* [ACM](https://github.com/liun-online/HeCo) - ACM学术网络数据集
+* [DBLP](https://github.com/liun-online/HeCo) - DBLP学术网络数据集
+* [ogbn-mag](https://ogb.stanford.edu/docs/nodeprop/#ogbn-mag) - OGB提供的微软学术数据集
 
 ### Baselines
 * [R-GCN](https://arxiv.org/pdf/1703.06103)
-* [HAN](https://arxiv.org/pdf/1903.07293)
-* [HetGNN](https://dl.acm.org/doi/pdf/10.1145/3292500.3330961)
 * [HGT](https://arxiv.org/pdf/2003.01332)
 * [HGConv](https://arxiv.org/pdf/2012.14722)
 * [R-HGNN](https://arxiv.org/pdf/2105.11122)

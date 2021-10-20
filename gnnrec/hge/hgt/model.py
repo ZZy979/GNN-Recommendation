@@ -172,3 +172,9 @@ class HGT(nn.Module):
             hs = self.layers[i](blocks[i], hs)  # {ntype: tensor(N_i, d_hid)}
         out = self.predict(hs[self.predict_ntype])  # tensor(N_i, d_out)
         return out
+
+
+class HGTFull(HGT):
+
+    def forward(self, g, feats):
+        return super().forward([g] * len(self.layers), feats)

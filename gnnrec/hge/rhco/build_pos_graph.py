@@ -17,7 +17,7 @@ def main():
     set_random_seed(args.seed)
     device = get_device(args.device)
 
-    g, _, labels, num_classes, predict_ntype, train_idx, val_idx, test_idx, _ = \
+    data, g, _, labels, predict_ntype, train_idx, val_idx, test_idx, _ = \
         load_data(args.dataset)
     g = g.to(device)
     labels = labels.tolist()
@@ -27,7 +27,7 @@ def main():
     output_nodes = test_idx if args.use_label else g.nodes(predict_ntype)
     label_neigh = sample_label_neighbors(labels, args.num_samples)  # (N, T_pos)
     attn_pos = calc_attn_pos(
-        g, num_classes, predict_ntype, args.num_samples, output_nodes, device, args
+        g, data.num_classes, predict_ntype, args.num_samples, output_nodes, device, args
     )  # (N, T_pos)
 
     train_pos = label_neigh[train_idx] if args.use_label else attn_pos[train_idx]

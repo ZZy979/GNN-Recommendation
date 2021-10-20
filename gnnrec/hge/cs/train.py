@@ -55,13 +55,17 @@ def correct_and_smooth(base_model, g, feats, labels, evaluator, train_idx, val_i
 def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
-    g, feat, labels, num_classes, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
+    data, g, feat, labels, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
         load_data(args.dataset, device)
     feat = (feat - feat.mean(dim=0)) / feat.std(dim=0)
     # 标签传播图
-    pg = dgl.load_graphs(args.prop_graph)[0][0].to(device)
+    if args.dataset == 'ogbn-mag':
+        pg = dgl.load_graphs(args.prop_graph)[0][0].to(device)
+    else:
+        pos_v, pos_u = data.pos
+        pg = dgl.graph((pos_u, pos_v), device=device)
 
-    base_model = nn.Linear(feat.shape[1], num_classes).to(device)
+    base_model = nn.Linear(feat.shape[1], data.num_classes).to(device)
     train_base_model(base_model, feat, labels, evaluator, train_idx, val_idx, test_idx, args)
     correct_and_smooth(base_model, pg, feat, labels, evaluator, train_idx, val_idx, test_idx, args)
 
@@ -70,11 +74,12 @@ def main():
     parser = argparse.ArgumentParser(description='训练C&S模型')
     parser.add_argument('--seed', type=int, default=0, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
-    parser.add_argument('--dataset', choices=['ogbn-mag'], default='ogbn-mag', help='数据集')
+    parser.add_argument('--dataset', choices=['acm', 'dblp', 'ogbn-mag'], default='ogbn-mag', help='数据集')
     # 基础模型
     parser.add_argument('--epochs', type=int, default=300, help='基础模型训练epoch数')
     parser.add_argument('--lr', type=float, default=0.01, help='基础模型学习率')
     # C&S
+    parser.add_argument('--prop-graph', help='标签传播图所在路径')
     parser.add_argument('--num-correct-layers', type=int, default=50, help='Correct步骤传播层数')
     parser.add_argument('--correct-alpha', type=float, default=0.5, help='Correct步骤α值')
     parser.add_argument(
@@ -88,7 +93,6 @@ def main():
         help='Smooth步骤归一化方式'
     )
     parser.add_argument('--scale', type=float, default=20, help='放缩系数')
-    parser.add_argument('prop_graph', help='标签传播图所在路径')
     args = parser.parse_args()
     print(args)
     train(args)

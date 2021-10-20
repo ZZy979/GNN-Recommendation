@@ -79,3 +79,9 @@ class RHCO(nn.Module):
                 z_sc = self.sc_encoder(blocks, blocks[0].srcdata['feat'], True)[ntype]
                 embeds[output_nodes[ntype]] = z_sc
             return self.predict(embeds)
+
+
+class RHCOFull(RHCO):
+
+    def forward(self, g, feats, pos_g, pos_feat, pos):
+        return super().forward([g] * len(self.sc_encoder.layers), feats, pos_g, pos_feat, pos)
