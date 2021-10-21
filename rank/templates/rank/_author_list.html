@@ -1,0 +1,10 @@
+{% for author in object_list %}
+    <div class="card my-2">
+        <div class="card-body">
+            <h5 class="card-title">
+                <a href="{% url 'rank:author-detail' author.id %}">{{ author.name }}</a>
+            </h5>
+            <h6 class="card-subtitle text-muted mb-2">{{ author.institution }}</h6>
+        </div>
+    </div>
+{% endfor %}

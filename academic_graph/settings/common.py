@@ -134,4 +134,6 @@ LOGIN_URL = 'rank:login'
 # 自定义设置
 PAPER_EMBEDS_FILE = BASE_DIR / 'data/oag/cs/paper_feat.pkl'
 SCIBERT_MODEL_FILE = BASE_DIR / 'model/scibert.pt'
+AUTHOR_RANK_FILE = BASE_DIR / 'data/rank/author_rank.json'
 PAGE_SIZE = 20
+TESTING = False

@@ -9,7 +9,8 @@ urlpatterns = [
     path('register/', views.RegisterView.as_view(), name='register'),
 
     path('', views.index, name='index'),
-    path('search-paper/', views.SearchPaper.as_view(), name='search-paper'),
-    path('paper/<int:pk>/', views.PaperDetail.as_view(), name='paper-detail'),
+    path('search-paper/', views.SearchPaperView.as_view(), name='search-paper'),
+    path('paper/<int:pk>/', views.PaperDetailView.as_view(), name='paper-detail'),
     path('author/<int:pk>/', views.AuthorDetailView.as_view(), name='author-detail'),
+    path('search-author/', views.SearchAuthorView.as_view(), name='search-author'),
 ]

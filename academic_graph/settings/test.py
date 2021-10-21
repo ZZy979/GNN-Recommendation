@@ -6,3 +6,6 @@ DATABASES = {
         'NAME': BASE_DIR / 'test.sqlite3',
     }
 }
+
+# 自定义设置
+TESTING = True

@@ -65,3 +65,7 @@ scholar disambiguation
 ```
 
 ## 精排
+构造学者排名数据，作为ground truth
+```shell
+python -m gnnrec.kgrec.data.preprocess.build_author_rank build data/oag/cs/mag_fields.txt data/oag/cs/paper_feat.pkl model/scibert.pt data/rank/author_rank.json
+```

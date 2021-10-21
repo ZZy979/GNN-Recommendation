@@ -4,7 +4,7 @@
 
 {% block content %}
     <h2>{{ paper.title }}</h2>
-    <p>{{ paper.venue }}</p>
+    <p>{{ paper.year }} {{ paper.venue }}</p>
     <div class="mb-2">
         {% for author in paper.authors.all %}
             <a href="{% url 'rank:author-detail' author.id %}">{{ author }}</a>

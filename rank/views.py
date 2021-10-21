@@ -1,4 +1,3 @@
-import logging
 import re
 
 from django.conf import settings
@@ -12,10 +11,8 @@ from django.views import View
 from django.views.generic import ListView, DetailView
 from django.views.generic.detail import SingleObjectMixin
 
-import gnnrec.kgrec.recall as recall
+from gnnrec.kgrec import recall, rank
 from .models import Author, Paper
-
-logger = logging.getLogger(__name__)
 
 
 class LoginView(View):
@@ -76,22 +73,19 @@ def index(request):
     return render(request, 'rank/index.html')
 
 
+# 召回和学者排名模块上下文对象，在RankConfig.ready()中初始化
 recall_ctx = None
+rank_ctx = None
 
 
-class SearchPaper(LoginRequiredMixin, ListView):
+class SearchPaperView(LoginRequiredMixin, ListView):
     template_name = 'rank/search_paper.html'
 
     def get_queryset(self):
-        global recall_ctx
         if not self.request.GET.get('q'):
             return Paper.objects.none()
-        else:
-            if recall_ctx is None:
-                logger.info('正在加载模型和论文向量...')
-                recall_ctx = recall.get_context(settings.PAPER_EMBEDS_FILE, settings.SCIBERT_MODEL_FILE)
-            pid = recall.recall(recall_ctx, self.request.GET['q'], settings.PAGE_SIZE)[1].tolist()
-            return sorted(Paper.objects.filter(id__in=pid), key=lambda p: pid.index(p.id))
+        _, pid = recall.recall(recall_ctx, self.request.GET['q'], settings.PAGE_SIZE)
+        return sorted(Paper.objects.filter(id__in=pid), key=lambda p: pid.index(p.id))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -99,7 +93,7 @@ class SearchPaper(LoginRequiredMixin, ListView):
         return context
 
 
-class PaperDetail(LoginRequiredMixin, DetailView):
+class PaperDetailView(LoginRequiredMixin, DetailView):
     model = Paper
 
 
@@ -119,4 +113,19 @@ class AuthorDetailView(LoginRequiredMixin, SingleObjectMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['author'] = self.object
         context['n_citation'] = self.object.papers.aggregate(Sum('n_citation'))['n_citation__sum']
+        return context
+
+
+class SearchAuthorView(LoginRequiredMixin, ListView):
+    template_name = 'rank/search_author.html'
+
+    def get_queryset(self):
+        if not self.request.GET.get('q'):
+            return Author.objects.none()
+        _, aid = rank.rank(rank_ctx, self.request.GET['q'])
+        return sorted(Author.objects.filter(id__in=aid), key=lambda a: aid.index(a.id))
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['q'] = self.request.GET.get('q', '')
         return context

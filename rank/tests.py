@@ -102,22 +102,13 @@ class SearchPaperViewTests(TestCase):
     def setUp(self):
         self.client.post(reverse('rank:login'), data={'username': 'alice', 'password': '1234'})
 
-    @patch('gnnrec.kgrec.recall.get_context')
-    @patch('gnnrec.kgrec.recall.recall', return_value=(None, Mock(tolist=Mock(return_value=[1]))))
-    def test_ok(self, recall, get_context):
+    @patch('gnnrec.kgrec.recall.recall', return_value=(None, [1, 2]))
+    def test_ok(self, recall):
         response = self.client.get(reverse('rank:search-paper'), data={'q': 'xxx'})
         self.assertEqual(200, response.status_code)
         self.assertTemplateUsed(response, 'rank/search_paper.html')
-        self.assertContains(response, 'P1')
-        self.assertQuerysetEqual(response.context['object_list'], ['P1'], transform=str)
-        recall.assert_called_with(get_context(), 'xxx', settings.PAGE_SIZE)
-
-    def test_not_login(self):
-        self.client.get(reverse('rank:logout'))
-        response = self.client.get(reverse('rank:search-paper'), {'q': 'xxx'})
-        self.assertRedirects(response, '{}?next={}'.format(
-            reverse('rank:login'), quote(reverse('rank:search-paper') + '?q=xxx')
-        ))
+        self.assertQuerysetEqual(response.context['object_list'], ['P1', 'P2'], transform=str)
+        recall.assert_called_with(None, 'xxx', settings.PAGE_SIZE)
 
 
 class PaperDetailViewTests(TestCase):
@@ -160,3 +151,28 @@ class AuthorDetailViewTests(TestCase):
     def test_not_found(self):
         response = self.client.get(reverse('rank:author-detail', args=(999,)))
         self.assertEqual(404, response.status_code)
+
+
+class SearchAuthorViewTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        create_test_data()
+
+    def setUp(self):
+        self.client.post(reverse('rank:login'), data={'username': 'alice', 'password': '1234'})
+
+    @patch('gnnrec.kgrec.rank.rank', return_value=(None, [1, 0]))
+    def test_ok(self, rank):
+        response = self.client.get(reverse('rank:search-author'), data={'q': 'xxx'})
+        self.assertEqual(200, response.status_code)
+        self.assertTemplateUsed(response, 'rank/search_author.html')
+        self.assertQuerysetEqual(response.context['object_list'], ['A1', 'A0'], transform=str)
+        rank.assert_called_with(None, 'xxx')
+
+    def test_not_login(self):
+        self.client.get(reverse('rank:logout'))
+        response = self.client.get(reverse('rank:search-author'), {'q': 'xxx'})
+        self.assertRedirects(response, '{}?next={}'.format(
+            reverse('rank:login'), quote(reverse('rank:search-author') + '?q=xxx')
+        ))

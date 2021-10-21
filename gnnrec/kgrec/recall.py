@@ -31,12 +31,13 @@ def recall(ctx, query, k=1000):
     :param ctx: Context 上下文对象
     :param query: str 查询词
     :param k: int, optional 召回论文数量，默认为1000
-    :return: tensor(k), tensor(k) Top k论文的相似度和id
+    :return: List[float], List[int] Top k论文的相似度和id，按相似度降序排序
     """
     q = ctx.scibert_model.get_embeds(query)  # (1, d)
     q = q / q.norm()
     similarity = torch.mm(ctx.paper_embeds, q.t()).squeeze(dim=1)  # (N,)
-    return similarity.topk(k, dim=0)
+    score, pid = similarity.topk(k, dim=0)
+    return score.tolist(), pid.tolist()
 
 
 def main():
@@ -52,7 +53,7 @@ def main():
         query = input('query> ').strip()
         score, pid = recall(ctx, query, 10)
         for i in range(len(pid)):
-            print(score[i].item(), data[pid[i].item()][0])
+            print(score[i], data[pid[i]][0])
 
 
 if __name__ == '__main__':

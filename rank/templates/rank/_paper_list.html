@@ -7,14 +7,14 @@
                 </h5>
                 <small class="text-right col-3 col-lg-2">{{ paper.n_citation }} citations</small>
             </div>
-            <h6 class="card-subtitle text-muted mb-2">{{ paper.venue.name }}</h6>
+            <h6 class="card-subtitle text-muted mb-2">{{ paper.year }} {{ paper.venue }}</h6>
             <div class="mb-2">
                 {% for author in paper.authors.all %}
                     <a href="{% url 'rank:author-detail' author.id %}">{{ author }}</a>
                     {% if not forloop.last %}; {% endif %}
                 {% endfor %}
             </div>
-            <p class="card-text">{{ paper.short_abstract }}</p>
+            <p class="card-text">{{ paper.abstract|truncatewords:50 }}</p>
         </div>
     </div>
 {% endfor %}

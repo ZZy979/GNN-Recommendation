@@ -21,6 +21,7 @@
             <div class="mr-auto">
                 <ul class="navbar-nav">
                     <li class="nav-item"><a href="{% url 'rank:search-paper' %}" class="nav-link">搜索论文</a></li>
+                    <li class="nav-item"><a href="{% url 'rank:search-author' %}" class="nav-link">搜索学者</a></li>
                 </ul>
             </div>
             {% if user.is_authenticated %}

@@ -1,5 +1,3 @@
-import textwrap
-
 from django.db import models
 
 
@@ -49,6 +47,3 @@ class Paper(models.Model):
 
     def __str__(self):
         return self.title
-
-    def short_abstract(self, width=200):
-        return textwrap.shorten(self.abstract, width, placeholder='...')
