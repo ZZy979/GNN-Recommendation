@@ -7,10 +7,10 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from gnnrec.hge.cs.model import CorrectAndSmooth
-from gnnrec.hge.utils import set_random_seed, get_device, load_data, accuracy
+from gnnrec.hge.utils import set_random_seed, get_device, load_data, calc_metrics, METRICS_STR
 
 
-def train_base_model(base_model, feats, labels, evaluator, train_idx, val_idx, test_idx, args):
+def train_base_model(base_model, feats, labels, train_idx, val_idx, test_idx, args):
     print('Training base model...')
     optimizer = optim.Adam(base_model.parameters(), lr=args.lr)
     for epoch in range(args.epochs):
@@ -20,24 +20,19 @@ def train_base_model(base_model, feats, labels, evaluator, train_idx, val_idx, t
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
-        train_acc = accuracy(logits[train_idx], labels[train_idx], evaluator)
-        val_acc = evaluate(base_model, feats, labels, evaluator, val_idx)
-        print('Epoch {:d} | Train Loss {:.4f} | Train Acc {:.4f} | Val Acc {:.4f}'.format(
-            epoch, loss, train_acc, val_acc
+        print(('Epoch {:d} | Loss {:.4f} | ' + METRICS_STR).format(
+            epoch, loss.item(), *evaluate(base_model, feats, labels, train_idx, val_idx, test_idx)
         ))
-    test_acc = evaluate(base_model, feats, labels, evaluator, test_idx)
-    print('Test Acc {:.4f}'.format(test_acc))
 
 
 @torch.no_grad()
-def evaluate(model, feats, labels, evaluator, mask):
+def evaluate(model, feats, labels, train_idx, val_idx, test_idx):
     model.eval()
     logits = model(feats)
-    return accuracy(logits[mask], labels[mask], evaluator)
+    return calc_metrics(logits, labels, train_idx, val_idx, test_idx)
 
 
-def correct_and_smooth(base_model, g, feats, labels, evaluator, train_idx, val_idx, test_idx, args):
+def correct_and_smooth(base_model, g, feats, labels, train_idx, val_idx, test_idx, args):
     print('Training C&S...')
     base_model.eval()
     base_pred = base_model(feats).softmax(dim=1)  # 注意要softmax
@@ -48,8 +43,8 @@ def correct_and_smooth(base_model, g, feats, labels, evaluator, train_idx, val_i
     )
     mask = torch.cat([train_idx, val_idx])
     logits = cs(g, F.one_hot(labels).float(), base_pred, mask)
-    test_acc = accuracy(logits[test_idx], labels[test_idx], evaluator)
-    print('Test Acc {:.4f}'.format(test_acc))
+    _, _, test_acc, _, _, test_f1 = calc_metrics(logits, labels, train_idx, val_idx, test_idx)
+    print('Test Acc {:.4f} | Test Macro-F1 {:.4f}'.format(test_acc, test_f1))
 
 
 def train(args):
@@ -66,8 +61,8 @@ def train(args):
         pg = dgl.graph((pos_u, pos_v), device=device)
 
     base_model = nn.Linear(feat.shape[1], data.num_classes).to(device)
-    train_base_model(base_model, feat, labels, evaluator, train_idx, val_idx, test_idx, args)
-    correct_and_smooth(base_model, pg, feat, labels, evaluator, train_idx, val_idx, test_idx, args)
+    train_base_model(base_model, feat, labels, train_idx, val_idx, test_idx, args)
+    correct_and_smooth(base_model, pg, feat, labels, train_idx, val_idx, test_idx, args)
 
 
 def main():

@@ -8,8 +8,8 @@ from dgl.dataloading import MultiLayerNeighborSampler, NodeDataLoader
 from tqdm import tqdm
 
 from gnnrec.hge.hgconv.model import HGConv
-from gnnrec.hge.utils import set_random_seed, get_device, load_data, add_node_feat, accuracy, \
-    evaluate
+from gnnrec.hge.utils import set_random_seed, get_device, load_data, add_node_feat, evaluate, \
+    calc_metrics, METRICS_STR
 
 
 def train(args):
@@ -43,15 +43,14 @@ def train(args):
             loss.backward()
             optimizer.step()
             torch.cuda.empty_cache()
-        print('Epoch {:d} | Train Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
+        print('Epoch {:d} | Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
-            print('Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(*evaluate(
+            print(METRICS_STR.format(*evaluate(
                 model, loader, g, labels, data.num_classes, predict_ntype,
-                train_idx, val_idx, test_idx, evaluator
+                train_idx, val_idx, test_idx
             )))
     embeds = model.inference(g, g.ndata['feat'], device, args.batch_size)
-    test_acc = accuracy(embeds[test_idx], labels[test_idx], evaluator)
-    print('Test Acc {:.4f}'.format(test_acc))
+    print(METRICS_STR.format(*calc_metrics(embeds, labels, train_idx, val_idx, test_idx)))
 
 
 def main():

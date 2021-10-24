@@ -53,7 +53,7 @@ def main():
         query = input('query> ').strip()
         score, pid = recall(ctx, query, 10)
         for i in range(len(pid)):
-            print(score[i], data[pid[i]][0])
+            print('{:.4f}\t{}'.format(score[i], data[pid[i]][0]))
 
 
 if __name__ == '__main__':

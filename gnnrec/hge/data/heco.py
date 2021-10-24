@@ -26,7 +26,7 @@ class HeCoDataset(DGLDataset):
     """
 
     def __init__(self, name, ntypes):
-        url = 'https://codeload.github.com/liun-online/HeCo/zip/refs/heads/main'
+        url = 'https://api.github.com/repos/liun-online/HeCo/zipball/main'
         self._ntypes = {ntype[0]: ntype for ntype in ntypes}
         super().__init__(name + '-heco', url)
 
@@ -133,7 +133,7 @@ class ACMDataset(HeCoDataset):
     * 边：13407 paper-author, 4019 paper-subject
     * 目标顶点类型：paper
     * 类别数：3
-    * 顶点划分：60 train, 1000 valid, 1000 test
+    * 顶点划分：180 train, 1000 valid, 1000 test
 
     paper顶点特征
     -----
@@ -167,7 +167,7 @@ class DBLPDataset(HeCoDataset):
     * 边：19645 paper-author, 14328 paper-conference, 85810 paper-term
     * 目标顶点类型：author
     * 类别数：4
-    * 顶点划分：80 train, 1000 valid, 1000 test
+    * 顶点划分：240 train, 1000 valid, 1000 test
 
     author顶点特征
     -----

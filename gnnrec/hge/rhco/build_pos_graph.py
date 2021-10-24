@@ -8,7 +8,7 @@ from dgl.dataloading import MultiLayerNeighborSampler, NodeDataLoader
 from tqdm import tqdm
 
 from gnnrec.hge.hgt.model import HGT
-from gnnrec.hge.utils import set_random_seed, get_device, load_data, load_pretrained_node_embed
+from gnnrec.hge.utils import set_random_seed, get_device, load_data, add_node_feat
 
 
 def main():
@@ -17,12 +17,11 @@ def main():
     set_random_seed(args.seed)
     device = get_device(args.device)
 
-    data, g, _, labels, predict_ntype, train_idx, val_idx, test_idx, _ = \
-        load_data(args.dataset)
+    data, g, _, labels, predict_ntype, train_idx, val_idx, test_idx, _ = load_data(args.dataset)
     g = g.to(device)
     labels = labels.tolist()
     train_idx = torch.cat([train_idx, val_idx])
-    load_pretrained_node_embed(g, args.node_embed_path)
+    add_node_feat(g, 'pretrained', args.node_embed_path)
 
     output_nodes = test_idx if args.use_label else g.nodes(predict_ntype)
     label_neigh = sample_label_neighbors(labels, args.num_samples)  # (N, T_pos)

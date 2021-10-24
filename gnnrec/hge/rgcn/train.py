@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from gnnrec.hge.rgcn.model import RGCN
-from gnnrec.hge.utils import set_random_seed, get_device, load_data, accuracy
+from gnnrec.hge.utils import set_random_seed, get_device, load_data, calc_metrics, METRICS_STR
 
 
 def train(args):
@@ -20,26 +20,24 @@ def train(args):
         predict_ntype, args.num_layers, args.dropout
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    features = {predict_ntype: features}
     for epoch in range(args.epochs):
         model.train()
-        logits = model(g, {predict_ntype: features})
+        logits = model(g, features)
         loss = F.cross_entropy(logits[train_idx], labels[train_idx])
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        print('Epoch {:d} | Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(
-            epoch, *evaluate(model, g, features, labels, predict_ntype, train_idx, val_idx, test_idx, evaluator)
+        print(('Epoch {:d} | Loss {:.4f} | ' + METRICS_STR).format(
+            epoch, loss.item(), *evaluate(model, g, features, labels, train_idx, val_idx, test_idx)
         ))
 
 
 @torch.no_grad()
-def evaluate(model, g, features, labels, predict_ntype, train_idx, val_idx, test_idx, evaluator):
+def evaluate(model, g, features, labels, train_idx, val_idx, test_idx):
     model.eval()
-    logits = model(g, {predict_ntype: features})
-    train_acc = accuracy(logits[train_idx], labels[train_idx], evaluator)
-    val_acc = accuracy(logits[val_idx], labels[val_idx], evaluator)
-    test_acc = accuracy(logits[test_idx], labels[test_idx], evaluator)
-    return train_acc, val_acc, test_acc
+    logits = model(g, features)
+    return calc_metrics(logits, labels, train_idx, val_idx, test_idx)
 
 
 def main():

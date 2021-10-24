@@ -6,7 +6,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from gnnrec.hge.rhgnn.model import RHGNNFull
-from gnnrec.hge.utils import set_random_seed, get_device, load_data, add_node_feat, evaluate_full
+from gnnrec.hge.utils import set_random_seed, get_device, load_data, add_node_feat, evaluate_full, \
+    METRICS_STR
 
 
 def train(args):
@@ -35,7 +36,7 @@ def train(args):
         optimizer.step()
         scheduler.step()
         torch.cuda.empty_cache()
-        print('Epoch {:d} | Train Loss {:.4f} | Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(
+        print(('Epoch {:d} | Loss {:.4f} | ' + METRICS_STR).format(
             epoch, loss.item(), *evaluate_full(model, g, labels, train_idx, val_idx, test_idx)
         ))
 

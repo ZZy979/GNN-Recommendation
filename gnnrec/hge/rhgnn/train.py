@@ -8,7 +8,8 @@ from dgl.dataloading import MultiLayerNeighborSampler, NodeDataLoader
 from tqdm import tqdm
 
 from gnnrec.hge.rhgnn.model import RHGNN
-from gnnrec.hge.utils import set_random_seed, get_device, load_data, add_node_feat, evaluate
+from gnnrec.hge.utils import set_random_seed, get_device, load_data, add_node_feat, evaluate, \
+    METRICS_STR
 
 
 def train(args):
@@ -46,11 +47,11 @@ def train(args):
             optimizer.step()
             scheduler.step()
             torch.cuda.empty_cache()
-        print('Epoch {:d} | Train Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
+        print('Epoch {:d} | Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
-            print('Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(*evaluate(
+            print(METRICS_STR.format(*evaluate(
                 model, loader, g, labels, data.num_classes, predict_ntype,
-                train_idx, val_idx, test_idx, evaluator
+                train_idx, val_idx, test_idx
             )))
     if args.save_path:
         torch.save(model.cpu().state_dict(), args.save_path)

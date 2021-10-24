@@ -11,8 +11,8 @@ from tqdm import tqdm, trange
 
 from gnnrec.hge.heco.model import HeCo
 from gnnrec.hge.heco.sampler import PositiveSampler
-from gnnrec.hge.utils import set_random_seed, get_device, load_data, load_pretrained_node_embed, \
-    accuracy
+from gnnrec.hge.utils import set_random_seed, get_device, load_data, add_node_feat, accuracy, \
+    calc_metrics, METRICS_STR
 
 
 def train(args):
@@ -20,7 +20,7 @@ def train(args):
     device = get_device(args.device)
     data, g, _, labels, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
         load_data(args.dataset, device)
-    load_pretrained_node_embed(g, args.node_embed_path)
+    add_node_feat(g, 'pretrained', args.node_embed_path)
     relations = [r for r in g.canonical_etypes if r[2] == predict_ntype]
 
     pos_g = dgl.load_graphs(args.pos_graph_path)[0][0].to(device)
@@ -56,16 +56,15 @@ def train(args):
             loss.backward()
             optimizer.step()
             torch.cuda.empty_cache()
-        print('Epoch {:d} | Train Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
+        print('Epoch {:d} | Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
-            train_acc, val_acc, test_acc = evaluate(
+            print(METRICS_STR.format(*evaluate(
                 model, pos_g, pos_g.ndata['feat'], device, labels, data.num_classes,
-                train_idx, val_idx, test_idx, evaluator
-            )
-            print('Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(train_acc, val_acc, test_acc))
+                train_idx, val_idx, test_idx
+            )))
 
 
-def evaluate(model, pos_g, feat, device, labels, num_classes, train_idx, val_idx, test_idx, evaluator):
+def evaluate(model, pos_g, feat, device, labels, num_classes, train_idx, val_idx, test_idx):
     model.eval()
     embeds = model.get_embeds(pos_g, feat)
 
@@ -82,12 +81,11 @@ def evaluate(model, pos_g, feat, device, labels, num_classes, train_idx, val_idx
 
         with torch.no_grad():
             clf.eval()
-            if accuracy(logits[val_idx], labels[val_idx], evaluator) > best_acc:
+            logits = clf(embeds)
+            predict = logits.argmax(dim=1)
+            if accuracy(predict[val_idx], labels[val_idx]) > best_acc:
                 best_logits = logits
-    train_acc = accuracy(best_logits[train_idx], labels[train_idx], evaluator)
-    val_acc = accuracy(best_logits[val_idx], labels[val_idx], evaluator)
-    test_acc = accuracy(best_logits[test_idx], labels[test_idx], evaluator)
-    return train_acc, val_acc, test_acc
+    return calc_metrics(best_logits, labels, train_idx, val_idx, test_idx)
 
 
 def main():

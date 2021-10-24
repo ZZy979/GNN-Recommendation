@@ -77,21 +77,17 @@ python -m gnnrec.hge.rhco.train_full --dataset=acm
 python -m gnnrec.hge.rhco.train_full --dataset=dblp
 ```
 
-ogbn-mag
+ogbn-mag（第3步如果中断可使用--load-path参数继续训练）
 ```shell
-python -m gnnrec.hge.hgt.train --dataset=ogbn-mag --node-feat=pretrained --node-embed-path=model/word2vec/ogbn_mag.model --epochs=40 --save-path=model/hgt_ogbn_mag.pt
+python -m gnnrec.hge.hgt.train --dataset=ogbn-mag --node-embed-path=model/word2vec/ogbn_mag.model --epochs=40 --save-path=model/hgt_ogbn_mag.pt
 python -m gnnrec.hge.rhco.build_pos_graph --dataset=ogbn-mag --num-samples=5 --use-label model/word2vec/ogbn_mag.model model/hgt_ogbn_mag.pt data/graph/pos_graph_5_label.bin
-python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --contrast-weight=0.5 model/word2vec/ogbn_mag.model data/graph/pos_graph_5_label.bin model/rhco_0.5_label.pt
-python -m gnnrec.hge.rhco.smooth --dataset=ogbn-mag model/word2vec/ogbn_mag.model data/graph/pos_graph_5_label_c.bin model/rhco_0.5_label.pt
+python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --num-hidden=64 --contrast-weight=0.5 model/word2vec/ogbn_mag.model data/graph/pos_graph_5_label.bin model/rhco_d64_a0.5_t5.pt
+python -m gnnrec.hge.rhco.smooth --dataset=ogbn-mag model/word2vec/ogbn_mag.model data/graph/pos_graph_5_label_c.bin model/rhco_d64_a0.5_t5.pt
 ```
 
 ## 实验结果
-| 模型 | ACM | DBLP | ogbn-mag |
-| --- | --- | --- | --- |
-| R-GCN | 0.7750 | 0.9490 | 0.3722 |
-| HGT | 0.7660 | 0.7860 | 0.4504 |
-| HGConv | 0.7550 | 0.9060 | 0.4828 |
-| R-HGNN | 0.6890 | 0.8680 | 0.5196 |
-| C&S | 0.7420 | 0.7970 | 0.3090 |
-| HeCo | 0.8850 | 0.9070 | 0.2501 |
-| RHCO | 0.8280 | 0.8890 | 0.5416 |
+[顶点分类](result/node_classification.csv)
+
+[参数敏感性分析](result/param_analysis.csv)
+
+[消融实验](result/ablation_study.csv)

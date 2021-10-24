@@ -29,8 +29,8 @@ pip install -r requirements.txt
 
 ## 异构图表示学习
 ### 数据集
-* [ACM](https://github.com/liun-online/HeCo) - ACM学术网络数据集
-* [DBLP](https://github.com/liun-online/HeCo) - DBLP学术网络数据集
+* [ACM](https://github.com/liun-online/HeCo/tree/main/data/acm) - ACM学术网络数据集
+* [DBLP](https://github.com/liun-online/HeCo/tree/main/data/dblp) - DBLP学术网络数据集
 * [ogbn-mag](https://ogb.stanford.edu/docs/nodeprop/#ogbn-mag) - OGB提供的微软学术数据集
 
 ### Baselines

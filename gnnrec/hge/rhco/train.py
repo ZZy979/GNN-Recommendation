@@ -10,7 +10,8 @@ from tqdm import tqdm
 
 from gnnrec.hge.heco.sampler import PositiveSampler
 from gnnrec.hge.rhco.model import RHCO
-from gnnrec.hge.utils import set_random_seed, get_device, load_data, add_node_feat, accuracy
+from gnnrec.hge.utils import set_random_seed, get_device, load_data, add_node_feat, calc_metrics, \
+    METRICS_STR
 
 
 def train(args):
@@ -67,12 +68,12 @@ def train(args):
             optimizer.step()
             scheduler.step()
             torch.cuda.empty_cache()
-        print('Epoch {:d} | Train Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
+        print('Epoch {:d} | Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
         torch.save(model.state_dict(), args.save_path)
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
-            print('Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(*evaluate(
+            print(METRICS_STR.format(*evaluate(
                 model, g, args.neighbor_size, args.batch_size, device,
-                labels, predict_ntype, train_idx, val_idx, test_idx, evaluator
+                labels, predict_ntype, train_idx, val_idx, test_idx
             )))
     torch.save(model.state_dict(), args.save_path)
     print('模型已保存到', args.save_path)
@@ -81,13 +82,10 @@ def train(args):
 @torch.no_grad()
 def evaluate(
         model, g, neighbor_size, batch_size, device, labels, predict_ntype,
-        train_idx, val_idx, test_idx, evaluator):
+        train_idx, val_idx, test_idx):
     model.eval()
     embeds = model.get_embeds(g, predict_ntype, neighbor_size, batch_size, device)
-    train_acc = accuracy(embeds[train_idx], labels[train_idx], evaluator)
-    val_acc = accuracy(embeds[val_idx], labels[val_idx], evaluator)
-    test_acc = accuracy(embeds[test_idx], labels[test_idx], evaluator)
-    return train_acc, val_acc, test_acc
+    return calc_metrics(embeds, labels, train_idx, val_idx, test_idx)
 
 
 def main():

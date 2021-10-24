@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import get_linear_schedule_with_warmup
 
-from gnnrec.hge.utils import set_random_seed, get_device
+from gnnrec.hge.utils import set_random_seed, get_device, accuracy
 from gnnrec.kgrec.data import OAGCSContrastDataset
 from gnnrec.kgrec.scibert import ContrastiveSciBERT
 
@@ -46,7 +46,7 @@ def train(args):
             optimizer.step()
             scheduler.step()
         val_score = evaluate(valid_loader, model, device)
-        print('Epoch {:d} | Train Loss {:.4f} | Train Acc {:.4f} | Val Acc {:.4f}'.format(
+        print('Epoch {:d} | Loss {:.4f} | Train Acc {:.4f} | Val Acc {:.4f}'.format(
             epoch, sum(losses) / len(losses), sum(scores) / len(scores), val_score
         ))
     torch.save(model.state_dict(), args.model_save_path)
@@ -65,11 +65,7 @@ def evaluate(loader, model, device):
 
 
 def score(logits, labels):
-    return (accuracy(logits, labels) + accuracy(logits.t(), labels)) / 2
-
-
-def accuracy(logits, labels):
-    return torch.sum(torch.argmax(logits, dim=1) == labels).item() * 1.0 / len(labels)
+    return (accuracy(logits.argmax(dim=1), labels) + accuracy(logits.argmax(dim=0), labels)) / 2
 
 
 @torch.no_grad()

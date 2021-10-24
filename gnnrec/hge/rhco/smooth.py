@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 from gnnrec.hge.cs.model import LabelPropagation
 from gnnrec.hge.rhco.model import RHCO
-from gnnrec.hge.utils import get_device, load_data, add_node_feat, accuracy
+from gnnrec.hge.utils import get_device, load_data, add_node_feat, calc_metrics
 
 
 def smooth(base_pred, g, labels, mask, args):
@@ -37,8 +37,8 @@ def main():
     base_pred = model.get_embeds(g, predict_ntype, args.neighbor_size, args.batch_size, device)
     mask = torch.cat([train_idx, val_idx])
     logits = smooth(base_pred, pos_g, labels, mask, args)
-    test_acc = accuracy(logits[test_idx], labels[test_idx], evaluator)
-    print('After smoothing: Test Acc {:.4f}'.format(test_acc))
+    _, _, test_acc, _, _, test_f1 = calc_metrics(logits, labels, train_idx, val_idx, test_idx)
+    print('After smoothing: Test Acc {:.4f} | Test Macro-F1 {:.4f}'.format(test_acc, test_f1))
 
 
 def parse_args():

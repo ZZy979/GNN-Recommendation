@@ -7,7 +7,8 @@ import torch.optim as optim
 
 from gnnrec.hge.rhco.model import RHCOFull
 from gnnrec.hge.rhco.smooth import smooth
-from gnnrec.hge.utils import set_random_seed, get_device, load_data, add_node_feat, accuracy
+from gnnrec.hge.utils import set_random_seed, get_device, load_data, add_node_feat, calc_metrics, \
+    METRICS_STR
 
 
 def train(args):
@@ -44,7 +45,7 @@ def train(args):
         optimizer.step()
         scheduler.step()
         torch.cuda.empty_cache()
-        print('Epoch {:d} | Train Loss {:.4f} | Train Acc {:.4f} | Val Acc {:.4f} | Test Acc {:.4f}'.format(
+        print(('Epoch {:d} | Loss {:.4f} | ' + METRICS_STR).format(
             epoch, loss.item(), *evaluate(model, g, pos_g, pos, labels, train_idx, val_idx, test_idx)
         ))
 
@@ -52,18 +53,15 @@ def train(args):
     _, base_pred = model(g, g.ndata['feat'], pos_g, pos_g.ndata['feat'], pos)
     mask = torch.cat([train_idx, val_idx])
     logits = smooth(base_pred, pos_g, labels, mask, args)
-    test_acc = accuracy(logits[test_idx], labels[test_idx])
-    print('After smoothing: Test Acc {:.4f}'.format(test_acc))
+    _, _, test_acc, _, _, test_f1 = calc_metrics(logits, labels, train_idx, val_idx, test_idx)
+    print('After smoothing: Test Acc {:.4f} | Test Macro-F1 {:.4f}'.format(test_acc, test_f1))
 
 
 @torch.no_grad()
 def evaluate(model, g, pos_g, pos, labels, train_idx, val_idx, test_idx):
     model.eval()
     _, logits = model(g, g.ndata['feat'], pos_g, pos_g.ndata['feat'], pos)
-    train_acc = accuracy(logits[train_idx], labels[train_idx])
-    val_acc = accuracy(logits[val_idx], labels[val_idx])
-    test_acc = accuracy(logits[test_idx], labels[test_idx])
-    return train_acc, val_acc, test_acc
+    return calc_metrics(logits, labels, train_idx, val_idx, test_idx)
 
 
 def main():

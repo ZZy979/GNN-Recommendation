@@ -122,11 +122,11 @@ python -m gnnrec.kgrec.data.preprocess.fine_tune train data/oag/cs/mag_papers.tx
 ```
 
 ```
-Epoch 0 | Train Loss 0.3470 | Train Acc 0.9105 | Val Acc 0.9426
-Epoch 1 | Train Loss 0.1609 | Train Acc 0.9599 | Val Acc 0.9535
-Epoch 2 | Train Loss 0.1065 | Train Acc 0.9753 | Val Acc 0.9573
-Epoch 3 | Train Loss 0.0741 | Train Acc 0.9846 | Val Acc 0.9606
-Epoch 4 | Train Loss 0.0551 | Train Acc 0.9898 | Val Acc 0.9614
+Epoch 0 | Loss 0.3470 | Train Acc 0.9105 | Val Acc 0.9426
+Epoch 1 | Loss 0.1609 | Train Acc 0.9599 | Val Acc 0.9535
+Epoch 2 | Loss 0.1065 | Train Acc 0.9753 | Val Acc 0.9573
+Epoch 3 | Loss 0.0741 | Train Acc 0.9846 | Val Acc 0.9606
+Epoch 4 | Loss 0.0551 | Train Acc 0.9898 | Val Acc 0.9614
 ```
 
 2. 推断
