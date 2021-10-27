@@ -5,21 +5,22 @@ import pandas as pd
 
 from gnnrec.config import BASE_DIR
 
+RESULT_DIR = os.path.join(BASE_DIR, 'gnnrec/hge/result')
+
 
 def plot_param_analysis():
-    df = pd.read_csv(os.path.join(BASE_DIR, 'gnnrec/hge/result/param_analysis.csv'))
+    df = pd.read_csv(os.path.join(RESULT_DIR, 'param_analysis.csv'))
     params = ['alpha', 'Tpos', 'dimension']
 
     for p in params:
         fig, ax = plt.subplots()
         x = df[p].dropna().to_numpy()
-        acc = df[f'Accuracy_{p}'].dropna().to_numpy()
-        f1 = df[f'Macro-F1_{p}'].dropna().to_numpy()
-        ax.plot(x, acc, '.-', label='Accuracy')
-        ax.plot(x, f1, '.--', label='Macro-F1')
+        ax.plot(x, df[f'Accuracy_{p}'].dropna().to_numpy(), '.-', label='Accuracy')
+        ax.plot(x, df[f'Macro-F1_{p}'].dropna().to_numpy(), '.--', label='Macro-F1')
         ax.set_xlabel(p)
+        ax.set_ylim(0.2, 0.7)
         ax.legend()
-        fig.savefig(os.path.join(BASE_DIR, f'gnnrec/hge/result/param_analysis_{p}.png'))
+        fig.savefig(os.path.join(RESULT_DIR, f'param_analysis_{p}.png'))
 
 
 def main():

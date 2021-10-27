@@ -1,5 +1,10 @@
 {% extends 'rank/base.html' %}
 
 {% block content %}
-    <h1>学术推荐系统</h1>
+    <h1 class="py-5">学术推荐系统</h1>
+    <form action="{% url 'rank:search-paper' %}" method="get" class="form-inline justify-content-center my-5">
+        <input id="query-input" type="search" name="q" class="form-control form-control-lg col-8 mr-2"
+               placeholder="领域关键词" value="{{ q }}" required>
+        <input type="submit" class="btn btn-primary btn-lg col-2" value="确定">
+    </form>
 {% endblock %}
