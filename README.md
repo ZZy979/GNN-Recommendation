@@ -9,6 +9,7 @@ GNN-Recommendation/
         kgrec/          基于图神经网络的推荐算法模块
     data/               数据集目录（已添加.gitignore）
     model/              模型保存目录（已添加.gitignore）
+    img/                图片目录
     academic_graph/     Django项目模块
     rank/               Django应用
     manage.py           Django管理脚本
@@ -28,25 +29,17 @@ pip install -r requirements.txt
 ```
 
 ## 异构图表示学习
-### 数据集
-* [ACM](https://github.com/liun-online/HeCo/tree/main/data/acm) - ACM学术网络数据集
-* [DBLP](https://github.com/liun-online/HeCo/tree/main/data/dblp) - DBLP学术网络数据集
-* [ogbn-mag](https://ogb.stanford.edu/docs/nodeprop/#ogbn-mag) - OGB提供的微软学术数据集
+基于对比学习的关系感知异构图神经网络(Relation-aware Heterogeneous Graph Neural Network with Contrastive Learning, RHCO)
 
-### Baselines
-* [R-GCN](https://arxiv.org/pdf/1703.06103)
-* [HGT](https://arxiv.org/pdf/2003.01332)
-* [HGConv](https://arxiv.org/pdf/2012.14722)
-* [R-HGNN](https://arxiv.org/pdf/2105.11122)
-* [C&S](https://arxiv.org/pdf/2010.13993)
-* [HeCo](https://arxiv.org/pdf/2105.09111)
+![RHCO模型结构](img/RHCO.png)
 
 ### 实验
 见 [readme](gnnrec/hge/readme.md)
 
 ## 基于图神经网络的推荐算法
-### 数据集
-oag-cs - 使用OAG微软学术数据构造的计算机领域的学术网络
+基于图神经网络的学术推荐算法(Graph Neural Network based Academic Recommendation Algorithm, GARec)
+
+![GARec算法整体框架](img/GARec.png)
 
 ### 实验
 见 [readme](gnnrec/kgrec/readme.md)
@@ -92,3 +85,16 @@ python manage.py collectstatic --settings=academic_graph.settings.prod
 export SECRET_KEY=xxx
 python manage.py runserver --settings=academic_graph.settings.prod 0.0.0.0:8000
 ```
+
+### 系统截图
+搜索论文
+![搜索论文](img/搜索论文.png)
+
+论文详情
+![论文详情](img/论文详情.png)
+
+搜索学者
+![搜索学者](img/搜索学者.png)
+
+学者详情
+![学者详情](img/学者详情.png)

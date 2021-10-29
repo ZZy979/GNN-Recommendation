@@ -40,6 +40,9 @@ def train(args):
         print(('Epoch {:d} | Loss {:.4f} | ' + METRICS_STR).format(
             epoch, loss.item(), *evaluate_full(model, g, labels, train_idx, val_idx, test_idx)
         ))
+    if args.save_path:
+        torch.save(model.cpu().state_dict(), args.save_path)
+        print('模型已保存到', args.save_path)
 
 
 def main():
@@ -53,6 +56,7 @@ def main():
     parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
     parser.add_argument('--epochs', type=int, default=10, help='训练epoch数')
     parser.add_argument('--max-lr', type=float, default=5e-4, help='学习率上界')
+    parser.add_argument('--save-path', help='模型保存路径')
     args = parser.parse_args()
     print(args)
     train(args)

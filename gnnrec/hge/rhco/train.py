@@ -20,9 +20,11 @@ def train(args):
     data, g, _, labels, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
         load_data(args.dataset, device)
     add_node_feat(g, 'pretrained', args.node_embed_path, True)
+    features = g.nodes[predict_ntype].data['feat']
 
-    pos_g = dgl.load_graphs(args.pos_graph_path)[0][0].to(device)
-    pos_g.ndata['feat'] = g.nodes[predict_ntype].data['feat']
+    (*mgs, pos_g), _ = dgl.load_graphs(args.pos_graph_path)
+    mgs = [mg.to(device) for mg in mgs]
+    pos_g = pos_g.to(device)
     pos = pos_g.in_edges(pos_g.nodes())[0].view(pos_g.num_nodes(), -1)  # (N, T_pos) 每个目标顶点的正样本id
     # 不能用pos_g.edges()，必须按终点id排序
 
@@ -31,15 +33,18 @@ def train(args):
         g, {predict_ntype: train_idx}, PositiveSampler([args.neighbor_size] * args.num_layers, pos),
         device=device, batch_size=args.batch_size
     )
-    pos_loader = NodeDataLoader(
-        pos_g, train_idx, PositiveSampler([None], pos), device=device, batch_size=args.batch_size
-    )
+    sampler = PositiveSampler([None], pos)
+    mg_loaders = [
+        NodeDataLoader(mg, train_idx, sampler, device=device, batch_size=args.batch_size)
+        for mg in mgs
+    ]
+    pos_loader = NodeDataLoader(pos_g, train_idx, sampler, device=device, batch_size=args.batch_size)
 
     model = RHCO(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
         args.num_hidden, data.num_classes, args.num_rel_hidden, args.num_heads,
         g.ntypes, g.canonical_etypes, predict_ntype, args.num_layers, args.dropout,
-        args.tau, args.lambda_
+        len(mgs), args.tau, args.lambda_
     ).to(device)
     if args.load_path:
         model.load_state_dict(torch.load(args.load_path, map_location=device))
@@ -51,14 +56,14 @@ def train(args):
     for epoch in range(args.epochs):
         model.train()
         losses = []
-        for (batch, (_, _, blocks), (_, _, pos_blocks)) in tqdm(zip(id_loader, loader, pos_loader)):
+        for (batch, (_, _, blocks), *mg_blocks, (_, _, pos_blocks)) in tqdm(zip(id_loader, loader, *mg_loaders, pos_loader)):
+            mg_feats = [features[i] for i, _, _ in mg_blocks]
+            mg_blocks = [b[0] for _, _, b in mg_blocks]
             pos_block = pos_blocks[0]
+            # pos_block.num_dst_nodes() = batch_size + 正样本数
             batch_pos = torch.zeros(pos_block.num_dst_nodes(), batch.shape[0], dtype=torch.int, device=device)
             batch_pos[pos_block.in_edges(torch.arange(batch.shape[0], device=device))] = 1
-            contrast_loss, logits = model(
-                blocks, blocks[0].srcdata['feat'],
-                pos_block, pos_block.srcdata['feat'], batch_pos.t()
-            )
+            contrast_loss, logits = model(blocks, blocks[0].srcdata['feat'], mg_blocks, mg_feats, batch_pos.t())
             clf_loss = F.cross_entropy(logits, labels[batch])
             loss = alpha * contrast_loss + (1 - alpha) * clf_loss
             losses.append(loss.item())
@@ -100,7 +105,7 @@ def main():
     parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
     parser.add_argument('--tau', type=float, default=0.8, help='温度参数')
     parser.add_argument('--lambda', type=float, default=0.5, dest='lambda_', help='对比损失的平衡系数')
-    parser.add_argument('--epochs', type=int, default=200, help='训练epoch数')
+    parser.add_argument('--epochs', type=int, default=100, help='训练epoch数')
     parser.add_argument('--batch-size', type=int, default=1024, help='批大小')
     parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
     parser.add_argument('--lr', type=float, default=0.001, help='学习率')

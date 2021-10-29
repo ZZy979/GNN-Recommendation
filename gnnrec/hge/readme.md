@@ -1,5 +1,9 @@
 # 异构图表示学习
 ## 数据集
+* [ACM](https://github.com/liun-online/HeCo/tree/main/data/acm) - ACM学术网络数据集
+* [DBLP](https://github.com/liun-online/HeCo/tree/main/data/dblp) - DBLP学术网络数据集
+* [ogbn-mag](https://ogb.stanford.edu/docs/nodeprop/#ogbn-mag) - OGB提供的微软学术数据集
+
 | 数据集 | 顶点数 | 边数 | 目标顶点 | 类别数 |
 | --- | --- | --- | --- | --- |
 | ACM | 11246 | 34852 | paper | 3 |
@@ -7,6 +11,13 @@
 | ogbn-mag | 1939743 | 21111007 | paper | 349 |
 
 ## Baselines
+* [R-GCN](https://arxiv.org/pdf/1703.06103)
+* [HGT](https://arxiv.org/pdf/2003.01332)
+* [HGConv](https://arxiv.org/pdf/2012.14722)
+* [R-HGNN](https://arxiv.org/pdf/2105.11122)
+* [C&S](https://arxiv.org/pdf/2010.13993)
+* [HeCo](https://arxiv.org/pdf/2105.09111)
+
 ### R-GCN (full batch)
 ```shell
 python -m gnnrec.hge.rgcn.train --dataset=acm --epochs=10
@@ -71,18 +82,26 @@ python -m gnnrec.hge.heco.train --dataset=ogbn-mag model/word2vec/ogbn_mag.model
 * Loss增加分类损失，训练方式由无监督改为半监督
 * 在最后增加C&S后处理步骤
 
-ACM和DBLP
+ACM
 ```shell
-python -m gnnrec.hge.rhco.train_full --dataset=acm
-python -m gnnrec.hge.rhco.train_full --dataset=dblp
+python -m gnnrec.hge.hgt.train_full --dataset=acm --save-path=model/hgt/hgt_acm.pt
+python -m gnnrec.hge.rhco.build_pos_graph_full --dataset=acm --num-samples=5 --use-label model/hgt/hgt_acm.pt data/graph/pos_graph_acm_5_label.bin
+python -m gnnrec.hge.rhco.train_full --dataset=acm data/graph/pos_graph_acm_5_label.bin
+```
+
+DBLP
+```shell
+python -m gnnrec.hge.hgt.train_full --dataset=dblp --save-path=model/hgt/hgt_dblp.pt
+python -m gnnrec.hge.rhco.build_pos_graph_full --dataset=dblp --num-samples=5 --use-label model/hgt/hgt_dblp.pt data/graph/pos_graph_dblp_5_label.bin
+python -m gnnrec.hge.rhco.train_full --dataset=dblp --use-data-pos data/graph/pos_graph_dblp_5_label.bin
 ```
 
 ogbn-mag（第3步如果中断可使用--load-path参数继续训练）
 ```shell
-python -m gnnrec.hge.hgt.train --dataset=ogbn-mag --node-embed-path=model/word2vec/ogbn_mag.model --epochs=40 --save-path=model/hgt_ogbn_mag.pt
-python -m gnnrec.hge.rhco.build_pos_graph --dataset=ogbn-mag --num-samples=5 --use-label model/word2vec/ogbn_mag.model model/hgt_ogbn_mag.pt data/graph/pos_graph_5_label.bin
-python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --num-hidden=64 --contrast-weight=0.5 model/word2vec/ogbn_mag.model data/graph/pos_graph_5_label.bin model/rhco_d64_a0.5_t5.pt
-python -m gnnrec.hge.rhco.smooth --dataset=ogbn-mag model/word2vec/ogbn_mag.model data/graph/pos_graph_5_label_c.bin model/rhco_d64_a0.5_t5.pt
+python -m gnnrec.hge.hgt.train --dataset=ogbn-mag --node-embed-path=model/word2vec/ogbn_mag.model --epochs=40 --save-path=model/hgt/hgt_ogbn-mag.pt
+python -m gnnrec.hge.rhco.build_pos_graph --dataset=ogbn-mag --num-samples=5 --use-label model/word2vec/ogbn_mag.model model/hgt/hgt_ogbn-mag.pt data/graph/pos_graph_ogbn-mag_5_label.bin
+python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --num-hidden=64 --contrast-weight=0.5 model/word2vec/ogbn_mag.model data/graph/pos_graph_ogbn-mag_5_label.bin model/rhco_d64_a0.5_t5.pt
+python -m gnnrec.hge.rhco.smooth --dataset=ogbn-mag model/word2vec/ogbn_mag.model data/graph/pos_graph_ogbn-mag_5_label.bin model/rhco_d64_a0.5_t5.pt
 ```
 
 ## 实验结果
