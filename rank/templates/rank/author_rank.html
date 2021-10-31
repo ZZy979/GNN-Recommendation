@@ -1,0 +1,12 @@
+{% extends 'rank/base.html' %}
+
+{% block title %}学者排名{% endblock %}
+
+{% block content %}
+    <form action="{% url 'rank:author-rank' %}" method="get" class="form-inline justify-content-center my-3">
+        <input id="query-input" type="search" name="q" class="form-control col-8 mr-2"
+               placeholder="领域关键词" value="{{ q }}" required>
+        <input type="submit" class="btn btn-primary col-2" value="确定">
+    </form>
+    {% include 'rank/_author_list.html' %}
+{% endblock %}

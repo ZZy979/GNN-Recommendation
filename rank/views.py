@@ -122,6 +122,20 @@ class SearchAuthorView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         if not self.request.GET.get('q'):
             return Author.objects.none()
+        return Author.objects.filter(name=self.request.GET['q'])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['q'] = self.request.GET.get('q', '')
+        return context
+
+
+class AuthorRankView(LoginRequiredMixin, ListView):
+    template_name = 'rank/author_rank.html'
+
+    def get_queryset(self):
+        if not self.request.GET.get('q'):
+            return Author.objects.none()
         _, aid = rank.rank(rank_ctx, self.request.GET['q'])
         return sorted(Author.objects.filter(id__in=aid), key=lambda a: aid.index(a.id))
 

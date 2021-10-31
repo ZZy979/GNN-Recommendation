@@ -1,4 +1,4 @@
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 from urllib.parse import quote
 
 from django.conf import settings
@@ -44,7 +44,7 @@ class LoginViewTests(TestCase):
         self.assertEqual('1', self.client.session[SESSION_KEY])
         self.assertRedirects(response, reverse('rank:index'))
 
-    def test_redirect(self, *args):
+    def test_redirect(self):
         redirect_url = reverse('rank:index') + '?foo=123&bar=abc'
         login_url = '{}?next={}'.format(reverse('rank:login'), quote(redirect_url))
         response = self.client.get(login_url)
@@ -162,17 +162,38 @@ class SearchAuthorViewTests(TestCase):
     def setUp(self):
         self.client.post(reverse('rank:login'), data={'username': 'alice', 'password': '1234'})
 
-    @patch('gnnrec.kgrec.rank.rank', return_value=(None, [1, 0]))
-    def test_ok(self, rank):
-        response = self.client.get(reverse('rank:search-author'), data={'q': 'xxx'})
+    def test_ok(self):
+        response = self.client.get(reverse('rank:search-author'), data={'q': 'A0'})
         self.assertEqual(200, response.status_code)
         self.assertTemplateUsed(response, 'rank/search_author.html')
+        self.assertQuerysetEqual(response.context['object_list'], ['A0'], transform=str)
+
+    def test_no_result(self):
+        response = self.client.get(reverse('rank:search-author'), data={'q': 'xxx'})
+        self.assertQuerysetEqual(response.context['object_list'], [], transform=str)
+        self.assertContains(response, '未找到学者xxx')
+
+
+class AuthorRankViewTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        create_test_data()
+
+    def setUp(self):
+        self.client.post(reverse('rank:login'), data={'username': 'alice', 'password': '1234'})
+
+    @patch('gnnrec.kgrec.rank.rank', return_value=(None, [1, 0]))
+    def test_ok(self, rank):
+        response = self.client.get(reverse('rank:author-rank'), data={'q': 'xxx'})
+        self.assertEqual(200, response.status_code)
+        self.assertTemplateUsed(response, 'rank/author_rank.html')
         self.assertQuerysetEqual(response.context['object_list'], ['A1', 'A0'], transform=str)
         rank.assert_called_with(None, 'xxx')
 
     def test_not_login(self):
         self.client.get(reverse('rank:logout'))
-        response = self.client.get(reverse('rank:search-author'), {'q': 'xxx'})
+        response = self.client.get(reverse('rank:author-rank'), {'q': 'xxx'})
         self.assertRedirects(response, '{}?next={}'.format(
-            reverse('rank:login'), quote(reverse('rank:search-author') + '?q=xxx')
+            reverse('rank:login'), quote(reverse('rank:author-rank') + '?q=xxx')
         ))
