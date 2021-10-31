@@ -29,15 +29,16 @@ def train(args):
         loss.backward()
         optimizer.step()
         print(('Epoch {:d} | Loss {:.4f} | ' + METRICS_STR).format(
-            epoch, loss.item(), *evaluate(model, g, features, labels, train_idx, val_idx, test_idx)
+            epoch, loss.item(),
+            *evaluate(model, g, features, labels, train_idx, val_idx, test_idx, evaluator)
         ))
 
 
 @torch.no_grad()
-def evaluate(model, g, features, labels, train_idx, val_idx, test_idx):
+def evaluate(model, g, features, labels, train_idx, val_idx, test_idx, evaluator):
     model.eval()
     logits = model(g, features)
-    return calc_metrics(logits, labels, train_idx, val_idx, test_idx)
+    return calc_metrics(logits, labels, train_idx, val_idx, test_idx, evaluator)
 
 
 def main():

@@ -30,45 +30,45 @@ python -m gnnrec.hge.rgcn.train --dataset=ogbn-mag --num-hidden=48
 使用metapath2vec（随机游走+word2vec）预训练顶点嵌入，作为GNN模型的顶点输入特征
 1. 随机游走
 ```shell
-python -m gnnrec.hge.metapath2vec.random_walk model/word2vec/ogbn_mag_corpus.txt
+python -m gnnrec.hge.metapath2vec.random_walk model/word2vec/ogbn-mag_corpus.txt
 ```
 
 2. 训练词向量
 ```shell
-python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 model/word2vec/ogbn_mag_corpus.txt model/word2vec/ogbn_mag.model
+python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 model/word2vec/ogbn-mag_corpus.txt model/word2vec/ogbn-mag.model
 ```
 
 ### HGT
 ```shell
 python -m gnnrec.hge.hgt.train_full --dataset=acm
 python -m gnnrec.hge.hgt.train_full --dataset=dblp
-python -m gnnrec.hge.hgt.train --dataset=ogbn-mag --node-embed-path=model/word2vec/ogbn_mag.model --epochs=40
+python -m gnnrec.hge.hgt.train --dataset=ogbn-mag --node-embed-path=model/word2vec/ogbn-mag.model --epochs=40
 ```
 
 ### HGConv
 ```shell
 python -m gnnrec.hge.hgconv.train_full --dataset=acm --epochs=5
 python -m gnnrec.hge.hgconv.train_full --dataset=dblp --epochs=20
-python -m gnnrec.hge.hgconv.train --dataset=ogbn-mag --node-embed-path=model/word2vec/ogbn_mag.model
+python -m gnnrec.hge.hgconv.train --dataset=ogbn-mag --node-embed-path=model/word2vec/ogbn-mag.model
 ```
 
 ### R-HGNN
 ```shell
 python -m gnnrec.hge.rhgnn.train_full --dataset=acm --epochs=30
 python -m gnnrec.hge.rhgnn.train_full --dataset=dblp --epochs=20
-python -m gnnrec.hge.rhgnn.train --dataset=ogbn-mag model/word2vec/ogbn_mag.model
+python -m gnnrec.hge.rhgnn.train --dataset=ogbn-mag model/word2vec/ogbn-mag.model
 ```
 
 ### C&S
 ```shell
 python -m gnnrec.hge.cs.train --dataset=acm --epochs=5
 python -m gnnrec.hge.cs.train --dataset=dblp --epochs=5
-python -m gnnrec.hge.cs.train --dataset=ogbn-mag --prop-graph=data/graph/pos_graph_5.bin
+python -m gnnrec.hge.cs.train --dataset=ogbn-mag --prop-graph=data/graph/pos_graph_ogbn-mag_t5.bin
 ```
 
 ### HeCo
 ```shell
-python -m gnnrec.hge.heco.train --dataset=ogbn-mag model/word2vec/ogbn_mag.model data/graph/pos_graph_5.bin
+python -m gnnrec.hge.heco.train --dataset=ogbn-mag model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5.bin
 ```
 （ACM和DBLP的数据来自 https://github.com/ZZy979/pytorch-tutorial/tree/master/gnn/heco ，准确率和Micro-F1相等）
 
@@ -85,23 +85,23 @@ python -m gnnrec.hge.heco.train --dataset=ogbn-mag model/word2vec/ogbn_mag.model
 ACM
 ```shell
 python -m gnnrec.hge.hgt.train_full --dataset=acm --save-path=model/hgt/hgt_acm.pt
-python -m gnnrec.hge.rhco.build_pos_graph_full --dataset=acm --num-samples=5 --use-label model/hgt/hgt_acm.pt data/graph/pos_graph_acm_5_label.bin
-python -m gnnrec.hge.rhco.train_full --dataset=acm data/graph/pos_graph_acm_5_label.bin
+python -m gnnrec.hge.rhco.build_pos_graph_full --dataset=acm --num-samples=5 --use-label model/hgt/hgt_acm.pt data/graph/pos_graph_acm_t5l.bin
+python -m gnnrec.hge.rhco.train_full --dataset=acm data/graph/pos_graph_acm_t5l.bin
 ```
 
 DBLP
 ```shell
 python -m gnnrec.hge.hgt.train_full --dataset=dblp --save-path=model/hgt/hgt_dblp.pt
-python -m gnnrec.hge.rhco.build_pos_graph_full --dataset=dblp --num-samples=5 --use-label model/hgt/hgt_dblp.pt data/graph/pos_graph_dblp_5_label.bin
-python -m gnnrec.hge.rhco.train_full --dataset=dblp --use-data-pos data/graph/pos_graph_dblp_5_label.bin
+python -m gnnrec.hge.rhco.build_pos_graph_full --dataset=dblp --num-samples=5 --use-label model/hgt/hgt_dblp.pt data/graph/pos_graph_dblp_t5l.bin
+python -m gnnrec.hge.rhco.train_full --dataset=dblp --use-data-pos data/graph/pos_graph_dblp_t5l.bin
 ```
 
 ogbn-mag（第3步如果中断可使用--load-path参数继续训练）
 ```shell
-python -m gnnrec.hge.hgt.train --dataset=ogbn-mag --node-embed-path=model/word2vec/ogbn_mag.model --epochs=40 --save-path=model/hgt/hgt_ogbn-mag.pt
-python -m gnnrec.hge.rhco.build_pos_graph --dataset=ogbn-mag --num-samples=5 --use-label model/word2vec/ogbn_mag.model model/hgt/hgt_ogbn-mag.pt data/graph/pos_graph_ogbn-mag_5_label.bin
-python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --num-hidden=64 --contrast-weight=0.5 model/word2vec/ogbn_mag.model data/graph/pos_graph_ogbn-mag_5_label.bin model/rhco_d64_a0.5_t5.pt
-python -m gnnrec.hge.rhco.smooth --dataset=ogbn-mag model/word2vec/ogbn_mag.model data/graph/pos_graph_ogbn-mag_5_label.bin model/rhco_d64_a0.5_t5.pt
+python -m gnnrec.hge.hgt.train --dataset=ogbn-mag --node-embed-path=model/word2vec/ogbn-mag.model --epochs=40 --save-path=model/hgt/hgt_ogbn-mag.pt
+python -m gnnrec.hge.rhco.build_pos_graph --dataset=ogbn-mag --num-samples=5 --use-label model/word2vec/ogbn-mag.model model/hgt/hgt_ogbn-mag.pt data/graph/pos_graph_ogbn-mag_t5l.bin
+python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --num-hidden=64 --contrast-weight=0.5 model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5l.bin model/rhco_d64_a0.5_t5l.pt
+python -m gnnrec.hge.rhco.smooth --dataset=ogbn-mag model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5l.bin model/rhco_d64_a0.5_t5l.pt
 ```
 
 ## 实验结果

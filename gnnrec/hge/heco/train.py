@@ -21,20 +21,22 @@ def train(args):
     data, g, _, labels, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
         load_data(args.dataset, device)
     add_node_feat(g, 'pretrained', args.node_embed_path)
+    features = g.nodes[predict_ntype].data['feat']
     relations = [r for r in g.canonical_etypes if r[2] == predict_ntype]
 
-    pos_g = dgl.load_graphs(args.pos_graph_path)[0][0].to(device)
-    pos_g.ndata['feat'] = g.nodes[predict_ntype].data['feat']
+    (*mgs, pos_g), _ = dgl.load_graphs(args.pos_graph_path)
+    mgs = [mg.to(device) for mg in mgs]
+    pos_g = pos_g.to(device)
     pos = pos_g.in_edges(pos_g.nodes())[0].view(pos_g.num_nodes(), -1)  # (N, T_pos) 每个目标顶点的正样本id
 
     id_loader = DataLoader(train_idx, batch_size=args.batch_size)
-    loader = NodeDataLoader(
-        g, {predict_ntype: train_idx}, PositiveSampler([None], pos),
-        device=device, batch_size=args.batch_size
-    )
-    pos_loader = NodeDataLoader(
-        pos_g, train_idx, PositiveSampler([None], pos), device=device, batch_size=args.batch_size
-    )
+    sampler = PositiveSampler([None], pos)
+    loader = NodeDataLoader(g, {predict_ntype: train_idx}, sampler, device=device, batch_size=args.batch_size)
+    mg_loaders = [
+        NodeDataLoader(mg, train_idx, sampler, device=device, batch_size=args.batch_size)
+        for mg in mgs
+    ]
+    pos_loader = NodeDataLoader(pos_g, train_idx, sampler, device=device, batch_size=args.batch_size)
 
     model = HeCo(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
@@ -44,12 +46,14 @@ def train(args):
     for epoch in range(args.epochs):
         model.train()
         losses = []
-        for (batch, (_, _, blocks), (_, _, pos_blocks)) in tqdm(zip(id_loader, loader, pos_loader)):
+        for (batch, (_, _, blocks), *mg_blocks, (_, _, pos_blocks)) in tqdm(zip(id_loader, loader, *mg_loaders, pos_loader)):
             block = blocks[0]
+            mg_feats = [features[i] for i, _, _ in mg_blocks]
+            mg_blocks = [b[0] for _, _, b in mg_blocks]
             pos_block = pos_blocks[0]
             batch_pos = torch.zeros(pos_block.num_dst_nodes(), batch.shape[0], dtype=torch.int, device=device)
             batch_pos[pos_block.in_edges(torch.arange(batch.shape[0], device=device))] = 1
-            loss, _ = model(block, block.srcdata['feat'], pos_block, pos_block.srcdata['feat'], batch_pos.t())
+            loss, _ = model(block, block.srcdata['feat'], mg_blocks, mg_feats, batch_pos.t())
             losses.append(loss.item())
 
             optimizer.zero_grad()
@@ -59,14 +63,14 @@ def train(args):
         print('Epoch {:d} | Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
             print(METRICS_STR.format(*evaluate(
-                model, pos_g, pos_g.ndata['feat'], device, labels, data.num_classes,
-                train_idx, val_idx, test_idx
+                model, mgs, features, device, labels, data.num_classes,
+                train_idx, val_idx, test_idx, evaluator
             )))
 
 
-def evaluate(model, pos_g, feat, device, labels, num_classes, train_idx, val_idx, test_idx):
+def evaluate(model, mgs, feat, device, labels, num_classes, train_idx, val_idx, test_idx, evaluator):
     model.eval()
-    embeds = model.get_embeds(pos_g, feat)
+    embeds = model.get_embeds(mgs, [feat] * len(mgs))
 
     clf = nn.Linear(embeds.shape[1], num_classes).to(device)
     optimizer = optim.Adam(clf.parameters(), lr=0.05)
@@ -85,7 +89,7 @@ def evaluate(model, pos_g, feat, device, labels, num_classes, train_idx, val_idx
             predict = logits.argmax(dim=1)
             if accuracy(predict[val_idx], labels[val_idx]) > best_acc:
                 best_logits = logits
-    return calc_metrics(best_logits, labels, train_idx, val_idx, test_idx)
+    return calc_metrics(best_logits, labels, train_idx, val_idx, test_idx, evaluator)
 
 
 def main():

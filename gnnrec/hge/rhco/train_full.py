@@ -50,8 +50,7 @@ def train(args):
         scheduler.step()
         torch.cuda.empty_cache()
         print(('Epoch {:d} | Loss {:.4f} | ' + METRICS_STR).format(
-            epoch, loss.item(),
-            *evaluate(model, g, predict_ntype, labels, train_idx, val_idx, test_idx)
+            epoch, loss.item(), *evaluate(model, g, labels, train_idx, val_idx, test_idx)
         ))
 
     model.eval()
@@ -63,9 +62,9 @@ def train(args):
 
 
 @torch.no_grad()
-def evaluate(model, g, predict_ntype, labels, train_idx, val_idx, test_idx):
+def evaluate(model, g, labels, train_idx, val_idx, test_idx):
     model.eval()
-    embeds = model.get_embeds(g, predict_ntype)
+    embeds = model.get_embeds(g)
     return calc_metrics(embeds, labels, train_idx, val_idx, test_idx)
 
 

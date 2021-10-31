@@ -56,7 +56,6 @@ class RelationGraphConv(nn.Module):
             g.apply_edges(fn.u_add_v('el', 'er', 'e'))
             e = self.leaky_relu(g.edata.pop('e'))
             g.edata['a'] = edge_softmax(g, e)  # (E, K, 1)
-            self.attn = g.edata['a'].squeeze(dim=-1).detach().cpu()
 
             # 消息传递
             g.update_all(fn.u_mul_e('ft', 'a', 'm'), fn.sum('m', 'ft'))
@@ -341,12 +340,11 @@ class RHGNN(nn.Module):
             nn.init.xavier_normal_(w_node[etype], gain=gain)
             nn.init.xavier_normal_(w_rel[etype], gain=gain)
 
-    def forward(self, blocks, feats, return_dict=False):
+    def forward(self, blocks, feats):
         """
         :param blocks: blocks: List[DGLBlock]
         :param feats: Dict[str, tensor(N_i, d_in_i)] 顶点类型到输入顶点特征的映射
-        :param return_dict: bool, optional 如果为True则返回顶点类型到最终嵌入的映射，否则只返回待预测类型顶点的最终嵌入
-        :return: tensor(N_i, d_out)或Dict[str, tensor(N_i, d_out)] 顶点最终嵌入
+        :return: tensor(N_i, d_out) 待预测顶点的最终嵌入
         """
         feats = {
             (stype, etype, dtype): self.fc_in[dtype](feats[dtype])
@@ -363,13 +361,10 @@ class RHGNN(nn.Module):
                 {e: rel_feats[e] for s, e, d in feats if d == ntype}
             ) for ntype in set(d for _, _, d in feats)
         }  # {ntype: tensor(N_i, K*d_hid)}
-        if return_dict:
-            return {ntype: self.classifier(out_feat) for ntype, out_feat in out_feats.items()}
-        else:
-            return self.classifier(out_feats[self.predict_ntype])
+        return self.classifier(out_feats[self.predict_ntype])
 
 
 class RHGNNFull(RHGNN):
 
-    def forward(self, g, feats, return_dict=False):
-        return super().forward([g] * len(self.layers), feats, return_dict)
+    def forward(self, g, feats):
+        return super().forward([g] * len(self.layers), feats)

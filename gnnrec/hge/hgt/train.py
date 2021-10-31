@@ -52,7 +52,7 @@ def train(args):
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
             print(METRICS_STR.format(*evaluate(
                 model, loader, g, labels, data.num_classes, predict_ntype,
-                train_idx, val_idx, test_idx
+                train_idx, val_idx, test_idx, evaluator
             )))
     if args.save_path:
         torch.save(model.cpu().state_dict(), args.save_path)

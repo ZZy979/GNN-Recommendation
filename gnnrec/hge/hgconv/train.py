@@ -47,10 +47,10 @@ def train(args):
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
             print(METRICS_STR.format(*evaluate(
                 model, loader, g, labels, data.num_classes, predict_ntype,
-                train_idx, val_idx, test_idx
+                train_idx, val_idx, test_idx, evaluator
             )))
     embeds = model.inference(g, g.ndata['feat'], device, args.batch_size)
-    print(METRICS_STR.format(*calc_metrics(embeds, labels, train_idx, val_idx, test_idx)))
+    print(METRICS_STR.format(*calc_metrics(embeds, labels, train_idx, val_idx, test_idx, evaluator)))
 
 
 def main():

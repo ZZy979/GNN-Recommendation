@@ -10,7 +10,7 @@ from gnnrec.hge.cs.model import CorrectAndSmooth
 from gnnrec.hge.utils import set_random_seed, get_device, load_data, calc_metrics, METRICS_STR
 
 
-def train_base_model(base_model, feats, labels, train_idx, val_idx, test_idx, args):
+def train_base_model(base_model, feats, labels, train_idx, val_idx, test_idx, evaluator, args):
     print('Training base model...')
     optimizer = optim.Adam(base_model.parameters(), lr=args.lr)
     for epoch in range(args.epochs):
@@ -21,18 +21,19 @@ def train_base_model(base_model, feats, labels, train_idx, val_idx, test_idx, ar
         loss.backward()
         optimizer.step()
         print(('Epoch {:d} | Loss {:.4f} | ' + METRICS_STR).format(
-            epoch, loss.item(), *evaluate(base_model, feats, labels, train_idx, val_idx, test_idx)
+            epoch, loss.item(),
+            *evaluate(base_model, feats, labels, train_idx, val_idx, test_idx, evaluator)
         ))
 
 
 @torch.no_grad()
-def evaluate(model, feats, labels, train_idx, val_idx, test_idx):
+def evaluate(model, feats, labels, train_idx, val_idx, test_idx, evaluator):
     model.eval()
     logits = model(feats)
-    return calc_metrics(logits, labels, train_idx, val_idx, test_idx)
+    return calc_metrics(logits, labels, train_idx, val_idx, test_idx, evaluator)
 
 
-def correct_and_smooth(base_model, g, feats, labels, train_idx, val_idx, test_idx, args):
+def correct_and_smooth(base_model, g, feats, labels, train_idx, val_idx, test_idx, evaluator, args):
     print('Training C&S...')
     base_model.eval()
     base_pred = base_model(feats).softmax(dim=1)  # 注意要softmax
@@ -43,7 +44,7 @@ def correct_and_smooth(base_model, g, feats, labels, train_idx, val_idx, test_id
     )
     mask = torch.cat([train_idx, val_idx])
     logits = cs(g, F.one_hot(labels).float(), base_pred, mask)
-    _, _, test_acc, _, _, test_f1 = calc_metrics(logits, labels, train_idx, val_idx, test_idx)
+    _, _, test_acc, _, _, test_f1 = calc_metrics(logits, labels, train_idx, val_idx, test_idx, evaluator)
     print('Test Acc {:.4f} | Test Macro-F1 {:.4f}'.format(test_acc, test_f1))
 
 
@@ -55,14 +56,14 @@ def train(args):
     feat = (feat - feat.mean(dim=0)) / feat.std(dim=0)
     # 标签传播图
     if args.dataset == 'ogbn-mag':
-        pg = dgl.load_graphs(args.prop_graph)[0][0].to(device)
+        pg = dgl.load_graphs(args.prop_graph)[0][-1].to(device)
     else:
         pos_v, pos_u = data.pos
         pg = dgl.graph((pos_u, pos_v), device=device)
 
     base_model = nn.Linear(feat.shape[1], data.num_classes).to(device)
-    train_base_model(base_model, feat, labels, train_idx, val_idx, test_idx, args)
-    correct_and_smooth(base_model, pg, feat, labels, train_idx, val_idx, test_idx, args)
+    train_base_model(base_model, feat, labels, train_idx, val_idx, test_idx, evaluator, args)
+    correct_and_smooth(base_model, pg, feat, labels, train_idx, val_idx, test_idx, evaluator, args)
 
 
 def main():

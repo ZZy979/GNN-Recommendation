@@ -124,22 +124,30 @@ class NetworkSchemaEncoder(nn.Module):
 
 class PositiveGraphEncoder(nn.Module):
 
-    def __init__(self, hidden_dim):
-        """正样本图编码器
+    def __init__(self, num_metapaths, in_dim, hidden_dim, attn_drop):
+        """正样本视图编码器
 
+        :param num_metapaths: int 元路径数量M
         :param hidden_dim: int 隐含特征维数
+        :param attn_drop: float 注意力dropout
         """
         super().__init__()
-        self.gcn = GraphConv(hidden_dim, hidden_dim, norm='right', activation=nn.PReLU())
+        self.gcns = nn.ModuleList([
+            GraphConv(in_dim, hidden_dim, norm='right', activation=nn.PReLU())
+            for _ in range(num_metapaths)
+        ])
+        self.attn = Attention(hidden_dim, attn_drop)
 
-    def forward(self, pos_g, feat):
+    def forward(self, mgs, feats):
         """
-        :param pos_g: DGLGraph 正样本图
-        :param feat: tensor(N, d) 输入顶点特征
+        :param mgs: List[DGLGraph] 正样本图
+        :param feats: List[tensor(N, d)] 输入顶点特征
         :return: tensor(N, d) 输出顶点特征
         """
-        z_mp = self.gcn(pos_g, feat)  # (N, d)
-        return z_mp
+        h = [gcn(mg, feat) for gcn, mg, feat in zip(self.gcns, mgs, feats)]
+        h = torch.stack(h, dim=1)  # (N, M, d)
+        z_pg = self.attn(h)  # (N, d)
+        return z_pg
 
 
 class Contrast(nn.Module):
@@ -222,7 +230,7 @@ class HeCo(nn.Module):
         })
         self.feat_drop = nn.Dropout(feat_drop)
         self.sc_encoder = NetworkSchemaEncoder(hidden_dim, attn_drop, relations)
-        self.mp_encoder = PositiveGraphEncoder(hidden_dim)
+        self.mp_encoder = PositiveGraphEncoder(len(relations), hidden_dim, hidden_dim, attn_drop)
         self.contrast = Contrast(hidden_dim, tau, lambda_)
         self.reset_parameters()
 
@@ -231,31 +239,31 @@ class HeCo(nn.Module):
         for ntype in self.fcs:
             nn.init.xavier_normal_(self.fcs[ntype].weight, gain)
 
-    def forward(self, g, feats, pos_g, pos_feat, pos):
+    def forward(self, g, feats, mgs, mg_feats, pos):
         """
         :param g: DGLGraph 异构图
         :param feats: Dict[str, tensor(N_i, d_in)] 顶点类型到输入特征的映射
-        :param pos_g: DGLGraph 正样本图
-        :param pos_feat: tensor(N_pos_src, d_in) 正样本图源顶点的输入特征
+        :param mgs: List[DGLBlock] 正样本图，len(mgs)=元路径数量=目标顶点邻居类型数S≠模型层数
+        :param mg_feats: List[tensor(N_pos_src, d_in)] 正样本图源顶点的输入特征
         :param pos: tensor(B, N) 布尔张量，每个顶点的正样本
             （B是batch大小，真正的目标顶点；N是B个目标顶点加上其正样本后的顶点数）
         :return: float, tensor(B, d_hid) 对比损失，元路径编码器输出的目标顶点特征
         """
         h = {ntype: F.elu(self.feat_drop(self.fcs[ntype](feat))) for ntype, feat in feats.items()}
-        pos_h = F.elu(self.feat_drop(self.fcs[self.dtype](pos_feat)))
+        mg_h = [F.elu(self.feat_drop(self.fcs[self.dtype](mg_feat))) for mg_feat in mg_feats]
         z_sc = self.sc_encoder(g, h)  # (N, d_hid)
-        z_mp = self.mp_encoder(pos_g, pos_h)  # (N, d_hid)
+        z_mp = self.mp_encoder(mgs, mg_h)  # (N, d_hid)
         loss = self.contrast(z_sc, z_mp, pos)
         return loss, z_mp[:pos.shape[0]]
 
     @torch.no_grad()
-    def get_embeds(self, pos_g, feat):
+    def get_embeds(self, mgs, feats):
         """计算目标顶点的最终嵌入(z_mp)
 
-        :param pos_g: DGLGraph 正样本图
-        :param feat: tensor(N_tgt, d_in) 目标顶点的输入特征
+        :param mgs: List[DGLBlock] 正样本图
+        :param feats: List[tensor(N_pos_src, d_in)] 正样本图源顶点的输入特征
         :return: tensor(N_tgt, d_hid) 目标顶点的最终嵌入
         """
-        h = F.elu(self.fcs[self.dtype](feat))
-        z_mp = self.mp_encoder(pos_g, h)
+        h = [F.elu(self.fcs[self.dtype](feat)) for feat in feats]
+        z_mp = self.mp_encoder(mgs, h)
         return z_mp

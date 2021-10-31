@@ -78,19 +78,17 @@ def train(args):
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
             print(METRICS_STR.format(*evaluate(
                 model, g, args.neighbor_size, args.batch_size, device,
-                labels, predict_ntype, train_idx, val_idx, test_idx
+                labels, train_idx, val_idx, test_idx, evaluator
             )))
     torch.save(model.state_dict(), args.save_path)
     print('模型已保存到', args.save_path)
 
 
 @torch.no_grad()
-def evaluate(
-        model, g, neighbor_size, batch_size, device, labels, predict_ntype,
-        train_idx, val_idx, test_idx):
+def evaluate(model, g, neighbor_size, batch_size, device, labels, train_idx, val_idx, test_idx, evaluator):
     model.eval()
-    embeds = model.get_embeds(g, predict_ntype, neighbor_size, batch_size, device)
-    return calc_metrics(embeds, labels, train_idx, val_idx, test_idx)
+    embeds = model.get_embeds(g, neighbor_size, batch_size, device)
+    return calc_metrics(embeds, labels, train_idx, val_idx, test_idx, evaluator)
 
 
 def main():
