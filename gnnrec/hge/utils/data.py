@@ -9,13 +9,13 @@ from gnnrec.config import DATA_DIR
 from gnnrec.hge.data import ACMDataset, DBLPDataset
 
 
-def load_data(name, device='cpu', add_reverse_edge=True, reverse_self=False):
+def load_data(name, device='cpu', add_reverse_edge=True, reverse_self=True):
     """加载数据集
 
     :param name: str 数据集名称 acm, dblp, ogbn-mag
     :param device: torch.device, optional 将图和数据移动到指定的设备上，默认为CPU
     :param add_reverse_edge: bool, optional 是否添加反向边，默认为True
-    :param reverse_self: bool, optional 起点和终点类型相同时是否添加反向边，默认为False
+    :param reverse_self: bool, optional 起点和终点类型相同时是否添加反向边，默认为True
     :return: dataset, g, features, labels, predict_ntype, train_mask, val_mask, test_mask, evaluator
     """
     if name == 'ogbn-mag':

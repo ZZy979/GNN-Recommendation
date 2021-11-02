@@ -51,7 +51,7 @@ def correct_and_smooth(base_model, g, feats, labels, train_idx, val_idx, test_id
 def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
-    data, g, feat, labels, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
+    data, _, feat, labels, _, train_idx, val_idx, test_idx, evaluator = \
         load_data(args.dataset, device)
     feat = (feat - feat.mean(dim=0)) / feat.std(dim=0)
     # 标签传播图

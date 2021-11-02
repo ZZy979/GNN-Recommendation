@@ -52,9 +52,13 @@ def calc_attn_pos(g, num_classes, predict_ntype, num_samples, device, args):
     num_neighbors = [{}, {}]
     # 形如ABA的元路径，其中A是目标顶点类型
     metapaths = []
+    rev_etype = {
+        e: next(re for rs, re, rd in g.canonical_etypes if rs == d and rd == s and re != e)
+        for s, e, d in g.canonical_etypes
+    }
     for s, e, d in g.canonical_etypes:
         if d == predict_ntype:
-            re = next(re for rs, re, rd in g.canonical_etypes if rs == d and rd == s)
+            re = rev_etype[e]
             num_neighbors[0][re] = num_neighbors[1][e] = 10
             metapaths.append((re, e))
     for i in range(len(num_neighbors)):

@@ -219,7 +219,7 @@ class RHGNNLayer(nn.Module):
         })
 
         self.rev_etype = {
-            e: next(re for rs, re, rd in etypes if rs == d and rd == s)
+            e: next(re for rs, re, rd in etypes if rs == d and rd == s and re != e)
             for s, e, d in etypes
         }
         self.reset_parameters(rel_attn)

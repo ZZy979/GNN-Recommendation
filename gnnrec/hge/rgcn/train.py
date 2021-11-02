@@ -12,7 +12,7 @@ def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
     data, g, features, labels, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
-        load_data(args.dataset, device)
+        load_data(args.dataset, device, reverse_self=False)
 
     model = RGCN(
         features.shape[1], args.num_hidden, data.num_classes, [predict_ntype],
