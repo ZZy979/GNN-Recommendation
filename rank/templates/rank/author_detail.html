@@ -7,7 +7,7 @@
     <p>{% firstof author.institution %}</p>
     <div class="row">
         <div class="col-6 col-sm-2"><p>{{ author.papers.count }} papers</p></div>
-        <div class="col-6 col-sm-2"><p>{{ n_citation }} citations</p></div>
+        <div class="col-6 col-sm-2"><p>{{ author.n_citation }} citations</p></div>
     </div>
     {% include 'rank/_paper_list.html' %}
 {% endblock %}

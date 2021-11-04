@@ -7,18 +7,24 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Author, Paper
+from .models import Author, Paper, Writes
 
 
 def create_test_data():
     User.objects.create_user('alice', 'alice@example.com', '1234')
-    Author.objects.bulk_create([Author(id=i, name=f'A{i}') for i in range(3)])
+    Author.objects.bulk_create([
+        Author(id=i, name=f'A{i}', n_citation=c)
+        for i, c in enumerate([4, 5, 3])
+    ])
     papers = Paper.objects.bulk_create([
-        Paper(id=i, title=f'P{i}', year=2021, abstract='', n_citation=2 - i)
+        Paper(id=i, title=f'P{i}', year=2021, abstract='', n_citation=3 - i)
         for i in range(3)
     ])
-    for i, a in enumerate([[0], [0, 1], [1, 2]]):
-        papers[i].authors.set(a)
+    writes = [[0, 1], [1, 2], [0, 2]]
+    Writes.objects.bulk_create(reversed([
+        Writes(author_id=a, paper_id=p, order=r + 1)
+        for p, authors in enumerate(writes) for r, a in enumerate(authors)
+    ]))
     for i, r in enumerate([[], [0], [0, 1]]):
         papers[i].references.set(r)
 
@@ -145,8 +151,8 @@ class AuthorDetailViewTests(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertTemplateUsed(response, 'rank/author_detail.html')
         self.assertContains(response, 'A0')
-        self.assertEqual(3, response.context['n_citation'])
-        self.assertQuerysetEqual(response.context['object_list'], ['P0', 'P1'], transform=str)
+        self.assertContains(response, '4 citations')
+        self.assertQuerysetEqual(response.context['object_list'], ['P0', 'P2'], transform=str)
 
     def test_not_found(self):
         response = self.client.get(reverse('rank:author-detail', args=(999,)))
@@ -197,3 +203,15 @@ class AuthorRankViewTests(TestCase):
         self.assertRedirects(response, '{}?next={}'.format(
             reverse('rank:login'), quote(reverse('rank:author-rank') + '?q=xxx')
         ))
+
+
+class WritesModelTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        create_test_data()
+
+    def test_ordering(self):
+        writes = Writes.objects.filter(paper_id=2)
+        expected = ['(author_id=0, paper_id=2, order=1)', '(author_id=2, paper_id=2, order=2)']
+        self.assertQuerysetEqual(writes, expected, transform=str)

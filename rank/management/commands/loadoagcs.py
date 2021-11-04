@@ -1,12 +1,13 @@
 import json
 import os
 
+import dgl
+import dgl.function as fn
 from django.core.management import BaseCommand
-from django.db import connection
 from tqdm import trange
 
 from gnnrec.kgrec.data import OAGCSDataset
-from rank.models import Venue, Institution, Field, Author, Paper
+from rank.models import Venue, Institution, Field, Author, Paper, Writes
 
 
 class Command(BaseCommand):
@@ -40,10 +41,17 @@ class Command(BaseCommand):
             for i, f in enumerate(iter_json(raw_path, 'mag_fields.txt'))
         ], batch_size=batch_size)
 
+        data = OAGCSDataset()
+        g = data[0]
+        apg = dgl.reverse(g['author', 'writes', 'paper'], copy_ndata=False)
+        apg.nodes['paper'].data['c'] = g.nodes['paper'].data['citation'].float()
+        apg.update_all(fn.copy_u('c', 'm'), fn.sum('m', 'c'))
+        author_citation = apg.nodes['author'].data['c'].int().tolist()
+
         print('正在导入学者数据...')
         Author.objects.bulk_create([
             Author(
-                id=i, name=a['name'],
+                id=i, name=a['name'], n_citation=author_citation[i],
                 institution_id=oid_map[a['org']] if a['org'] is not None else None
             ) for i, a in enumerate(iter_json(raw_path, 'mag_authors.txt'))
         ], batch_size=batch_size)
@@ -57,23 +65,35 @@ class Command(BaseCommand):
         ], batch_size=batch_size)
 
         print('正在导入论文关联数据（很慢）...')
-        data = OAGCSDataset()
-        g = data[0]
-        tables = [
-            ('writes', 'rank_paper_authors(author_id, paper_id)'),
-            ('has_field', 'rank_paper_fos(paper_id, field_id)'),
-            ('cites', 'rank_paper_references(from_paper_id, to_paper_id)')
-        ]
-        for etype, table in tables:
-            print(f'{etype} -> {table}')
-            u, v = g.edges(etype=etype)
-            edges = list(zip(u.tolist(), v.tolist()))
-            with connection.cursor() as cursor:
-                for i in trange(0, len(edges), batch_size):
-                    cursor.executemany(
-                        f'INSERT INTO {table} VALUES (%s, %s)',
-                        edges[i:i + batch_size]
-                    )
+        print('writes')
+        u, v = g.edges(etype='writes')
+        order = g.edges['writes'].data['order']
+        edges = list(zip(u.tolist(), v.tolist(), order.tolist()))
+        for i in trange(0, len(edges), batch_size):
+            Writes.objects.bulk_create([
+                Writes(author_id=a, paper_id=p, order=r)
+                for a, p, r in edges[i:i + batch_size]
+            ])
+
+        print('has_field')
+        u, v = g.edges(etype='has_field')
+        edges = list(zip(u.tolist(), v.tolist()))
+        HasField = Paper.fos.through
+        for i in trange(0, len(edges), batch_size):
+            HasField.objects.bulk_create([
+                HasField(paper_id=p, field_id=f)
+                for p, f in edges[i:i + batch_size]
+            ])
+
+        print('cites')
+        u, v = g.edges(etype='cites')
+        edges = list(zip(u.tolist(), v.tolist()))
+        Cites = Paper.references.through
+        for i in trange(0, len(edges), batch_size):
+            Cites.objects.bulk_create([
+                Cites(from_paper_id=p, to_paper_id=r)
+                for p, r in edges[i:i + batch_size]
+            ])
         print('导入完成')
 
 

@@ -33,15 +33,20 @@ class OAGCSDataset(DGLDataset):
     -----
     * feat: tensor(N_paper, 128) 预训练的标题和摘要词向量
     * year: tensor(N_paper) 发表年份（2010~2021）
+    * citation: tensor(N_paper) 引用数
     * 不包含标签
 
     field顶点属性
     -----
     * feat: tensor(N_field, 128) 预训练的领域向量
+
+    writes边属性
+    -----
+    * order: tensor(N_writes) 作者顺序（从1开始）
     """
 
-    def __init__(self):
-        super().__init__('oag-cs', 'https://pan.baidu.com/s/1ayH3tQxsiDDnqPoXhR0Ekg')
+    def __init__(self, **kwargs):
+        super().__init__('oag-cs', 'https://pan.baidu.com/s/1ayH3tQxsiDDnqPoXhR0Ekg', **kwargs)
 
     def download(self):
         zip_file_path = os.path.join(self.raw_dir, 'oag-cs.zip')
@@ -62,9 +67,9 @@ class OAGCSDataset(DGLDataset):
         self._oid_map = self._read_institutions()  # {原始id: 顶点id}
         self._fid_map = self._read_fields()  # {领域名称: 顶点id}
         self._aid_map, author_inst = self._read_authors()  # {原始id: 顶点id}, R(aid, oid)
-        # [原始id], R(pid, aid), R(pid, vid), R(pid, fid), R(pid, rid), [年份]
-        paper_author, paper_venue, paper_field, paper_ref, paper_years = self._read_papers()
-        self.g = self._build_graph(paper_author, paper_venue, paper_field, paper_ref, author_inst, paper_years)
+        # PA(pid, aid), PV(pid, vid), PF(pid, fid), PP(pid, rid), [年份], [引用数]
+        paper_author, paper_venue, paper_field, paper_ref, paper_year, paper_citation = self._read_papers()
+        self.g = self._build_graph(paper_author, paper_venue, paper_field, paper_ref, author_inst, paper_year, paper_citation)
 
     def _iter_json(self, filename):
         with open(os.path.join(self.raw_path, filename), encoding='utf8') as f:
@@ -95,26 +100,28 @@ class OAGCSDataset(DGLDataset):
 
     def _read_papers(self):
         print('正在读取论文数据...')
-        paper_id_map, paper_author, paper_venue, paper_field, paper_years = {}, [], [], [], []
+        paper_id_map, paper_author, paper_venue, paper_field = {}, [], [], []
+        paper_year, paper_citation = [], []
         for i, p in enumerate(self._iter_json('mag_papers.txt')):
             paper_id_map[p['id']] = i
-            paper_author.extend([i, self._aid_map[a]] for a in p['authors'])
+            paper_author.extend([i, self._aid_map[a], r + 1] for r, a in enumerate(p['authors']))
             paper_venue.append([i, self._vid_map[p['venue']]])
             paper_field.extend([i, self._fid_map[f]] for f in p['fos'] if f in self._fid_map)
-            paper_years.append(p['year'])
+            paper_year.append(p['year'])
+            paper_citation.append(p['n_citation'])
 
         paper_ref = []
         for i, p in enumerate(self._iter_json('mag_papers.txt')):
             paper_ref.extend([i, paper_id_map[r]] for r in p['references'] if r in paper_id_map)
         return (
-            pd.DataFrame(paper_author, columns=['pid', 'aid']).drop_duplicates(),
+            pd.DataFrame(paper_author, columns=['pid', 'aid', 'order']).drop_duplicates(subset=['pid', 'aid']),
             pd.DataFrame(paper_venue, columns=['pid', 'vid']),
             pd.DataFrame(paper_field, columns=['pid', 'fid']),
             pd.DataFrame(paper_ref, columns=['pid', 'rid']),
-            paper_years
+            paper_year, paper_citation
         )
 
-    def _build_graph(self, paper_author, paper_venue, paper_field, paper_ref, author_inst, paper_years):
+    def _build_graph(self, paper_author, paper_venue, paper_field, paper_ref, author_inst, paper_year, paper_citation):
         print('正在构造异构图...')
         pa_p, pa_a = paper_author['pid'].to_list(), paper_author['aid'].to_list()
         pv_p, pv_v = paper_venue['pid'].to_list(), paper_venue['vid'].to_list()
@@ -129,8 +136,10 @@ class OAGCSDataset(DGLDataset):
             ('author', 'affiliated_with', 'institution'): (ai_a, ai_i)
         })
         g.nodes['paper'].data['feat'] = torch.load(os.path.join(self.raw_path, 'paper_feat.pkl'))
-        g.nodes['paper'].data['year'] = torch.tensor(paper_years)
+        g.nodes['paper'].data['year'] = torch.tensor(paper_year)
+        g.nodes['paper'].data['citation'] = torch.tensor(paper_citation)
         g.nodes['field'].data['feat'] = torch.load(os.path.join(self.raw_path, 'field_feat.pkl'))
+        g.edges['writes'].data['order'] = torch.tensor(paper_author['order'].to_list())
         return g
 
     def has_cache(self):

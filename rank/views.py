@@ -5,7 +5,6 @@ from django.contrib.auth import authenticate, login, logout, REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
-from django.db.models import Sum
 from django.shortcuts import render, redirect
 from django.views import View
 from django.views.generic import ListView, DetailView
@@ -112,7 +111,6 @@ class AuthorDetailView(LoginRequiredMixin, SingleObjectMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['author'] = self.object
-        context['n_citation'] = self.object.papers.aggregate(Sum('n_citation'))['n_citation__sum']
         return context
 
 

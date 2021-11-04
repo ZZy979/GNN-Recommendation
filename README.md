@@ -74,6 +74,7 @@ python manage.py migrate --settings=academic_graph.settings.prod
 ```shell
 python manage.py loadoagcs --settings=academic_graph.settings.prod data/oag/cs/
 ```
+注：由于导入一次时间很长（约9小时），为了避免中途发生错误，可以先用data/oag/test中的测试数据调试一下
 
 ### 拷贝静态文件
 ```shell
