@@ -17,7 +17,7 @@ python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 model/wo
 ## 召回
 使用微调后的SciBERT模型（见 [readme](data/readme.md) 第2步）将查询词编码为向量，与预先计算好的论文标题向量计算余弦相似度，取top k
 ```shell
-python -m gnnrec.kgrec.recall data/oag/cs/paper_feat.pkl model/scibert.pt data/oag/cs/mag_papers.txt
+python -m gnnrec.kgrec.recall
 ```
 
 召回结果示例：
@@ -65,7 +65,40 @@ scholar disambiguation
 ```
 
 ## 精排
-构造学者排名数据，作为ground truth
+### 构造ground truth
+（1）验证集
+
+从AMiner发布的 [AI 2000人工智能全球最具影响力学者榜单](https://www.aminer.cn/ai2000) 抓取人工智能20个子领域的top 100学者
 ```shell
-python -m gnnrec.kgrec.data.preprocess.build_author_rank build data/oag/cs/mag_fields.txt data/oag/cs/paper_feat.pkl model/scibert.pt data/rank/author_rank.json
+pip install scrapy>=2.3.0
+cd gnnrec/kgrec/data/preprocess
+scrapy runspider ai2000_crawler.py -a save_path=/home/zzy/GNN-Recommendation/data/rank/ai2000.json
 ```
+
+与oag-cs数据集的学者匹配，并人工确认一些排名较高但未匹配上的学者，作为学者排名ground truth验证集
+```shell
+export DJANGO_SETTINGS_MODULE=academic_graph.settings.common
+export SECRET_KEY=xxx
+python -m gnnrec.kgrec.data.preprocess.build_author_rank build-val
+```
+
+（2）训练集
+
+参考AI 2000的计算公式，根据某个领域的论文引用数加权求和构造学者排名，作为ground truth训练集
+
+计算公式：
+![计算公式](https://originalfileserver.aminer.cn/data/ranks/%E5%AD%A6%E8%80%85%E8%91%97%E4%BD%9C%E5%85%AC%E5%BC%8F.png)
+即：假设一篇论文有n个作者，第k作者的权重为1/k，最后一个视为通讯作者，权重为1/2，归一化之后计算论文引用数的加权求和
+
+```shell
+python -m gnnrec.kgrec.data.preprocess.build_author_rank build-train
+```
+
+（3）采样三元组
+
+从学者排名训练集中采样三元组(t, ap, an)，表示对于领域t，学者ap的排名在an之前
+```shell
+python -m gnnrec.kgrec.data.preprocess.build_author_rank sample
+```
+
+### 训练GNN模型

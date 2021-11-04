@@ -1,5 +1,7 @@
 import json
 
+from gnnrec.config import DATA_DIR
+
 
 class Context:
 
@@ -14,8 +16,8 @@ class Context:
         self.author_rank = author_rank
 
 
-def get_context(recall_ctx, author_rank_file):
-    with open(author_rank_file) as f:
+def get_context(recall_ctx):
+    with open(DATA_DIR / 'rank/author_rank_train.json') as f:
         author_rank = json.load(f)
     return Context(recall_ctx, author_rank)
 

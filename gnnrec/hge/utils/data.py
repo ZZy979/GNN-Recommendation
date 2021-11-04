@@ -1,7 +1,6 @@
 import dgl
 import dgl.function as fn
 import torch
-from dgl.utils import extract_node_subframes, set_new_frames
 from gensim.models import Word2Vec
 from ogb.nodeproppred import DglNodePropPredDataset, Evaluator
 
@@ -75,8 +74,10 @@ def add_reverse_edges(g, reverse_self=False):
         if stype != dtype or reverse_self:
             data[(dtype, etype + '_rev', stype)] = v, u
     new_g = dgl.heterograph(data, {ntype: g.num_nodes(ntype) for ntype in g.ntypes})
-    node_frames = extract_node_subframes(g, None)
-    set_new_frames(new_g, node_frames=node_frames)
+    for ntype in g.ntypes:
+        new_g.nodes[ntype].data.update(g.nodes[ntype].data)
+    for etype in g.canonical_etypes:
+        new_g.edges[etype].data.update(g.edges[etype].data)
     return new_g
 
 

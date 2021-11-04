@@ -1,4 +1,3 @@
-import json
 import os
 
 import dgl
@@ -6,6 +5,8 @@ import pandas as pd
 import torch
 from dgl.data import DGLDataset, extract_archive
 from dgl.data.utils import save_graphs, load_graphs
+
+from gnnrec.kgrec.utils import iter_json
 
 
 class OAGCSDataset(DGLDataset):
@@ -72,9 +73,7 @@ class OAGCSDataset(DGLDataset):
         self.g = self._build_graph(paper_author, paper_venue, paper_field, paper_ref, author_inst, paper_year, paper_citation)
 
     def _iter_json(self, filename):
-        with open(os.path.join(self.raw_path, filename), encoding='utf8') as f:
-            for line in f:
-                yield json.loads(line)
+        yield from iter_json(os.path.join(self.raw_path, filename))
 
     def _read_venues(self):
         print('正在读取期刊数据...')

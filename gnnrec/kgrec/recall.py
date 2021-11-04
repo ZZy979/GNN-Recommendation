@@ -1,7 +1,6 @@
-import argparse
-
 import torch
 
+from gnnrec.config import DATA_DIR, MODEL_DIR
 from gnnrec.kgrec.data import OAGCSContrastDataset
 from gnnrec.kgrec.scibert import ContrastiveSciBERT
 
@@ -18,10 +17,10 @@ class Context:
         self.scibert_model = scibert_model
 
 
-def get_context(paper_embeds_file, scibert_model_file):
-    paper_embeds = torch.load(paper_embeds_file, map_location='cpu')
+def get_context():
+    paper_embeds = torch.load(DATA_DIR / 'oag/cs/paper_feat.pkl', map_location='cpu')
     scibert_model = ContrastiveSciBERT(128, 0.07)
-    scibert_model.load_state_dict(torch.load(scibert_model_file, map_location='cpu'))
+    scibert_model.load_state_dict(torch.load(MODEL_DIR / 'scibert.pt', map_location='cpu'))
     return Context(paper_embeds, scibert_model)
 
 
@@ -41,19 +40,13 @@ def recall(ctx, query, k=1000):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='oag-cs数据集 论文召回模块')
-    parser.add_argument('paper_embeds_file', help='预训练的论文标题向量文件')
-    parser.add_argument('scibert_model_file', help='微调后的SciBERT模型文件')
-    parser.add_argument('raw_paper_file', help='原始论文数据文件')
-    args = parser.parse_args()
-
-    ctx = get_context(args.paper_embeds_file, args.scibert_model_file)
-    data = OAGCSContrastDataset(args.raw_paper_file, 'all')
+    ctx = get_context()
+    paper_titles = OAGCSContrastDataset(DATA_DIR / 'oag/cs/mag_papers.txt', 'all')
     while True:
         query = input('query> ').strip()
         score, pid = recall(ctx, query, 10)
         for i in range(len(pid)):
-            print('{:.4f}\t{}'.format(score[i], data[pid[i]][0]))
+            print('{:.4f}\t{}'.format(score[i], paper_titles[pid[i]][0]))
 
 
 if __name__ == '__main__':

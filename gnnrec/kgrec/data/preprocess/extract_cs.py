@@ -1,7 +1,7 @@
 import argparse
 import json
-import os
 
+from gnnrec.config import DATA_DIR
 from gnnrec.kgrec.data.config import CS, CS_FIELD_L2
 from gnnrec.kgrec.data.preprocess.utils import iter_lines
 
@@ -71,7 +71,8 @@ def extract_institutions(raw_path, institution_ids):
 def extract(args):
     print('正在抽取计算机领域的论文...')
     paper_ids, author_ids, venue_ids, fields = set(), set(), set(), set()
-    with open(os.path.join(args.output_path, 'mag_papers.txt'), 'w', encoding='utf8') as f:
+    output_path = DATA_DIR / 'oag/cs'
+    with open(output_path / 'mag_papers.txt', 'w', encoding='utf8') as f:
         for p in extract_papers(args.raw_path):
             paper_ids.add(p['id'])
             author_ids.update(p['authors'])
@@ -84,7 +85,7 @@ def extract(args):
 
     print('正在抽取学者...')
     institution_ids = set()
-    with open(os.path.join(args.output_path, 'mag_authors.txt'), 'w', encoding='utf8') as f:
+    with open(output_path / 'mag_authors.txt', 'w', encoding='utf8') as f:
         for a in extract_authors(args.raw_path, author_ids):
             if a['org']:
                 institution_ids.add(a['org'])
@@ -94,14 +95,14 @@ def extract(args):
     print(f'机构数{len(institution_ids)}')
 
     print('正在抽取期刊...')
-    with open(os.path.join(args.output_path, 'mag_venues.txt'), 'w', encoding='utf8') as f:
+    with open(output_path / 'mag_venues.txt', 'w', encoding='utf8') as f:
         for v in extract_venues(args.raw_path, venue_ids):
             json.dump(v, f, ensure_ascii=False)
             f.write('\n')
     print(f'期刊抽取完成，已保存到{f.name}')
 
     print('正在抽取机构...')
-    with open(os.path.join(args.output_path, 'mag_institutions.txt'), 'w', encoding='utf8') as f:
+    with open(output_path / 'mag_institutions.txt', 'w', encoding='utf8') as f:
         for i in extract_institutions(args.raw_path, institution_ids):
             json.dump(i, f, ensure_ascii=False)
             f.write('\n')
@@ -110,7 +111,7 @@ def extract(args):
     print('正在抽取领域...')
     fields.remove(CS)
     fields = sorted(fields)
-    with open(os.path.join(args.output_path, 'mag_fields.txt'), 'w', encoding='utf8') as f:
+    with open(output_path / 'mag_fields.txt', 'w', encoding='utf8') as f:
         for i, field in enumerate(fields):
             json.dump({'id': i, 'name': field}, f, ensure_ascii=False)
             f.write('\n')
@@ -120,7 +121,6 @@ def extract(args):
 def main():
     parser = argparse.ArgumentParser(description='抽取OAG数据集计算机领域的子集')
     parser.add_argument('raw_path', help='原始zip文件所在目录')
-    parser.add_argument('output_path', help='输出目录')
     args = parser.parse_args()
     extract(args)
 

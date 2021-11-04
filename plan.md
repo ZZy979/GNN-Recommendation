@@ -42,6 +42,7 @@
 ### 基于图神经网络的推荐算法
 #### 综述
 * [x] 2020 IEEE [A Survey on Knowledge Graph-Based Recommender Systems](https://arxiv.org/pdf/2003.00911)
+* [x] 2020 [Graph Neural Networks in Recommender Systems: A Survey](http://arxiv.org/pdf/2011.02260)
 #### 基于嵌入的方法
 * [x] 2016 KDD [CKE](https://www.kdd.org/kdd2016/papers/files/adf0066-zhangA.pdf)
 * [x] 2018 [CFKG](https://arxiv.org/pdf/1803.06540)
@@ -231,7 +232,7 @@
     * [ ] 异构图表示学习
         * [ ] 完成参数敏感性分析和消融实验
     * [ ] 推荐算法精排部分
-        * [ ] 使用某个领域的学者论文引用数之和构造学者排名ground truth，采样三元组
-        * [ ] 人工标注一些三元组，验证ground truth的准确性，之后用作验证集
+        * [x] 抓取AMiner AI 2000的人工智能学者榜单作为学者排名验证集
+        * [x] 参考AI 2000的计算公式，使用某个领域的论文引用数加权求和构造学者排名ground truth训练集，采样三元组
         * [ ] 训练：使用三元组损失训练GNN模型
         * [ ] 预测：对于召回的论文构造子图，利用顶点嵌入计算查询词与学者的相似度，实现学者排名

@@ -11,5 +11,5 @@ class RankConfig(AppConfig):
     def ready(self):
         if not settings.TESTING:
             from . import views
-            views.recall_ctx = recall.get_context(settings.PAPER_EMBEDS_FILE, settings.SCIBERT_MODEL_FILE)
-            views.rank_ctx = rank.get_context(views.recall_ctx, settings.AUTHOR_RANK_FILE)
+            views.recall_ctx = recall.get_context()
+            views.rank_ctx = rank.get_context(views.recall_ctx)

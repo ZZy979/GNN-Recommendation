@@ -1,15 +1,13 @@
-import os
-
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from gnnrec.config import BASE_DIR
 
-RESULT_DIR = os.path.join(BASE_DIR, 'gnnrec/hge/result')
+RESULT_DIR = BASE_DIR / 'gnnrec/hge/result'
 
 
 def plot_param_analysis():
-    df = pd.read_csv(os.path.join(RESULT_DIR, 'param_analysis.csv'))
+    df = pd.read_csv(RESULT_DIR / 'param_analysis.csv')
     params = ['alpha', 'Tpos', 'dimension']
 
     for p in params:
@@ -20,7 +18,7 @@ def plot_param_analysis():
         ax.set_xlabel(p)
         ax.set_ylim(0.2, 0.7)
         ax.legend()
-        fig.savefig(os.path.join(RESULT_DIR, f'param_analysis_{p}.png'))
+        fig.savefig(RESULT_DIR / f'param_analysis_{p}.png')
 
 
 def main():

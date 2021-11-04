@@ -1,7 +1,8 @@
-import json
 import os
 import tempfile
 import zipfile
+
+from gnnrec.kgrec.utils import iter_json
 
 
 def iter_lines(raw_path, data_type):
@@ -18,7 +19,5 @@ def iter_lines(raw_path, data_type):
                     for txt in z.namelist():
                         print(f'{zip_file}\\{txt}')
                         txt_file = z.extract(txt, tmp)
-                        with open(txt_file, encoding='utf8') as f:
-                            for line in f:
-                                yield json.loads(line)
+                        yield from iter_json(txt_file)
                         os.remove(txt_file)

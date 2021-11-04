@@ -1,6 +1,6 @@
-import json
-
 from torch.utils.data import Dataset
+
+from gnnrec.kgrec.utils import iter_json
 
 
 class OAGCSContrastDataset(Dataset):
@@ -16,14 +16,12 @@ class OAGCSContrastDataset(Dataset):
         """
         self.titles = []
         self.keywords = []
-        with open(raw_file, encoding='utf8') as f:
-            for line in f:
-                p = json.loads(line)
-                if split == 'train' and p['year'] <= self.SPLIT_YEAR \
-                        or split == 'valid' and p['year'] > self.SPLIT_YEAR \
-                        or split == 'all':
-                    self.titles.append(p['title'])
-                    self.keywords.append('; '.join(p['fos']))
+        for p in iter_json(raw_file):
+            if split == 'train' and p['year'] <= self.SPLIT_YEAR \
+                    or split == 'valid' and p['year'] > self.SPLIT_YEAR \
+                    or split == 'all':
+                self.titles.append(p['title'])
+                self.keywords.append('; '.join(p['fos']))
 
     def __getitem__(self, item):
         return self.titles[item], self.keywords[item]

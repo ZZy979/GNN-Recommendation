@@ -68,7 +68,7 @@ python -m gnnrec.kgrec.data.preprocess.analyze affiliation data/oag/mag/
 
 ## 第1步：抽取计算机领域的子集
 ```shell
-python -m gnnrec.kgrec.data.preprocess.extract_cs data/oag/mag/ data/oag/cs/
+python -m gnnrec.kgrec.data.preprocess.extract_cs data/oag/mag/
 ```
 
 筛选近10年计算机领域的论文，从微软学术抓取了计算机科学下的34个二级领域作为领域字段过滤条件，过滤掉主要字段为空的论文
@@ -118,7 +118,7 @@ python -m gnnrec.kgrec.data.preprocess.extract_cs data/oag/mag/ data/oag/cs/
 
 1. fine-tune
 ```shell
-python -m gnnrec.kgrec.data.preprocess.fine_tune train data/oag/cs/mag_papers.txt model/scibert.pt
+python -m gnnrec.kgrec.data.preprocess.fine_tune train
 ```
 
 ```
@@ -131,7 +131,7 @@ Epoch 4 | Loss 0.0551 | Train Acc 0.9898 | Val Acc 0.9614
 
 2. 推断
 ```shell
-python -m gnnrec.kgrec.data.preprocess.fine_tune infer data/oag/cs/ model/scibert.pt data/oag/cs/paper_feat.pkl data/oag/cs/field_feat.pkl
+python -m gnnrec.kgrec.data.preprocess.fine_tune infer
 ```
 
 预训练的论文和领域向量分别保存到paper_feat.pkl和field_feat.pkl文件（已归一化），
