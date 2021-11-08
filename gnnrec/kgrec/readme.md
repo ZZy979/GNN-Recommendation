@@ -94,7 +94,20 @@ python -m gnnrec.kgrec.data.preprocess.build_author_rank build-val
 python -m gnnrec.kgrec.data.preprocess.build_author_rank build-train
 ```
 
-（3）采样三元组
+（3）评估ground truth训练集的质量
+```shell
+python -m gnnrec.kgrec.data.preprocess.build_author_rank eval
+```
+
+```
+nDGC@100=0.2420 Precision@100=0.1859    Recall@100=0.2016
+nDGC@50=0.2308  Precision@50=0.2494     Recall@50=0.1351
+nDGC@20=0.2492  Precision@20=0.3118     Recall@20=0.0678
+nDGC@10=0.2743  Precision@10=0.3471     Recall@10=0.0376
+nDGC@5=0.3165   Precision@5=0.3765      Recall@5=0.0203
+```
+
+（4）采样三元组
 
 从学者排名训练集中采样三元组(t, ap, an)，表示对于领域t，学者ap的排名在an之前
 ```shell
@@ -102,3 +115,6 @@ python -m gnnrec.kgrec.data.preprocess.build_author_rank sample
 ```
 
 ### 训练GNN模型
+```shell
+python -m gnnrec.kgrec.train model/word2vec/oag-cs.model model/garec_gnn.pt data/rank/author_embed.pt
+```

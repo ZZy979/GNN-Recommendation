@@ -60,11 +60,11 @@ def load_ogbn_mag(device, add_reverse_edge, reverse_self):
     return data, g, features, labels, 'paper', train_idx, val_idx, test_idx, evaluator
 
 
-def add_reverse_edges(g, reverse_self=False):
+def add_reverse_edges(g, reverse_self=True):
     """给异构图的每种边添加反向边，返回新的异构图
 
     :param g: DGLGraph 异构图
-    :param reverse_self: bool, optional 起点和终点类型相同时是否添加反向边，默认为False
+    :param reverse_self: bool, optional 起点和终点类型相同时是否添加反向边，默认为True
     :return: DGLGraph 添加反向边之后的异构图
     """
     data = {}

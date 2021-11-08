@@ -54,7 +54,7 @@ python -m gnnrec.hge.hgconv.train --dataset=ogbn-mag --node-embed-path=model/wor
 
 ### R-HGNN
 ```shell
-python -m gnnrec.hge.rhgnn.train_full --dataset=acm --epochs=30
+python -m gnnrec.hge.rhgnn.train_full --dataset=acm --num-layers=1 --epochs=15
 python -m gnnrec.hge.rhgnn.train_full --dataset=dblp --epochs=20
 python -m gnnrec.hge.rhgnn.train --dataset=ogbn-mag model/word2vec/ogbn-mag.model
 ```

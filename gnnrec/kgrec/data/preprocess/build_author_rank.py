@@ -1,18 +1,21 @@
 import argparse
 import json
+import math
 import random
 
 import dgl
 import dgl.function as fn
 import django
+import numpy as np
 import torch
 from dgl.ops import edge_softmax
+from sklearn.metrics import ndcg_score
 from tqdm import tqdm
 
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.utils import set_random_seed, add_reverse_edges
 from gnnrec.kgrec.data import OAGCSDataset
-from gnnrec.kgrec.utils import iter_json
+from gnnrec.kgrec.utils import iter_json, precision_at_k, recall_at_k
 
 
 def build_ground_truth_valid(args):
@@ -69,7 +72,7 @@ def build_ground_truth_train(args):
     """根据某个领域的论文引用数加权求和构造学者排名，作为ground truth训练集。"""
     data = OAGCSDataset()
     g = data[0]
-    g.nodes['paper'].data['citation'] = g.nodes['paper'].data['citation'].float()
+    g.nodes['paper'].data['citation'] = g.nodes['paper'].data['citation'].float().log1p()
     g.edges['writes'].data['order'] = g.edges['writes'].data['order'].float()
     apg = g['author', 'writes', 'paper']
 
@@ -106,6 +109,34 @@ def build_ground_truth_train(args):
     with open(DATA_DIR / 'rank/author_rank_train.json', 'w') as f:
         json.dump(author_rank, f)
         print('结果已保存到', f.name)
+
+
+def evaluate_ground_truth(args):
+    """评估ground truth训练集的质量。"""
+    with open(DATA_DIR / 'rank/author_rank_val.json') as f:
+        author_rank_val = json.load(f)
+    with open(DATA_DIR / 'rank/author_rank_train.json') as f:
+        author_rank_train = json.load(f)
+    fields = list(set(author_rank_val) & set(author_rank_train))
+    author_rank_val = {k: v for k, v in author_rank_val.items() if k in fields}
+    author_rank_train = {k: v for k, v in author_rank_train.items() if k in fields}
+
+    num_authors = OAGCSDataset()[0].num_nodes('author')
+    true_relevance = np.zeros((len(fields), num_authors), dtype=np.int32)
+    scores = np.zeros_like(true_relevance)
+    for i, f in enumerate(fields):
+        for r, a in enumerate(author_rank_val[f]):
+            if a != -1:
+                true_relevance[i, a] = math.ceil((100 - r) / 10)
+        for r, a in enumerate(author_rank_train[f]):
+            scores[i, a] = len(author_rank_train[f]) - r
+
+    for k in (100, 50, 20, 10, 5):
+        print('nDGC@{0}={1:.4f}\tPrecision@{0}={2:.4f}\tRecall@{0}={3:.4f}'.format(
+            k, ndcg_score(true_relevance, scores, k=k, ignore_ties=True),
+            sum(precision_at_k(author_rank_val[f], author_rank_train[f], k) for f in fields) / len(fields),
+            sum(recall_at_k(author_rank_val[f], author_rank_train[f], k) for f in fields) / len(fields)
+        ))
 
 
 def sample_triplets(args):
@@ -150,6 +181,9 @@ def main():
     build_train_parser.add_argument('--num-authors', type=int, default=100, help='每个领域取top k的学者数量')
     build_train_parser.add_argument('--use-field-name', action='store_true', help='使用领域名称（用于调试）')
     build_train_parser.set_defaults(func=build_ground_truth_train)
+
+    evaluate_parser = subparsers.add_parser('eval', help='评估ground truth训练集的质量')
+    evaluate_parser.set_defaults(func=evaluate_ground_truth)
 
     sample_parser = subparsers.add_parser('sample', help='采样三元组')
     sample_parser.add_argument('--seed', type=int, default=0, help='随机数种子')

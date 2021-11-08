@@ -14,10 +14,15 @@ def plot_param_analysis():
         fig, ax = plt.subplots()
         x = df[p].dropna().to_numpy()
         ax.plot(x, df[f'Accuracy_{p}'].dropna().to_numpy(), '.-', label='Accuracy')
-        ax.plot(x, df[f'Macro-F1_{p}'].dropna().to_numpy(), '.--', label='Macro-F1')
+        ax.plot(x, df[f'Macro-F1_{p}'].dropna().to_numpy(), '*--', label='Macro-F1')
         ax.set_xlabel(p)
-        ax.set_ylim(0.2, 0.7)
-        ax.legend()
+        ax.set_ylabel('Accuracy / Macro-F1')
+
+        ax2 = ax.twinx()
+        ax2.plot(x, df[f'Train-time_{p}(h)'].dropna().to_numpy(), 'x-.', label='Train time')
+        ax2.set_ylabel('Train time(h)')
+
+        fig.legend(loc='upper center')
         fig.savefig(RESULT_DIR / f'param_analysis_{p}.png')
 
 
