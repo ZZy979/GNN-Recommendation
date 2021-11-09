@@ -96,7 +96,7 @@ def main():
     parser = argparse.ArgumentParser(description='训练HeCo模型')
     parser.add_argument('--seed', type=int, default=0, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
-    parser.add_argument('--dataset', choices=['ogbn-mag'], default='ogbn-mag', help='数据集')
+    parser.add_argument('--dataset', choices=['ogbn-mag', 'oag-venue'], default='ogbn-mag', help='数据集')
     parser.add_argument('--num-hidden', type=int, default=64, help='隐藏层维数')
     parser.add_argument('--feat-drop', type=float, default=0.3, help='特征dropout')
     parser.add_argument('--attn-drop', type=float, default=0.5, help='注意力dropout')

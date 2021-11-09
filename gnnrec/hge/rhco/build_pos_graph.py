@@ -120,7 +120,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='使用预训练的HGT计算的注意力权重构造正样本图')
     parser.add_argument('--seed', type=int, default=0, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
-    parser.add_argument('--dataset', choices=['ogbn-mag'], default='ogbn-mag', help='数据集')
+    parser.add_argument('--dataset', choices=['ogbn-mag', 'oag-venue'], default='ogbn-mag', help='数据集')
     parser.add_argument('--num-hidden', type=int, default=512, help='隐藏层维数')
     parser.add_argument('--num-heads', type=int, default=8, help='注意力头数')
     parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')

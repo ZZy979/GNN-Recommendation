@@ -45,7 +45,7 @@ def main():
     parser = argparse.ArgumentParser(description='训练R-GCN模型')
     parser.add_argument('--seed', type=int, default=8, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
-    parser.add_argument('--dataset', choices=['acm', 'dblp', 'ogbn-mag'], default='ogbn-mag', help='数据集')
+    parser.add_argument('--dataset', choices=['acm', 'dblp', 'ogbn-mag', 'oag-venue'], default='ogbn-mag', help='数据集')
     parser.add_argument('--num-hidden', type=int, default=32, help='隐藏层维数')
     parser.add_argument('--num-layers', type=int, default=2, help='模型层数')
     parser.add_argument('--dropout', type=float, default=0.8, help='Dropout概率')

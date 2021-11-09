@@ -63,7 +63,7 @@ def main():
     parser = argparse.ArgumentParser(description='训练HGT模型')
     parser.add_argument('--seed', type=int, default=1, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
-    parser.add_argument('--dataset', choices=['ogbn-mag'], default='ogbn-mag', help='数据集')
+    parser.add_argument('--dataset', choices=['ogbn-mag', 'oag-cs-venue'], default='ogbn-mag', help='数据集')
     parser.add_argument(
         '--node-feat', choices=['average', 'pretrained'], default='pretrained',
         help='如何获取无特征顶点的输入特征'

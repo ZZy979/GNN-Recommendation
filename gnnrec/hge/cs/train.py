@@ -55,11 +55,14 @@ def train(args):
         load_data(args.dataset, device)
     feat = (feat - feat.mean(dim=0)) / feat.std(dim=0)
     # 标签传播图
-    if args.dataset == 'ogbn-mag':
-        pg = dgl.load_graphs(args.prop_graph)[0][-1].to(device)
-    else:
+    if args.dataset in ('acm', 'dblp'):
         pos_v, pos_u = data.pos
         pg = dgl.graph((pos_u, pos_v), device=device)
+    else:
+        pg = dgl.load_graphs(args.prop_graph)[0][-1].to(device)
+
+    if args.dataset == 'oag-venue':
+        labels[labels == -1] = 0
 
     base_model = nn.Linear(feat.shape[1], data.num_classes).to(device)
     train_base_model(base_model, feat, labels, train_idx, val_idx, test_idx, evaluator, args)
@@ -70,7 +73,7 @@ def main():
     parser = argparse.ArgumentParser(description='训练C&S模型')
     parser.add_argument('--seed', type=int, default=0, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
-    parser.add_argument('--dataset', choices=['acm', 'dblp', 'ogbn-mag'], default='ogbn-mag', help='数据集')
+    parser.add_argument('--dataset', choices=['acm', 'dblp', 'ogbn-mag', 'oag-venue'], default='ogbn-mag', help='数据集')
     # 基础模型
     parser.add_argument('--epochs', type=int, default=300, help='基础模型训练epoch数')
     parser.add_argument('--lr', type=float, default=0.01, help='基础模型学习率')

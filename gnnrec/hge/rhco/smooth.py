@@ -23,6 +23,8 @@ def main():
     data, g, _, labels, predict_ntype, train_idx, val_idx, test_idx, evaluator = \
         load_data(args.dataset, device)
     add_node_feat(g, 'pretrained', args.node_embed_path, True)
+    if args.dataset == 'oag-venue':
+        labels[labels == -1] = 0
     (*mgs, pos_g), _ = dgl.load_graphs(args.pos_graph_path)
     pos_g = pos_g.to(device)
 
@@ -45,7 +47,7 @@ def main():
 def parse_args():
     parser = argparse.ArgumentParser(description='RHCO+C&S（仅Smooth步骤）')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
-    parser.add_argument('--dataset', choices=['ogbn-mag'], default='ogbn-mag', help='数据集')
+    parser.add_argument('--dataset', choices=['ogbn-mag', 'oag-venue'], default='ogbn-mag', help='数据集')
     # RHCO
     parser.add_argument('--num-hidden', type=int, default=64, help='隐藏层维数')
     parser.add_argument('--num-rel-hidden', type=int, default=8, help='关系表示的隐藏层维数')

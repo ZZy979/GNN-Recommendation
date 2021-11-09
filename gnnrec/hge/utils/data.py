@@ -6,12 +6,13 @@ from ogb.nodeproppred import DglNodePropPredDataset, Evaluator
 
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.data import ACMDataset, DBLPDataset
+from gnnrec.kgrec.data import OAGVenueDataset
 
 
 def load_data(name, device='cpu', add_reverse_edge=True, reverse_self=True):
     """加载数据集
 
-    :param name: str 数据集名称 acm, dblp, ogbn-mag
+    :param name: str 数据集名称 acm, dblp, ogbn-mag, oag-venue
     :param device: torch.device, optional 将图和数据移动到指定的设备上，默认为CPU
     :param add_reverse_edge: bool, optional 是否添加反向边，默认为True
     :param reverse_self: bool, optional 起点和终点类型相同时是否添加反向边，默认为True
@@ -23,11 +24,15 @@ def load_data(name, device='cpu', add_reverse_edge=True, reverse_self=True):
         data = ACMDataset()
     elif name == 'dblp':
         data = DBLPDataset()
+    elif name == 'oag-venue':
+        data = OAGVenueDataset()
     else:
         raise ValueError(f'load_data: 未知数据集{name}')
     g = data[0]
     predict_ntype = data.predict_ntype
     # ACM和DBLP数据集已添加反向边
+    if add_reverse_edge and name not in ('acm', 'dblp'):
+        g = add_reverse_edges(g, reverse_self)
     g = g.to(device)
     features = g.nodes[predict_ntype].data['feat']
     labels = g.nodes[predict_ntype].data['label']

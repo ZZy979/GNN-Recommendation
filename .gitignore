@@ -10,6 +10,9 @@ __pycache__/
 # 保存的模型
 /model/
 
+# 日志输出目录
+/output/
+
 # Django
 /static/
 /.mylogin.cnf
