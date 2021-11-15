@@ -57,7 +57,7 @@ python -m gnnrec.hge.hgconv.train --dataset=oag-venue --node-embed-path=model/wo
 python -m gnnrec.hge.rhgnn.train_full --dataset=acm --num-layers=1 --epochs=15
 python -m gnnrec.hge.rhgnn.train_full --dataset=dblp --epochs=20
 python -m gnnrec.hge.rhgnn.train --dataset=ogbn-mag model/word2vec/ogbn-mag.model
-python -m gnnrec.hge.rhgnn.train --dataset=oag-venue model/word2vec/oag-cs.model
+python -m gnnrec.hge.rhgnn.train --dataset=oag-venue --epochs=50 model/word2vec/oag-cs.model
 ```
 
 ### C&S
@@ -113,6 +113,12 @@ python -m gnnrec.hge.hgt.train --dataset=oag-venue --node-embed-path=model/word2
 python -m gnnrec.hge.rhco.build_pos_graph --dataset=oag-venue --num-samples=5 --use-label model/word2vec/oag-cs.model model/hgt/hgt_oag-venue.pt data/graph/pos_graph_oag-venue_t5l.bin
 python -m gnnrec.hge.rhco.train --dataset=oag-venue --num-hidden=64 --contrast-weight=0.9 model/word2vec/oag-cs.model data/graph/pos_graph_oag-venue_t5l.bin model/rhco_oag-venue.pt
 python -m gnnrec.hge.rhco.smooth --dataset=oag-venue model/word2vec/oag-cs.model data/graph/pos_graph_oag-venue_t5l.bin model/rhco_oag-venue.pt
+```
+
+消融实验
+```shell
+python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --model=RHCO_sc model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5l.bin model/rhco_sc_ogbn-mag.pt
+python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --model=RHCO_pg model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5l.bin model/rhco_pg_ogbn-mag.pt
 ```
 
 ## 实验结果

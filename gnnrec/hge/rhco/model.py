@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from dgl.dataloading import MultiLayerNeighborSampler, NodeDataLoader
+from dgl.dataloading import MultiLayerFullNeighborSampler, NodeDataLoader
 
 from ..heco.model import PositiveGraphEncoder, Contrast
 from ..rhgnn.model import RHGNN
@@ -56,34 +56,33 @@ class RHCO(nn.Module):
         :return: float, tensor(B, d_out) 对比损失，目标顶点输出特征
         """
         z_sc = self.sc_encoder(blocks, feats)  # (N, d_hid)
-        z_mp = self.pg_encoder(mgs, mg_feats)  # (N, d_hid)
-        loss = self.contrast(z_sc, z_mp, pos)
+        z_pg = self.pg_encoder(mgs, mg_feats)  # (N, d_hid)
+        loss = self.contrast(z_sc, z_pg, pos)
         return loss, self.predict(z_sc[:pos.shape[0]])
 
     @torch.no_grad()
-    def get_embeds(self, g, neighbor_size, batch_size, device):
+    def get_embeds(self, g, batch_size, device):
         """计算目标顶点的最终嵌入(z_sc)
 
         :param g: DGLGraph 异构图
-        :param neighbor_size: int 邻居采样数
         :param batch_size: int 批大小
         :param device torch.device GPU设备
         :return: tensor(N_tgt, d_out) 目标顶点的最终嵌入
         """
-        with g.local_scope():
-            sampler = MultiLayerNeighborSampler([neighbor_size] * len(self.sc_encoder.layers))
-            loader = NodeDataLoader(
-                g, {self.predict_ntype: g.nodes(self.predict_ntype)}, sampler,
-                device=device, batch_size=batch_size
-            )
-            embeds = torch.zeros(g.num_nodes(self.predict_ntype), self.hidden_dim, device=device)
-            for input_nodes, output_nodes, blocks in loader:
-                z_sc = self.sc_encoder(blocks, blocks[0].srcdata['feat'])
-                embeds[output_nodes[self.predict_ntype]] = z_sc
-            return self.predict(embeds)
+        sampler = MultiLayerFullNeighborSampler(len(self.sc_encoder.layers))
+        loader = NodeDataLoader(
+            g, {self.predict_ntype: g.nodes(self.predict_ntype)}, sampler,
+            device=device, batch_size=batch_size
+        )
+        embeds = torch.zeros(g.num_nodes(self.predict_ntype), self.hidden_dim, device=device)
+        for input_nodes, output_nodes, blocks in loader:
+            z_sc = self.sc_encoder(blocks, blocks[0].srcdata['feat'])
+            embeds[output_nodes[self.predict_ntype]] = z_sc
+        return self.predict(embeds)
 
 
 class RHCOFull(RHCO):
+    """Full-batch RHCO"""
 
     def forward(self, g, feats, mgs, mg_feat, pos):
         return super().forward(
@@ -92,5 +91,36 @@ class RHCOFull(RHCO):
 
     @torch.no_grad()
     def get_embeds(self, g, *args):
-        embeds = self.sc_encoder([g] * len(self.sc_encoder.layers), g.ndata['feat'])
+        return self.predict(self.sc_encoder([g] * len(self.sc_encoder.layers), g.ndata['feat']))
+
+
+class RHCOsc(RHCO):
+    """RHCO消融实验变体：仅使用网络结构编码器"""
+
+    def forward(self, blocks, feats, mgs, mg_feats, pos):
+        z_sc = self.sc_encoder(blocks, feats)  # (N, d_hid)
+        loss = self.contrast(z_sc, z_sc, pos)
+        return loss, self.predict(z_sc[:pos.shape[0]])
+
+
+class RHCOpg(RHCO):
+    """RHCO消融实验变体：仅使用正样本图编码器"""
+
+    def forward(self, blocks, feats, mgs, mg_feats, pos):
+        z_pg = self.pg_encoder(mgs, mg_feats)  # (N, d_hid)
+        loss = self.contrast(z_pg, z_pg, pos)
+        return loss, self.predict(z_pg[:pos.shape[0]])
+
+    def get_embeds(self, mgs, feat, batch_size, device):
+        sampler = MultiLayerFullNeighborSampler(1)
+        mg_loaders = [
+            NodeDataLoader(mg, mg.nodes(self.predict_ntype), sampler, device=device, batch_size=batch_size)
+            for mg in mgs
+        ]
+        embeds = torch.zeros(mgs[0].num_nodes(self.predict_ntype), self.hidden_dim, device=device)
+        for mg_blocks in zip(*mg_loaders):
+            output_nodes = mg_blocks[0][1]
+            mg_feats = [feat[i] for i, _, _ in mg_blocks]
+            mg_blocks = [b[0] for _, _, b in mg_blocks]
+            embeds[output_nodes] = self.pg_encoder(mg_blocks, mg_feats)
         return self.predict(embeds)

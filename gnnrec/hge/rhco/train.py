@@ -9,9 +9,13 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from gnnrec.hge.heco.sampler import PositiveSampler
-from gnnrec.hge.rhco.model import RHCO
+from gnnrec.hge.rhco.model import RHCO, RHCOsc, RHCOpg
 from gnnrec.hge.utils import set_random_seed, get_device, load_data, add_node_feat, calc_metrics, \
     METRICS_STR
+
+
+def get_model_class(model):
+    return RHCOsc if model == 'RHCO_sc' else RHCOpg if model == 'RHCO_pg' else RHCO
 
 
 def train(args):
@@ -40,7 +44,8 @@ def train(args):
     ]
     pos_loader = NodeDataLoader(pos_g, train_idx, sampler, device=device, batch_size=args.batch_size)
 
-    model = RHCO(
+    model_class = get_model_class(args.model)
+    model = model_class(
         {ntype: g.nodes[ntype].data['feat'].shape[1] for ntype in g.ntypes},
         args.num_hidden, data.num_classes, args.num_rel_hidden, args.num_heads,
         g.ntypes, g.canonical_etypes, predict_ntype, args.num_layers, args.dropout,
@@ -77,17 +82,16 @@ def train(args):
         torch.save(model.state_dict(), args.save_path)
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
             print(METRICS_STR.format(*evaluate(
-                model, g, args.neighbor_size, args.batch_size, device,
-                labels, train_idx, val_idx, test_idx, evaluator
+                model, g, args.batch_size, device, labels, train_idx, val_idx, test_idx, evaluator
             )))
     torch.save(model.state_dict(), args.save_path)
     print('模型已保存到', args.save_path)
 
 
 @torch.no_grad()
-def evaluate(model, g, neighbor_size, batch_size, device, labels, train_idx, val_idx, test_idx, evaluator):
+def evaluate(model, g, batch_size, device, labels, train_idx, val_idx, test_idx, evaluator):
     model.eval()
-    embeds = model.get_embeds(g, neighbor_size, batch_size, device)
+    embeds = model.get_embeds(g, batch_size, device)
     return calc_metrics(embeds, labels, train_idx, val_idx, test_idx, evaluator)
 
 
@@ -96,6 +100,7 @@ def main():
     parser.add_argument('--seed', type=int, default=0, help='随机数种子')
     parser.add_argument('--device', type=int, default=0, help='GPU设备')
     parser.add_argument('--dataset', choices=['ogbn-mag', 'oag-venue'], default='ogbn-mag', help='数据集')
+    parser.add_argument('--model', choices=['RHCO', 'RHCO_sc', 'RHCO_pg'], default='RHCO', help='模型名称（用于消融实验）')
     parser.add_argument('--num-hidden', type=int, default=64, help='隐藏层维数')
     parser.add_argument('--num-rel-hidden', type=int, default=8, help='关系表示的隐藏层维数')
     parser.add_argument('--num-heads', type=int, default=8, help='注意力头数')
@@ -107,7 +112,7 @@ def main():
     parser.add_argument('--batch-size', type=int, default=512, help='批大小')
     parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
     parser.add_argument('--lr', type=float, default=0.001, help='学习率')
-    parser.add_argument('--contrast-weight', type=float, default=0.5, help='对比损失权重')
+    parser.add_argument('--contrast-weight', type=float, default=0.9, help='对比损失权重')
     parser.add_argument('--eval-every', type=int, default=10, help='每多少个epoch计算一次准确率')
     parser.add_argument('--load-path', help='模型加载路径，用于继续训练')
     parser.add_argument('node_embed_path', help='预训练顶点嵌入路径')
