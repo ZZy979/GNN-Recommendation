@@ -2,7 +2,7 @@ import torch
 
 from gnnrec.config import DATA_DIR, MODEL_DIR
 from gnnrec.kgrec.data import OAGCSContrastDataset
-from gnnrec.kgrec.scibert import ContrastiveSciBERT
+from gnnrec.kgrec.model import ContrastiveSciBERT
 
 
 class Context:
@@ -10,7 +10,7 @@ class Context:
     def __init__(self, paper_embeds, scibert_model):
         """论文召回模块上下文对象
 
-        :param paper_embeds: tensor(N, d) 论文标题向量
+        :param paper_embeds: tensor(N_paper, d) 论文标题向量
         :param scibert_model: ContrastiveSciBERT 微调后的SciBERT模型
         """
         self.paper_embeds = paper_embeds
@@ -32,9 +32,9 @@ def recall(ctx, query, k=1000):
     :param k: int, optional 召回论文数量，默认为1000
     :return: List[float], List[int] Top k论文的相似度和id，按相似度降序排序
     """
-    q = ctx.scibert_model.get_embeds(query)  # (1, d)
+    q = ctx.scibert_model.get_embeds(query).squeeze(dim=0)  # (d,)
     q = q / q.norm()
-    similarity = torch.mm(ctx.paper_embeds, q.t()).squeeze(dim=1)  # (N,)
+    similarity = torch.matmul(ctx.paper_embeds, q.t())  # (N_paper,)
     score, pid = similarity.topk(k, dim=0)
     return score.tolist(), pid.tolist()
 

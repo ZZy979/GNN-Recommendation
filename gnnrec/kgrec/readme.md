@@ -107,14 +107,17 @@ nDGC@10=0.2743  Precision@10=0.3471     Recall@10=0.0376
 nDGC@5=0.3165   Precision@5=0.3765      Recall@5=0.0203
 ```
 
-（4）采样三元组
-
-从学者排名训练集中采样三元组(t, ap, an)，表示对于领域t，学者ap的排名在an之前
-```shell
-python -m gnnrec.kgrec.data.preprocess.build_author_rank sample
-```
-
 ### 训练GNN模型
+（1）论文召回
 ```shell
-python -m gnnrec.kgrec.train model/word2vec/oag-cs.model model/garec_gnn.pt data/rank/author_embed.pt
+python -m gnnrec.kgrec.train_recall model/word2vec/oag-cs.model model/rhgnn_garec_recall.pt
 ```
+训练完成后得到论文嵌入rank/paper_embed.pkl
+
+TODO 使用这样得到的论文嵌入做第一步的召回结果又变得很差……分别尝试使用该嵌入和原始论文向量训练学者排名的效果
+
+（2）学者排名
+```shell
+python -m gnnrec.kgrec.train_rank model/word2vec/oag-cs.model model/rhgnn_garec_rank.pt
+```
+训练完成后得到学者嵌入rank/author_embed.pkl

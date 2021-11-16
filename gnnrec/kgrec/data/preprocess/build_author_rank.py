@@ -1,7 +1,6 @@
 import argparse
 import json
 import math
-import random
 
 import dgl
 import dgl.function as fn
@@ -13,7 +12,7 @@ from sklearn.metrics import ndcg_score
 from tqdm import tqdm
 
 from gnnrec.config import DATA_DIR
-from gnnrec.hge.utils import set_random_seed, add_reverse_edges
+from gnnrec.hge.utils import add_reverse_edges
 from gnnrec.kgrec.data import OAGCSDataset
 from gnnrec.kgrec.utils import iter_json, precision_at_k, recall_at_k
 
@@ -139,35 +138,6 @@ def evaluate_ground_truth(args):
         ))
 
 
-def sample_triplets(args):
-    set_random_seed(args.seed)
-    with open(DATA_DIR / 'rank/author_rank_train.json') as f:
-        author_rank = json.load(f)
-
-    # 三元组：(t, ap, an)，表示对于领域t，学者ap的排名在an之前
-    triplets = []
-    for fid, aid in author_rank.items():
-        fid = int(fid)
-        n = len(aid)
-        easy_margin, hard_margin = int(n * args.easy_margin), int(n * args.hard_margin)
-        num_triplets = min(args.max_num, 2 * n - easy_margin - hard_margin)
-        num_hard = int(num_triplets * args.hard_ratio)
-        num_easy = num_triplets - num_hard
-        triplets.extend(
-            (fid, aid[i], aid[i + easy_margin])
-            for i in random.sample(range(n - easy_margin), num_easy)
-        )
-        triplets.extend(
-            (fid, aid[i], aid[i + hard_margin])
-            for i in random.sample(range(n - hard_margin), num_hard)
-        )
-
-    with open(DATA_DIR / 'rank/author_rank_triplets.txt', 'w') as f:
-        for t, ap, an in triplets:
-            f.write(f'{t} {ap} {an}\n')
-        print('结果已保存到', f.name)
-
-
 def main():
     parser = argparse.ArgumentParser(description='基于oag-cs数据集构造学者排名数据集')
     subparsers = parser.add_subparsers()
@@ -184,14 +154,6 @@ def main():
 
     evaluate_parser = subparsers.add_parser('eval', help='评估ground truth训练集的质量')
     evaluate_parser.set_defaults(func=evaluate_ground_truth)
-
-    sample_parser = subparsers.add_parser('sample', help='采样三元组')
-    sample_parser.add_argument('--seed', type=int, default=0, help='随机数种子')
-    sample_parser.add_argument('--max-num', type=int, default=100, help='每个领域采样三元组最大数量')
-    sample_parser.add_argument('--easy-margin', type=float, default=0.2, help='简单样本间隔（百分比）')
-    sample_parser.add_argument('--hard-margin', type=float, default=0.05, help='困难样本间隔（百分比）')
-    sample_parser.add_argument('--hard-ratio', type=float, default=0.5, help='困难样本比例')
-    sample_parser.set_defaults(func=sample_triplets)
 
     args = parser.parse_args()
     print(args)
