@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 from gnnrec.config import BASE_DIR
@@ -26,8 +27,24 @@ def plot_param_analysis():
         fig.savefig(RESULT_DIR / f'param_analysis_{p}.png')
 
 
+def plot_ablation_study():
+    df = pd.read_csv(RESULT_DIR / 'ablation_study.csv')
+    labels = ['Accuracy', 'Macro-F1']
+    x = np.arange(len(labels))
+    width = 0.2
+
+    fig, ax = plt.subplots()
+    for d, model in zip(range(-1, 2), ('RHCO_pg', 'RHCO_sc', 'RHCO')):
+        ax.bar(x + d * width, df[model].to_numpy(), width, label=model)
+    ax.set_xticks(x, labels)
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(RESULT_DIR / 'ablation_study.png')
+
+
 def main():
     plot_param_analysis()
+    plot_ablation_study()
 
 
 if __name__ == '__main__':

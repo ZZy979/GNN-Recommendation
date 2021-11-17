@@ -61,10 +61,11 @@ class RHCO(nn.Module):
         return loss, self.predict(z_sc[:pos.shape[0]])
 
     @torch.no_grad()
-    def get_embeds(self, g, batch_size, device):
+    def get_embeds(self, g, mgs, batch_size, device):
         """计算目标顶点的最终嵌入(z_sc)
 
         :param g: DGLGraph 异构图
+        :param mgs: List[DGLGraph] 正样本图
         :param batch_size: int 批大小
         :param device torch.device GPU设备
         :return: tensor(N_tgt, d_out) 目标顶点的最终嵌入
@@ -111,13 +112,14 @@ class RHCOpg(RHCO):
         loss = self.contrast(z_pg, z_pg, pos)
         return loss, self.predict(z_pg[:pos.shape[0]])
 
-    def get_embeds(self, mgs, feat, batch_size, device):
+    def get_embeds(self, g, mgs, batch_size, device):
+        feat = g.nodes[self.predict_ntype].data['feat']
         sampler = MultiLayerFullNeighborSampler(1)
         mg_loaders = [
-            NodeDataLoader(mg, mg.nodes(self.predict_ntype), sampler, device=device, batch_size=batch_size)
+            NodeDataLoader(mg, g.nodes(self.predict_ntype), sampler, device=device, batch_size=batch_size)
             for mg in mgs
         ]
-        embeds = torch.zeros(mgs[0].num_nodes(self.predict_ntype), self.hidden_dim, device=device)
+        embeds = torch.zeros(g.num_nodes(self.predict_ntype), self.hidden_dim, device=device)
         for mg_blocks in zip(*mg_loaders):
             output_nodes = mg_blocks[0][1]
             mg_feats = [feat[i] for i, _, _ in mg_blocks]

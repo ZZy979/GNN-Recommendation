@@ -2,7 +2,7 @@
 dgl==0.7.0
 django>=3.2.8
 gensim>=3.8.3
-matplotlib>=3.3.1
+matplotlib>=3.5.0
 mysqlclient>=2.0.3
 numpy>=1.20.1
 ogb>=1.2.5

@@ -118,7 +118,9 @@ python -m gnnrec.hge.rhco.smooth --dataset=oag-venue model/word2vec/oag-cs.model
 消融实验
 ```shell
 python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --model=RHCO_sc model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5l.bin model/rhco_sc_ogbn-mag.pt
-python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --model=RHCO_pg model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5l.bin model/rhco_pg_ogbn-mag.pt
+python -m gnnrec.hge.rhco.smooth --dataset=ogbn-mag model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5l.bin model/rhco_sc_ogbn-mag.pt
+
+python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --model=RHCO_pg model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5.bin model/rhco_pg_ogbn-mag.pt
 ```
 
 ## 实验结果
