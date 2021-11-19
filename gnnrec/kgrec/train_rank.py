@@ -4,8 +4,6 @@ import math
 import random
 import warnings
 
-import dgl
-import dgl.function as fn
 import numpy as np
 import torch
 import torch.nn.functional as F

@@ -34,8 +34,8 @@ def recall(ctx, query, k=1000):
     """
     q = ctx.scibert_model.get_embeds(query).squeeze(dim=0)  # (d,)
     q = q / q.norm()
-    similarity = torch.matmul(ctx.paper_embeds, q.t())  # (N_paper,)
-    score, pid = similarity.topk(k, dim=0)
+    similarity = torch.matmul(ctx.paper_embeds, q)
+    score, pid = similarity.topk(k)
     return score.tolist(), pid.tolist()
 
 
