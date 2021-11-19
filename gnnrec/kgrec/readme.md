@@ -121,3 +121,6 @@ TODO 使用这样得到的论文嵌入做第一步的召回结果又变得很差
 python -m gnnrec.kgrec.train_rank model/word2vec/oag-cs.model model/rhgnn_garec_rank.pt
 ```
 训练完成后得到学者嵌入rank/author_embed.pkl
+
+TODO 不管使用上一步得到的论文嵌入还是原始标题向量，学者排名效果都很差，nDGC@100只有0.02~0.03 `_(:з」∠)_`
+训练学者排名前的论文召回改为直接使用论文召回的ground truth（领域和学者关联论文的交集），nDGC@100能到0.16~0.17，还是比较差

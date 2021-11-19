@@ -1,3 +1,5 @@
-评价指标,RHCO,RHCO_sc,RHCO_pg
-Accuracy,0.5662,0.5302,0.3683
-Macro-F1,0.3433,0.3105,0.1874
+数据集,评价指标,RHCO,RHCO_sc,RHCO_pg
+ogbn-mag,Accuracy,0.5662,0.5302,0.3683
+ogbn-mag,Macro-F1,0.3433,0.3105,0.1874
+oag-venue,Accuracy,0.9623,0.9529,0.5309
+oag-venue,Macro-F1,0.9186,0.8867,0.4509

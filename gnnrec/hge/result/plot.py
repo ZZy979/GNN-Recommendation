@@ -29,17 +29,19 @@ def plot_param_analysis():
 
 def plot_ablation_study():
     df = pd.read_csv(RESULT_DIR / 'ablation_study.csv')
+    datasets = ['ogbn-mag', 'oag-venue']
     labels = ['Accuracy', 'Macro-F1']
     x = np.arange(len(labels))
     width = 0.2
 
-    fig, ax = plt.subplots()
-    for d, model in zip(range(-1, 2), ('RHCO_pg', 'RHCO_sc', 'RHCO')):
-        ax.bar(x + d * width, df[model].to_numpy(), width, label=model)
-    ax.set_xticks(x, labels)
-    ax.legend()
-    fig.tight_layout()
-    fig.savefig(RESULT_DIR / 'ablation_study.png')
+    for i, d in enumerate(datasets):
+        fig, ax = plt.subplots()
+        for r, model in zip(range(-1, 2), ('RHCO_pg', 'RHCO_sc', 'RHCO')):
+            ax.bar(x + r * width, df[model][i * 2:(i + 1) * 2].to_numpy(), width, label=model)
+        ax.set_xticks(x, labels)
+        ax.legend()
+        fig.tight_layout()
+        fig.savefig(RESULT_DIR / f'ablation_study_{d}.png')
 
 
 def main():

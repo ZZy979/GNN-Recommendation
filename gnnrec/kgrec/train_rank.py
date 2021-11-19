@@ -19,6 +19,7 @@ from gnnrec.config import DATA_DIR
 from gnnrec.hge.rhgnn.model import RHGNN
 from gnnrec.hge.utils import set_random_seed, get_device, add_reverse_edges, add_node_feat
 from gnnrec.kgrec.data import OAGCSDataset
+from gnnrec.kgrec.train_recall import load_data as load_recall_data
 from gnnrec.kgrec.utils import TripletNodeCollator
 
 
@@ -47,13 +48,12 @@ def recall_paper(g, field_ids, num_recall):
     :param num_recall: 每个领域召回的论文数
     :return: Dict[int, List[int]] {field_id: [paper_id]}
     """
-    similarity = torch.zeros((len(field_ids), g.num_nodes('paper')), device=g.device)
-    sg = dgl.out_subgraph(g['has_field_rev'], {'field': field_ids}, relabel_nodes=True)
-    sg.apply_edges(fn.u_dot_v('feat', 'feat', 's'))
-    f, p = sg.edges()
-    similarity[f, sg.nodes['paper'].data[dgl.NID][p]] = sg.edata['s'].squeeze(dim=1)
-    _, pid = similarity.topk(num_recall, dim=1)
-    return {f: pid[i].tolist() for i, f in enumerate(field_ids)}
+    g, train_eids = load_recall_data()
+    u, v = g.find_edges(train_eids, etype='has_field')
+    field_paper = {f: [] for f in field_ids}
+    for p, f in zip(u.tolist(), v.tolist()):
+        field_paper[f].append(p)
+    return field_paper
 
 
 def sample_triplets(field_id, author_ids, args):
@@ -84,7 +84,7 @@ def train(args):
     set_random_seed(args.seed)
     device = get_device(args.device)
     g, author_rank, field_ids, true_relevance = load_data(device)
-    g.nodes['paper'].data['feat'] = torch.load(DATA_DIR / 'rank/paper_embed.pkl', map_location=device)
+    # g.nodes['paper'].data['feat'] = torch.load(DATA_DIR / 'rank/paper_embed.pkl', map_location=device)
     out_dim = g.nodes['field'].data['feat'].shape[1]
     add_node_feat(g, 'pretrained', args.node_embed_path)
     field_paper = recall_paper(g, field_ids, args.num_recall)  # {field_id: [paper_id]}
@@ -124,10 +124,11 @@ def train(args):
             torch.cuda.empty_cache()
         print('Epoch {:d} | Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
         torch.save(model.state_dict(), args.model_save_path)
-        print('nDCG@{}={:.4f}'.format(args.k, evaluate(
-            model, g, out_dim, sampler, args.batch_size, device, field_ids,
-            field_paper, true_relevance, args.k
-        )))
+        if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
+            print('nDCG@{}={:.4f}'.format(args.k, evaluate(
+                model, g, out_dim, sampler, args.batch_size, device, field_ids,
+                field_paper, true_relevance, args.k
+            )))
     torch.save(model.state_dict(), args.model_save_path)
     print('模型已保存到', args.model_save_path)
 
@@ -140,12 +141,15 @@ def train(args):
 @torch.no_grad()
 def evaluate(model, g, out_dim, sampler, batch_size, device, field_ids, field_paper, true_relevance, k):
     model.eval()
+    field_feat = g.nodes['field'].data['feat']
     author_embeds = infer(model, g, 'author', out_dim, sampler, batch_size, device)  # (N_author, d)
-    author_scores = torch.zeros(len(field_ids), author_embeds.shape[0])  # (N_field, N_author)
+    ndcg_scores = []
     for i, f in enumerate(field_ids):
-        aid = g.in_edges(field_paper[f], etype='writes')[0].numpy()
-        author_scores[i, aid] = torch.matmul(author_embeds[aid], g.nodes['field'].data['feat'][f])
-    return ndcg_score(true_relevance, author_scores, k=k, ignore_ties=True)
+        aid = g.in_edges(field_paper[f], etype='writes')[0].cpu().numpy()
+        y_true = true_relevance[i, aid][np.newaxis]
+        y_score = torch.matmul(author_embeds[aid], field_feat[f]).cpu().numpy()[np.newaxis]
+        ndcg_scores.append(ndcg_score(y_true, y_score, k=k, ignore_ties=True))
+    return sum(ndcg_scores) / len(ndcg_scores)
 
 
 @torch.no_grad()
@@ -168,7 +172,7 @@ def main():
     parser.add_argument('--num-heads', type=int, default=8, help='注意力头数')
     parser.add_argument('--num-layers', type=int, default=2, help='层数')
     parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
-    parser.add_argument('--epochs', type=int, default=200, help='训练epoch数')
+    parser.add_argument('--epochs', type=int, default=50, help='训练epoch数')
     parser.add_argument('--batch-size', type=int, default=1024, help='批大小')
     parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
     parser.add_argument('--lr', type=float, default=0.001, help='学习率')
@@ -178,6 +182,7 @@ def main():
     parser.add_argument('--hard-margin', type=float, default=0.05, help='困难样本间隔（百分比）')
     parser.add_argument('--hard-ratio', type=float, default=0.5, help='困难样本比例')
     # 评价
+    parser.add_argument('--eval-every', type=int, default=10, help='每多少个epoch评价一次')
     parser.add_argument('--num-recall', type=int, default=1000, help='评价时每个领域召回论文的数量')
     parser.add_argument('-k', type=int, default=100, help='评价指标只考虑top k的学者')
     parser.add_argument('node_embed_path', help='预训练顶点嵌入路径')

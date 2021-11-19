@@ -37,7 +37,7 @@ def main():
     model.load_state_dict(torch.load(args.model_path, map_location=device))
     model.eval()
 
-    base_pred = model.get_embeds(g, mgs, args.batch_size, device)
+    base_pred = model.get_embeds(g, mgs, args.neighbor_size, args.batch_size, device)
     mask = torch.cat([train_idx, val_idx])
     logits = smooth(base_pred, pos_g, labels, mask, args)
     _, _, test_acc, _, _, test_f1 = calc_metrics(logits, labels, train_idx, val_idx, test_idx, evaluator)

@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from dgl.dataloading import MultiLayerFullNeighborSampler, NodeDataLoader
+from dgl.dataloading import MultiLayerFullNeighborSampler, MultiLayerNeighborSampler, NodeDataLoader
 
 from ..heco.model import PositiveGraphEncoder, Contrast
 from ..rhgnn.model import RHGNN
@@ -61,16 +61,17 @@ class RHCO(nn.Module):
         return loss, self.predict(z_sc[:pos.shape[0]])
 
     @torch.no_grad()
-    def get_embeds(self, g, mgs, batch_size, device):
+    def get_embeds(self, g, mgs, neighbor_size, batch_size, device):
         """计算目标顶点的最终嵌入(z_sc)
 
         :param g: DGLGraph 异构图
         :param mgs: List[DGLGraph] 正样本图
+        :param neighbor_size: int 邻居采样数
         :param batch_size: int 批大小
         :param device torch.device GPU设备
         :return: tensor(N_tgt, d_out) 目标顶点的最终嵌入
         """
-        sampler = MultiLayerFullNeighborSampler(len(self.sc_encoder.layers))
+        sampler = MultiLayerNeighborSampler([neighbor_size] * len(self.sc_encoder.layers))
         loader = NodeDataLoader(
             g, {self.predict_ntype: g.nodes(self.predict_ntype)}, sampler,
             device=device, batch_size=batch_size
@@ -112,7 +113,7 @@ class RHCOpg(RHCO):
         loss = self.contrast(z_pg, z_pg, pos)
         return loss, self.predict(z_pg[:pos.shape[0]])
 
-    def get_embeds(self, g, mgs, batch_size, device):
+    def get_embeds(self, g, mgs, neighbor_size, batch_size, device):
         feat = g.nodes[self.predict_ntype].data['feat']
         sampler = MultiLayerFullNeighborSampler(1)
         mg_loaders = [
