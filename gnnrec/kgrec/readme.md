@@ -112,9 +112,14 @@ nDGC@5=0.3165   Precision@5=0.3765      Recall@5=0.0203
 ```shell
 python -m gnnrec.kgrec.train_recall model/word2vec/oag-cs.model model/rhgnn_garec_recall.pt
 ```
+```
+Precision 0.9236 | Recall 0.9632 | F1 0.9430
+```
 训练完成后得到论文嵌入rank/paper_embed.pkl
 
-TODO 使用这样得到的论文嵌入做第一步的召回结果又变得很差……分别尝试使用该嵌入和原始论文向量训练学者排名的效果
+连接预测的边由P-F改为F-P，模型输出的边得分使用sigmoid归一化
+连接预测的F1能到0.96以上，但每个领域单独召回论文的召回率仍然很低
+TODO 分析原因，提升召回率
 
 （2）学者排名
 ```shell
@@ -122,5 +127,7 @@ python -m gnnrec.kgrec.train_rank model/word2vec/oag-cs.model model/rhgnn_garec_
 ```
 训练完成后得到学者嵌入rank/author_embed.pkl
 
-TODO 不管使用上一步得到的论文嵌入还是原始标题向量，学者排名效果都很差，nDGC@100只有0.02~0.03 `_(:з」∠)_`
-训练学者排名前的论文召回改为直接使用论文召回的ground truth（领域和学者关联论文的交集），nDGC@100能到0.16~0.17，还是比较差
+三元组的采样范围由每个领域的top-n学者改为每个领域召回的论文关联的所有学者
+（论文召回仍然直接使用ground truth）
+学者嵌入归一化（保证三元组损失中的距离和最终预测时的内积/余弦相似度等价）
+nDCG@100提升到0.38，仍需继续优化

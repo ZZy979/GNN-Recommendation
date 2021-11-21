@@ -46,7 +46,7 @@ def recall_paper(g, field_ids, num_recall):
     :param num_recall: 每个领域召回的论文数
     :return: Dict[int, List[int]] {field_id: [paper_id]}
     """
-    g, train_eids = load_recall_data()
+    g, _, train_eids = load_recall_data()
     u, v = g.find_edges(train_eids, etype='has_field')
     field_paper = {f: [] for f in field_ids}
     for p, f in zip(u.tolist(), v.tolist()):
@@ -54,28 +54,31 @@ def recall_paper(g, field_ids, num_recall):
     return field_paper
 
 
-def sample_triplets(field_id, author_ids, args):
+def sample_triplets(field_id, true_author_ids, false_author_ids, num_triplets):
     """根据领域学者排名采样三元组(t, ap, an)，表示对于领域t，学者ap的排名在an之前
 
     :param field_id: int 领域id
-    :param author_ids: List[int] 学者排名
-    :param args: 命令行参数
+    :param true_author_ids: List[int] top-n学者id，真实排名
+    :param false_author_ids: List[int] 不属于top-n的学者id
+    :param num_triplets: int 采样的三元组数量
     :return: tensor(N, 3) 采样的三元组
     """
-    n = len(author_ids)
-    easy_margin, hard_margin = int(n * args.easy_margin), int(n * args.hard_margin)
-    num_triplets = min(args.max_triplets, 2 * n - easy_margin - hard_margin)
-    num_hard = int(num_triplets * args.hard_ratio)
-    num_easy = num_triplets - num_hard
+    n = len(true_author_ids)
+    easy_margin, hard_margin = int(n * 0.2), int(n * 0.05)
     easy_triplets = [
-        (field_id, author_ids[i], author_ids[i + easy_margin])
-        for i in random.sample(range(n - easy_margin), num_easy)
-    ]
+        (field_id, true_author_ids[i], true_author_ids[i + easy_margin])
+        for i in range(n - easy_margin)
+    ]  # 简单样本
     hard_triplets = [
-        (field_id, author_ids[i], author_ids[i + hard_margin])
-        for i in random.sample(range(n - hard_margin), num_hard)
-    ]
-    return torch.tensor(easy_triplets + hard_triplets)
+        (field_id, true_author_ids[i], true_author_ids[i + hard_margin])
+        for i in range(n - hard_margin)
+    ]  # 困难样本
+    m = num_triplets - len(easy_triplets) - len(hard_triplets)
+    true_false_triplets = [
+        (field_id, t, f)
+        for t, f in zip(random.choices(true_author_ids, k=m), random.choices(false_author_ids, k=m))
+    ]  # 真-假样本
+    return torch.tensor(easy_triplets + hard_triplets + true_false_triplets)
 
 
 def train(args):
@@ -105,9 +108,11 @@ def train(args):
         model.train()
         losses = []
         for f in tqdm(field_ids):
-            triplets = sample_triplets(f, author_rank[f], args).to(device)
+            false_author_ids = list(set(g.in_edges(field_paper[f], etype='writes')[0].tolist()) - set(author_rank[f]))
+            triplets = sample_triplets(f, author_rank[f], false_author_ids, args.num_triplets).to(device)
             aid, blocks = triplet_collator.collate(triplets)
             author_embeds = model(blocks, blocks[0].srcdata['feat'])
+            author_embeds = author_embeds / author_embeds.norm(dim=1, keepdim=True)
             aid_map = {a: i for i, a in enumerate(aid.tolist())}
             anchor = g.nodes['field'].data['feat'][triplets[:, 0]]
             positive = author_embeds[[aid_map[a] for a in triplets[:, 1].tolist()]]
@@ -121,11 +126,10 @@ def train(args):
             scheduler.step()
             torch.cuda.empty_cache()
         print('Epoch {:d} | Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
-        torch.save(model.state_dict(), args.model_save_path)
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
-            print('nDCG@{}={:.4f}'.format(args.k, evaluate(
+            print(' | '.join(f'nDCG@{k}={{0[{k}]:.4f}}' for k in (1, 10, 20, 50, 100)).format(evaluate(
                 model, g, out_dim, sampler, args.batch_size, device, field_ids,
-                field_paper, true_relevance, args.k
+                field_paper, true_relevance
             )))
     torch.save(model.state_dict(), args.model_save_path)
     print('模型已保存到', args.model_save_path)
@@ -137,17 +141,18 @@ def train(args):
 
 
 @torch.no_grad()
-def evaluate(model, g, out_dim, sampler, batch_size, device, field_ids, field_paper, true_relevance, k):
+def evaluate(model, g, out_dim, sampler, batch_size, device, field_ids, field_paper, true_relevance):
     model.eval()
     field_feat = g.nodes['field'].data['feat']
     author_embeds = infer(model, g, 'author', out_dim, sampler, batch_size, device)  # (N_author, d)
-    ndcg_scores = []
+    ndcg_scores = {k: [] for k in (1, 10, 20, 50, 100)}
     for i, f in enumerate(field_ids):
         aid = g.in_edges(field_paper[f], etype='writes')[0].cpu().numpy()
         y_true = true_relevance[i, aid][np.newaxis]
         y_score = torch.matmul(author_embeds[aid], field_feat[f]).cpu().numpy()[np.newaxis]
-        ndcg_scores.append(ndcg_score(y_true, y_score, k=k, ignore_ties=True))
-    return sum(ndcg_scores) / len(ndcg_scores)
+        for k in ndcg_scores:
+            ndcg_scores[k].append(ndcg_score(y_true, y_score, k=k, ignore_ties=True))
+    return {k: sum(scores) / len(scores) for k, scores in ndcg_scores.items()}
 
 
 @torch.no_grad()
@@ -157,6 +162,7 @@ def infer(model, g, ntype, out_dim, sampler, batch_size, device):
     loader = NodeDataLoader(g, {ntype: g.nodes(ntype)}, sampler, device=device, batch_size=batch_size)
     for _, output_nodes, blocks in tqdm(loader):
         embeds[output_nodes[ntype]] = model(blocks, blocks[0].srcdata['feat'])
+    embeds = embeds / embeds.norm(dim=1, keepdim=True)
     return embeds
 
 
@@ -175,14 +181,10 @@ def main():
     parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
     parser.add_argument('--lr', type=float, default=0.001, help='学习率')
     # 采样三元组
-    parser.add_argument('--max-triplets', type=int, default=100, help='每个领域采样三元组最大数量')
-    parser.add_argument('--easy-margin', type=float, default=0.2, help='简单样本间隔（百分比）')
-    parser.add_argument('--hard-margin', type=float, default=0.05, help='困难样本间隔（百分比）')
-    parser.add_argument('--hard-ratio', type=float, default=0.5, help='困难样本比例')
+    parser.add_argument('--num-triplets', type=int, default=1000, help='每个领域采样三元组数量')
     # 评价
     parser.add_argument('--eval-every', type=int, default=10, help='每多少个epoch评价一次')
     parser.add_argument('--num-recall', type=int, default=1000, help='评价时每个领域召回论文的数量')
-    parser.add_argument('-k', type=int, default=100, help='评价指标只考虑top k的学者')
     parser.add_argument('node_embed_path', help='预训练顶点嵌入路径')
     parser.add_argument('model_save_path', help='模型保存路径')
     args = parser.parse_args()

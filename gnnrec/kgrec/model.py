@@ -77,7 +77,7 @@ class HeteroDotProductPredictor(nn.Module):
         with g.local_scope():
             g.ndata['h'] = feats
             g.apply_edges(fn.u_dot_v('h', 'h', 'score'), etype=etype)
-            return g.edges[etype].data['score']
+            return torch.sigmoid(g.edges[etype].data['score'])
 
 
 class RecallModel(nn.Module):
