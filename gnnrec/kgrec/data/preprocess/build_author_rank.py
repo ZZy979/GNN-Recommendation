@@ -4,7 +4,6 @@ import math
 
 import dgl
 import dgl.function as fn
-import django
 import numpy as np
 import torch
 from dgl.ops import edge_softmax
@@ -44,6 +43,7 @@ def build_ground_truth_valid(args):
     with open(DATA_DIR / 'rank/ai2000.json', encoding='utf8') as f:
         ai2000_author_rank = json.load(f)
 
+    import django
     django.setup()
     from rank.models import Author
 
@@ -79,27 +79,14 @@ def build_ground_truth_train(args):
     field_in_degree, fid = g.in_degrees(g.nodes('field'), etype='has_field').sort(descending=True)
     fid = fid[field_in_degree >= args.num_papers].tolist()
 
-    # 2.对每个领域召回论文，构造学者-论文子图，通过论文引用数之和对学者排名
+    # 2.对每个领域关联的论文，构造学者-论文子图，通过论文引用数之和构造学者排名
     author_rank = {}
     for i in tqdm(fid):
         pid, _ = g.in_edges(i, etype='has_field')
         sg = add_reverse_edges(dgl.in_subgraph(apg, {'paper': pid}, relabel_nodes=True))
-
-        # 第k作者的权重为1/k，最后一个视为通讯作者，权重为1/2
-        sg.edges['writes'].data['w'] = 1.0 / sg.edges['writes'].data['order']
-        sg.update_all(fn.copy_e('w', 'w'), fn.min('w', 'mw'), etype='writes')
-        sg.apply_edges(fn.copy_u('mw', 'mw'), etype='writes_rev')
-        w, mw = sg.edges['writes'].data.pop('w'), sg.edges['writes_rev'].data.pop('mw')
-        w[w == mw] = 0.5
-
-        # 每篇论文所有作者的权重归一化，每个学者所有论文的引用数加权求和
-        p = edge_softmax(sg['author', 'writes', 'paper'], torch.log(w).unsqueeze(dim=1))
-        sg.edges['writes_rev'].data['p'] = p.squeeze(dim=1)
-        sg.update_all(fn.u_mul_e('citation', 'p', 'c'), fn.sum('c', 'c'), etype='writes_rev')
-        author_citation = sg.nodes['author'].data['c']
-
-        _, aid = author_citation.topk(args.num_authors)
-        aid = sg.nodes['author'].data[dgl.NID][aid]
+        author_citation = calc_author_citation(sg)
+        _, idx = author_citation.topk(args.num_authors)
+        aid = sg.nodes['author'].data[dgl.NID][idx]
         author_rank[i] = aid.tolist()
     if args.use_field_name:
         fields = [f['name'] for f in iter_json(DATA_DIR / 'oag/cs/mag_fields.txt')]
@@ -108,6 +95,26 @@ def build_ground_truth_train(args):
     with open(DATA_DIR / 'rank/author_rank_train.json', 'w') as f:
         json.dump(author_rank, f)
         print('结果已保存到', f.name)
+
+
+def calc_author_citation(g):
+    """使用论文引用数加权求和计算学者引用数
+
+    :param g: DGLGraph 学者-论文二分图
+    :return: tensor(N_author) 学者引用数
+    """
+    # 第k作者的权重为1/k，最后一个视为通讯作者，权重为1/2
+    g.edges['writes'].data['w'] = 1.0 / g.edges['writes'].data['order']
+    g.update_all(fn.copy_e('w', 'w'), fn.min('w', 'mw'), etype='writes')
+    g.apply_edges(fn.copy_u('mw', 'mw'), etype='writes_rev')
+    w, mw = g.edges['writes'].data.pop('w'), g.edges['writes_rev'].data.pop('mw')
+    w[w == mw] = 0.5
+
+    # 每篇论文所有作者的权重归一化，每个学者所有论文的引用数加权求和
+    p = edge_softmax(g['author', 'writes', 'paper'], torch.log(w).unsqueeze(dim=1))
+    g.edges['writes_rev'].data['p'] = p.squeeze(dim=1)
+    g.update_all(fn.u_mul_e('citation', 'p', 'c'), fn.sum('c', 'c'), etype='writes_rev')
+    return g.nodes['author'].data['c']
 
 
 def evaluate_ground_truth(args):
@@ -127,11 +134,12 @@ def evaluate_ground_truth(args):
         for r, a in enumerate(author_rank_val[f]):
             if a != -1:
                 true_relevance[i, a] = math.ceil((100 - r) / 10)
+        author_rank_val[f] = [a for a in author_rank_val[f] if a != -1]
         for r, a in enumerate(author_rank_train[f]):
             scores[i, a] = len(author_rank_train[f]) - r
 
     for k in (100, 50, 20, 10, 5):
-        print('nDGC@{0}={1:.4f}\tPrecision@{0}={2:.4f}\tRecall@{0}={3:.4f}'.format(
+        print('nDCG@{0}={1:.4f}\tPrecision@{0}={2:.4f}\tRecall@{0}={3:.4f}'.format(
             k, ndcg_score(true_relevance, scores, k=k, ignore_ties=True),
             sum(precision_at_k(author_rank_val[f], author_rank_train[f], k) for f in fields) / len(fields),
             sum(recall_at_k(author_rank_val[f], author_rank_train[f], k) for f in fields) / len(fields)

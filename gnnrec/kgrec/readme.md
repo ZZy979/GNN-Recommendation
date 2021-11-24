@@ -14,13 +14,13 @@ python -m gnnrec.kgrec.random_walk model/word2vec/oag_cs_corpus.txt
 python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 model/word2vec/oag_cs_corpus.txt model/word2vec/oag_cs.model
 ```
 
-## 召回
+## 论文召回
 使用微调后的SciBERT模型（见 [readme](data/readme.md) 第2步）将查询词编码为向量，与预先计算好的论文标题向量计算余弦相似度，取top k
 ```shell
 python -m gnnrec.kgrec.recall
 ```
 
-召回结果示例：
+论文召回结果示例：
 
 graph neural network
 ```
@@ -100,11 +100,11 @@ python -m gnnrec.kgrec.data.preprocess.build_author_rank eval
 ```
 
 ```
-nDGC@100=0.2420 Precision@100=0.1859    Recall@100=0.2016
-nDGC@50=0.2308  Precision@50=0.2494     Recall@50=0.1351
-nDGC@20=0.2492  Precision@20=0.3118     Recall@20=0.0678
-nDGC@10=0.2743  Precision@10=0.3471     Recall@10=0.0376
-nDGC@5=0.3165   Precision@5=0.3765      Recall@5=0.0203
+nDCG@100=0.2420 Precision@100=0.1859    Recall@100=0.2037
+nDCG@50=0.2308  Precision@50=0.2494     Recall@50=0.1365
+nDCG@20=0.2492  Precision@20=0.3118     Recall@20=0.0685
+nDCG@10=0.2743  Precision@10=0.3471     Recall@10=0.0380
+nDCG@5=0.3165   Precision@5=0.3765      Recall@5=0.0205
 ```
 
 ### 训练GNN模型
@@ -117,17 +117,8 @@ Precision 0.9236 | Recall 0.9632 | F1 0.9430
 ```
 训练完成后得到论文嵌入rank/paper_embed.pkl
 
-连接预测的边由P-F改为F-P，模型输出的边得分使用sigmoid归一化
-连接预测的F1能到0.96以上，但每个领域单独召回论文的召回率仍然很低
-TODO 分析原因，提升召回率
-
 （2）学者排名
 ```shell
 python -m gnnrec.kgrec.train_rank model/word2vec/oag-cs.model model/rhgnn_garec_rank.pt
 ```
 训练完成后得到学者嵌入rank/author_embed.pkl
-
-三元组的采样范围由每个领域的top-n学者改为每个领域召回的论文关联的所有学者
-（论文召回仍然直接使用ground truth）
-学者嵌入归一化（保证三元组损失中的距离和最终预测时的内积/余弦相似度等价）
-nDCG@100提升到0.38，仍需继续优化

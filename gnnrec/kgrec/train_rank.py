@@ -4,6 +4,7 @@ import math
 import random
 import warnings
 
+import dgl
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -17,8 +18,11 @@ from gnnrec.config import DATA_DIR
 from gnnrec.hge.rhgnn.model import RHGNN
 from gnnrec.hge.utils import set_random_seed, get_device, add_reverse_edges, add_node_feat
 from gnnrec.kgrec.data import OAGCSDataset
+from gnnrec.kgrec.data.preprocess.build_author_rank import calc_author_citation
 from gnnrec.kgrec.train_recall import load_data as load_recall_data
-from gnnrec.kgrec.utils import TripletNodeCollator
+from gnnrec.kgrec.utils import TripletNodeCollator, recall_at_k
+
+K = [1, 10, 20, 50, 100]
 
 
 def load_data(device):
@@ -46,12 +50,8 @@ def recall_paper(g, field_ids, num_recall):
     :param num_recall: 每个领域召回的论文数
     :return: Dict[int, List[int]] {field_id: [paper_id]}
     """
-    g, _, train_eids = load_recall_data()
-    u, v = g.find_edges(train_eids, etype='has_field')
-    field_paper = {f: [] for f in field_ids}
-    for p, f in zip(u.tolist(), v.tolist()):
-        field_paper[f].append(p)
-    return field_paper
+    _, field_papers, _ = load_recall_data()
+    return {f: list(field_pid & author_pid) for f, (field_pid, author_pid) in field_papers.items()}
 
 
 def sample_triplets(field_id, true_author_ids, false_author_ids, num_triplets):
@@ -86,6 +86,8 @@ def train(args):
     device = get_device(args.device)
     g, author_rank, field_ids, true_relevance = load_data(device)
     # g.nodes['paper'].data['feat'] = torch.load(DATA_DIR / 'rank/paper_embed.pkl', map_location=device)
+    g.nodes['paper'].data['citation'] = g.nodes['paper'].data['citation'].float().log1p()
+    g.edges['writes'].data['order'] = g.edges['writes'].data['order'].float()
     out_dim = g.nodes['field'].data['feat'].shape[1]
     add_node_feat(g, 'pretrained', args.node_embed_path)
     field_paper = recall_paper(g, field_ids, args.num_recall)  # {field_id: [paper_id]}
@@ -99,6 +101,8 @@ def train(args):
         args.num_hidden, out_dim, args.num_rel_hidden, args.num_rel_hidden,
         args.num_heads, g.ntypes, g.canonical_etypes, 'author', args.num_layers, args.dropout
     ).to(device)
+    if args.load_path:
+        model.load_state_dict(torch.load(args.load_path, map_location=device))
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=len(field_ids) * args.epochs, eta_min=args.lr / 100
@@ -126,11 +130,14 @@ def train(args):
             scheduler.step()
             torch.cuda.empty_cache()
         print('Epoch {:d} | Loss {:.4f}'.format(epoch, sum(losses) / len(losses)))
+        torch.save(model.state_dict(), args.model_save_path)
         if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
-            print(' | '.join(f'nDCG@{k}={{0[{k}]:.4f}}' for k in (1, 10, 20, 50, 100)).format(evaluate(
+            ndgc_scores, recall_scores = evaluate(
                 model, g, out_dim, sampler, args.batch_size, device, field_ids,
                 field_paper, true_relevance
-            )))
+            )
+            print(' | '.join(f'nDCG@{k}={{0[{k}]:.4f}}' for k in K).format(ndgc_scores))
+            print(' | '.join(f'Recall@{k}={{0[{k}]:.4f}}' for k in K).format(recall_scores))
     torch.save(model.state_dict(), args.model_save_path)
     print('模型已保存到', args.model_save_path)
 
@@ -145,14 +152,23 @@ def evaluate(model, g, out_dim, sampler, batch_size, device, field_ids, field_pa
     model.eval()
     field_feat = g.nodes['field'].data['feat']
     author_embeds = infer(model, g, 'author', out_dim, sampler, batch_size, device)  # (N_author, d)
-    ndcg_scores = {k: [] for k in (1, 10, 20, 50, 100)}
+    ndcg_scores = {k: [] for k in K}
+    recall_scores = {k: [] for k in K}
+    apg = g['author', 'writes', 'paper'].cpu()
     for i, f in enumerate(field_ids):
-        aid = g.in_edges(field_paper[f], etype='writes')[0].cpu().numpy()
+        sg = add_reverse_edges(dgl.in_subgraph(apg, {'paper': field_paper[f]}, relabel_nodes=True))
+        author_citation = calc_author_citation(sg)
+        _, idx = author_citation.topk(120)
+        aid = sg.nodes['author'].data[dgl.NID][idx].numpy()
+        similarity = torch.matmul(author_embeds[aid], field_feat[f]).cpu()
+        pred_aid = aid[similarity.argsort(descending=True)]
         y_true = true_relevance[i, aid][np.newaxis]
-        y_score = torch.matmul(author_embeds[aid], field_feat[f]).cpu().numpy()[np.newaxis]
+        y_score = similarity.numpy()[np.newaxis]
         for k in ndcg_scores:
             ndcg_scores[k].append(ndcg_score(y_true, y_score, k=k, ignore_ties=True))
-    return {k: sum(scores) / len(scores) for k, scores in ndcg_scores.items()}
+            recall_scores[k].append(recall_at_k(aid, pred_aid, k))
+    return {k: sum(s) / len(s) for k, s in ndcg_scores.items()}, \
+           {k: sum(s) / len(s) for k, s in recall_scores.items()}
 
 
 @torch.no_grad()
@@ -176,10 +192,11 @@ def main():
     parser.add_argument('--num-heads', type=int, default=8, help='注意力头数')
     parser.add_argument('--num-layers', type=int, default=2, help='层数')
     parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
-    parser.add_argument('--epochs', type=int, default=50, help='训练epoch数')
+    parser.add_argument('--epochs', type=int, default=150, help='训练epoch数')
     parser.add_argument('--batch-size', type=int, default=1024, help='批大小')
     parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
     parser.add_argument('--lr', type=float, default=0.001, help='学习率')
+    parser.add_argument('--load-path', help='模型加载路径，用于继续训练')
     # 采样三元组
     parser.add_argument('--num-triplets', type=int, default=1000, help='每个领域采样三元组数量')
     # 评价
