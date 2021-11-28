@@ -1,7 +1,7 @@
 from django.apps import AppConfig
 from django.conf import settings
 
-from gnnrec.kgrec import recall, rank
+from gnnrec.kgrec.garec import recall, rank
 
 
 class RankConfig(AppConfig):

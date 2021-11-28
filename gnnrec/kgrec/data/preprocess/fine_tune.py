@@ -9,7 +9,7 @@ from transformers import get_linear_schedule_with_warmup
 from gnnrec.config import DATA_DIR, MODEL_DIR
 from gnnrec.hge.utils import set_random_seed, get_device, accuracy
 from gnnrec.kgrec.data import OAGCSContrastDataset
-from gnnrec.kgrec.model import ContrastiveSciBERT
+from gnnrec.kgrec.garec.model import ContrastiveSciBERT
 from gnnrec.kgrec.utils import iter_json
 
 

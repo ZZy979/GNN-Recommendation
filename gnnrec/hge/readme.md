@@ -103,24 +103,24 @@ ogbn-mag（第3步如果中断可使用--load-path参数继续训练）
 ```shell
 python -m gnnrec.hge.hgt.train --dataset=ogbn-mag --node-embed-path=model/word2vec/ogbn-mag.model --epochs=40 --save-path=model/hgt/hgt_ogbn-mag.pt
 python -m gnnrec.hge.rhco.build_pos_graph --dataset=ogbn-mag --num-samples=5 --use-label model/word2vec/ogbn-mag.model model/hgt/hgt_ogbn-mag.pt data/graph/pos_graph_ogbn-mag_t5l.bin
-python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --num-hidden=64 --contrast-weight=0.9 model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5l.bin model/rhco_ogbn-mag_d64_a0.9_t5l.pt
-python -m gnnrec.hge.rhco.smooth --dataset=ogbn-mag model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5l.bin model/rhco_ogbn-mag_d64_a0.9_t5l.pt
+python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --num-hidden=64 --contrast-weight=0.9 model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5l.bin model/rhco/rhco_ogbn-mag_d64_a0.9_t5l.pt
+python -m gnnrec.hge.rhco.smooth --dataset=ogbn-mag model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5l.bin model/rhco/rhco_ogbn-mag_d64_a0.9_t5l.pt
 ```
 
 oag-venue
 ```shell
 python -m gnnrec.hge.hgt.train --dataset=oag-venue --node-embed-path=model/word2vec/oag-cs.model --epochs=40 --save-path=model/hgt/hgt_oag-venue.pt
 python -m gnnrec.hge.rhco.build_pos_graph --dataset=oag-venue --num-samples=5 --use-label model/word2vec/oag-cs.model model/hgt/hgt_oag-venue.pt data/graph/pos_graph_oag-venue_t5l.bin
-python -m gnnrec.hge.rhco.train --dataset=oag-venue --num-hidden=64 --contrast-weight=0.9 model/word2vec/oag-cs.model data/graph/pos_graph_oag-venue_t5l.bin model/rhco_oag-venue.pt
-python -m gnnrec.hge.rhco.smooth --dataset=oag-venue model/word2vec/oag-cs.model data/graph/pos_graph_oag-venue_t5l.bin model/rhco_oag-venue.pt
+python -m gnnrec.hge.rhco.train --dataset=oag-venue --num-hidden=64 --contrast-weight=0.9 model/word2vec/oag-cs.model data/graph/pos_graph_oag-venue_t5l.bin model/rhco/rhco_oag-venue.pt
+python -m gnnrec.hge.rhco.smooth --dataset=oag-venue model/word2vec/oag-cs.model data/graph/pos_graph_oag-venue_t5l.bin model/rhco/rhco_oag-venue.pt
 ```
 
 消融实验
 ```shell
-python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --model=RHCO_sc model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5l.bin model/rhco_sc_ogbn-mag.pt
-python -m gnnrec.hge.rhco.train --dataset=oag-venue --model=RHCO_sc model/word2vec/oag-cs.model data/graph/pos_graph_oag-venue_t5l.bin model/rhco_sc_oag-venue.pt
-python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --model=RHCO_pg model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5.bin model/rhco_pg_ogbn-mag.pt
-python -m gnnrec.hge.rhco.train --dataset=oag-venue --model=RHCO_pg model/word2vec/oag-cs.model data/graph/pos_graph_oag-venue_t5.bin model/rhco_pg_oag-venue.pt
+python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --model=RHCO_sc model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5l.bin model/rhco/rhco_sc_ogbn-mag.pt
+python -m gnnrec.hge.rhco.train --dataset=oag-venue --model=RHCO_sc model/word2vec/oag-cs.model data/graph/pos_graph_oag-venue_t5l.bin model/rhco/rhco_sc_oag-venue.pt
+python -m gnnrec.hge.rhco.train --dataset=ogbn-mag --model=RHCO_pg model/word2vec/ogbn-mag.model data/graph/pos_graph_ogbn-mag_t5.bin model/rhco/rhco_pg_ogbn-mag.pt
+python -m gnnrec.hge.rhco.train --dataset=oag-venue --model=RHCO_pg model/word2vec/oag-cs.model data/graph/pos_graph_oag-venue_t5.bin model/rhco/rhco_pg_oag-venue.pt
 ```
 
 ## 实验结果

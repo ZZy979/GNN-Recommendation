@@ -108,7 +108,7 @@ class SearchPaperViewTests(TestCase):
     def setUp(self):
         self.client.post(reverse('rank:login'), data={'username': 'alice', 'password': '1234'})
 
-    @patch('gnnrec.kgrec.recall.recall', return_value=(None, [1, 2]))
+    @patch('gnnrec.kgrec.garec.recall.recall', return_value=(None, [1, 2]))
     def test_ok(self, recall):
         response = self.client.get(reverse('rank:search-paper'), data={'q': 'xxx'})
         self.assertEqual(200, response.status_code)
@@ -189,7 +189,7 @@ class AuthorRankViewTests(TestCase):
     def setUp(self):
         self.client.post(reverse('rank:login'), data={'username': 'alice', 'password': '1234'})
 
-    @patch('gnnrec.kgrec.rank.rank', return_value=(None, [1, 0]))
+    @patch('gnnrec.kgrec.garec.rank.rank', return_value=(None, [1, 0]))
     def test_ok(self, rank):
         response = self.client.get(reverse('rank:author-rank'), data={'q': 'xxx'})
         self.assertEqual(200, response.status_code)

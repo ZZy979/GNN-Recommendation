@@ -3,9 +3,9 @@ import json
 import torch
 
 from gnnrec.config import DATA_DIR
-from gnnrec.kgrec import recall
+from gnnrec.kgrec.garec import recall
 from gnnrec.kgrec.data import OAGCSDataset
-from gnnrec.kgrec.utils import iter_json
+from gnnrec.kgrec.utils import iter_json, load_author_rank
 
 
 class Context:
@@ -27,13 +27,17 @@ class Context:
 
 
 def get_context(recall_ctx):
-    apg = OAGCSDataset()[0]['author', 'writes', 'paper']
+    g = OAGCSDataset()[0]
+    g.nodes['paper'].data['citation'] = g.nodes['paper'].data['citation'].float().log1p()
+    g.edges['writes'].data['order'] = g.edges['writes'].data['order'].float()
+    apg = g['author', 'writes', 'paper']
+
     author_embeds = torch.load(DATA_DIR / 'rank/author_embed.pkl', map_location='cpu')
     field2id = {f['name']: i for i, f in enumerate(iter_json(DATA_DIR / 'oag/cs/mag_fields.txt'))}
-    with open(DATA_DIR / 'rank/author_rank_train.json') as f:
-        author_rank = {int(k): v for k, v in json.load(f).items()}
-    with open(DATA_DIR / 'rank/author_rank_val.json') as f:
-        author_rank.update({int(k): v for k, v in json.load(f).items()})
+
+    # TODO 直接使用引用数计算就没必要加载train.json
+    author_rank = load_author_rank(True)
+    author_rank.update(load_author_rank(False))
     return Context(recall_ctx, apg, author_embeds, field2id, author_rank)
 
 

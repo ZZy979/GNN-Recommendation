@@ -102,17 +102,24 @@ def average_node_feat(g):
     g.multi_update_all({'affiliated_with': (message_func, reduce_func)}, 'sum')
 
 
-def load_pretrained_node_embed(g, node_embed_path, concat=False):
+def load_pretrained_node_embed(g, node_embed_path, concat=False, use_raw_id=False):
     """为没有输入特征的顶点加载预训练的顶点特征
 
     :param g: DGLGraph 异构图
     :param node_embed_path: str 预训练的word2vec模型路径
     :param concat: bool, optional 如果为True则将预训练特征与原输入特征拼接
+    :param use_raw_id: bool, optional 使用原始顶点id
     """
     model = Word2Vec.load(node_embed_path)
     for ntype in g.ntypes:
-        embed = torch.from_numpy(model.wv[[f'{ntype}_{i}' for i in range(g.num_nodes(ntype))]]) \
-            .to(g.device)
+        if use_raw_id:
+            embed = torch.from_numpy(
+                model.wv[[f'{ntype}_{i}' for i in g.nodes[ntype].data[dgl.NID].tolist()]]
+            ).to(g.device)
+        else:
+            embed = torch.from_numpy(
+                model.wv[[f'{ntype}_{i}' for i in range(g.num_nodes(ntype))]]
+            ).to(g.device)
         if 'feat' in g.nodes[ntype].data:
             if concat:
                 g.nodes[ntype].data['feat'] = torch.cat([g.nodes[ntype].data['feat'], embed], dim=1)
@@ -120,19 +127,20 @@ def load_pretrained_node_embed(g, node_embed_path, concat=False):
             g.nodes[ntype].data['feat'] = embed
 
 
-def add_node_feat(g, method, node_embed_path=None, concat=False):
+def add_node_feat(g, method, node_embed_path=None, concat=False, use_raw_id=False):
     """为没有输入特征的顶点添加输入特征
 
     :param g: DGLGraph 异构图
     :param method: str one-hot, average（仅用于ogbn-mag数据集）, pretrained
     :param node_embed_path: str 预训练的word2vec模型路径
     :param concat: bool, optional 如果为True则将预训练特征与原输入特征拼接
+    :param use_raw_id: bool, optional 使用原始顶点id
     """
     if method == 'one-hot':
         one_hot_node_feat(g)
     elif method == 'average':
         average_node_feat(g)
     elif method == 'pretrained':
-        load_pretrained_node_embed(g, node_embed_path, concat)
+        load_pretrained_node_embed(g, node_embed_path, concat, use_raw_id)
     else:
         raise ValueError(f'add_node_feat: 未知方法{method}')

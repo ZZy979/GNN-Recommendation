@@ -2,7 +2,7 @@ import torch
 
 from gnnrec.config import DATA_DIR, MODEL_DIR
 from gnnrec.kgrec.data import OAGCSContrastDataset
-from gnnrec.kgrec.model import ContrastiveSciBERT
+from gnnrec.kgrec.garec.model import ContrastiveSciBERT
 
 
 class Context:

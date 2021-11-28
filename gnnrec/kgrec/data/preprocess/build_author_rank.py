@@ -3,17 +3,15 @@ import json
 import math
 
 import dgl
-import dgl.function as fn
 import numpy as np
-import torch
-from dgl.ops import edge_softmax
 from sklearn.metrics import ndcg_score
 from tqdm import tqdm
 
 from gnnrec.config import DATA_DIR
 from gnnrec.hge.utils import add_reverse_edges
-from gnnrec.kgrec.data import OAGCSDataset
-from gnnrec.kgrec.utils import iter_json, precision_at_k, recall_at_k
+from gnnrec.kgrec.data import OAGCSDataset, OAGCoreDataset
+from gnnrec.kgrec.utils import iter_json, load_author_rank, precision_at_k, recall_at_k, \
+    calc_author_citation
 
 
 def build_ground_truth_valid(args):
@@ -69,7 +67,7 @@ def build_ground_truth_valid(args):
 
 def build_ground_truth_train(args):
     """根据某个领域的论文引用数加权求和构造学者排名，作为ground truth训练集。"""
-    data = OAGCSDataset()
+    data = OAGCoreDataset()
     g = data[0]
     g.nodes['paper'].data['citation'] = g.nodes['paper'].data['citation'].float().log1p()
     g.edges['writes'].data['order'] = g.edges['writes'].data['order'].float()
@@ -88,41 +86,21 @@ def build_ground_truth_train(args):
         _, idx = author_citation.topk(args.num_authors)
         aid = sg.nodes['author'].data[dgl.NID][idx]
         author_rank[i] = aid.tolist()
-    if args.use_field_name:
-        fields = [f['name'] for f in iter_json(DATA_DIR / 'oag/cs/mag_fields.txt')]
-        author_rank = {fields[i]: aid for i, aid in author_rank.items()}
+    if args.use_original_id:
+        author_rank = {
+            g.nodes['field'].data[dgl.NID][i].item(): g.nodes['author'].data[dgl.NID][aid].tolist()
+            for i, aid in author_rank.items()
+        }
 
     with open(DATA_DIR / 'rank/author_rank_train.json', 'w') as f:
         json.dump(author_rank, f)
         print('结果已保存到', f.name)
 
 
-def calc_author_citation(g):
-    """使用论文引用数加权求和计算学者引用数
-
-    :param g: DGLGraph 学者-论文二分图
-    :return: tensor(N_author) 学者引用数
-    """
-    # 第k作者的权重为1/k，最后一个视为通讯作者，权重为1/2
-    g.edges['writes'].data['w'] = 1.0 / g.edges['writes'].data['order']
-    g.update_all(fn.copy_e('w', 'w'), fn.min('w', 'mw'), etype='writes')
-    g.apply_edges(fn.copy_u('mw', 'mw'), etype='writes_rev')
-    w, mw = g.edges['writes'].data.pop('w'), g.edges['writes_rev'].data.pop('mw')
-    w[w == mw] = 0.5
-
-    # 每篇论文所有作者的权重归一化，每个学者所有论文的引用数加权求和
-    p = edge_softmax(g['author', 'writes', 'paper'], torch.log(w).unsqueeze(dim=1))
-    g.edges['writes_rev'].data['p'] = p.squeeze(dim=1)
-    g.update_all(fn.u_mul_e('citation', 'p', 'c'), fn.sum('c', 'c'), etype='writes_rev')
-    return g.nodes['author'].data['c']
-
-
 def evaluate_ground_truth(args):
     """评估ground truth训练集的质量。"""
-    with open(DATA_DIR / 'rank/author_rank_val.json') as f:
-        author_rank_val = json.load(f)
-    with open(DATA_DIR / 'rank/author_rank_train.json') as f:
-        author_rank_train = json.load(f)
+    author_rank_val = load_author_rank(False)
+    author_rank_train = load_author_rank(True)
     fields = list(set(author_rank_val) & set(author_rank_train))
     author_rank_val = {k: v for k, v in author_rank_val.items() if k in fields}
     author_rank_train = {k: v for k, v in author_rank_train.items() if k in fields}
@@ -157,7 +135,7 @@ def main():
     build_train_parser = subparsers.add_parser('build-train', help='构造学者排名训练集')
     build_train_parser.add_argument('--num-papers', type=int, default=5000, help='筛选领域的论文数阈值')
     build_train_parser.add_argument('--num-authors', type=int, default=100, help='每个领域取top k的学者数量')
-    build_train_parser.add_argument('--use-field-name', action='store_true', help='使用领域名称（用于调试）')
+    build_train_parser.add_argument('--use-original-id', action='store_true', help='使用原始id')
     build_train_parser.set_defaults(func=build_ground_truth_train)
 
     evaluate_parser = subparsers.add_parser('eval', help='评估ground truth训练集的质量')

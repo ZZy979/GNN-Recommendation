@@ -10,7 +10,7 @@ from django.views import View
 from django.views.generic import ListView, DetailView
 from django.views.generic.detail import SingleObjectMixin
 
-from gnnrec.kgrec import recall, rank
+from gnnrec.kgrec.garec import recall, rank
 from .models import Author, Paper
 
 
