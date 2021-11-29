@@ -20,13 +20,25 @@ def plot_rank():
             ax.plot(K, df[model][i * n:(i + 1) * n].to_numpy(), fmt, label=model)
         ax.set_xlabel('k')
         ax.set_xticks(K, K)
+        ax.set_ylabel(metric)
         ax.legend()
-        ax.set_title(metric)
         fig.savefig(RESULT_DIR / f'rank_{metric[:-2]}.png')
+
+
+def plot_param_analysis():
+    df = pd.read_csv(RESULT_DIR / 'param_analysis.csv')
+    fig, ax = plt.subplots()
+    x = df['alpha'].to_numpy()
+    ax.semilogx(x, df['nDCG@100'].to_numpy(), '.-', label='nDCG@100')
+    ax.semilogx(x, df['Recall@100'].to_numpy(), '*--', label='Recall@100')
+    ax.set_xlabel('alpha')
+    ax.legend()
+    fig.savefig(RESULT_DIR / 'param_analysis_alpha.png')
 
 
 def main():
     plot_rank()
+    plot_param_analysis()
 
 
 if __name__ == '__main__':

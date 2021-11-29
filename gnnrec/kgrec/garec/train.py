@@ -49,7 +49,7 @@ def train(args):
     g, author_rank, field_ids, true_relevance = load_rank_data(device)
     out_dim = g.nodes['field'].data['feat'].shape[1]
     add_node_feat(g, 'pretrained', args.node_embed_path, use_raw_id=True)
-    field_paper = recall_paper(g, field_ids, args.num_recall)  # {field_id: [paper_id]}
+    field_paper = recall_paper(g.cpu(), field_ids, args.num_recall)  # {field_id: [paper_id]}
 
     sampler = MultiLayerNeighborSampler([args.neighbor_size] * args.num_layers)
     sampler.set_output_context(to_dgl_context(device))
@@ -80,7 +80,7 @@ def train(args):
             anchor = g.nodes['field'].data['feat'][triplets[:, 0]]
             positive = author_embeds[[aid_map[a] for a in triplets[:, 1].tolist()]]
             negative = author_embeds[[aid_map[a] for a in triplets[:, 2].tolist()]]
-            loss = F.triplet_margin_loss(anchor, positive, negative)
+            loss = F.triplet_margin_loss(anchor, positive, negative, args.margin)
 
             losses.append(loss.item())
             optimizer.zero_grad()
@@ -141,10 +141,11 @@ def main():
     parser.add_argument('--epochs', type=int, default=100, help='训练epoch数')
     parser.add_argument('--batch-size', type=int, default=1024, help='批大小')
     parser.add_argument('--neighbor-size', type=int, default=10, help='邻居采样数')
+    parser.add_argument('--margin', type=float, default=0.02, help='三元组损失间隔参数')
     parser.add_argument('--lr', type=float, default=0.001, help='学习率')
     parser.add_argument('--load-path', help='模型加载路径，用于继续训练')
     # 采样三元组
-    parser.add_argument('--num-triplets', type=int, default=1000, help='每个领域采样三元组数量')
+    parser.add_argument('--num-triplets', type=int, default=200, help='每个领域采样三元组数量')
     # 评价
     parser.add_argument('--eval-every', type=int, default=10, help='每多少个epoch评价一次')
     parser.add_argument('--num-recall', type=int, default=200, help='每个领域召回论文的数量')

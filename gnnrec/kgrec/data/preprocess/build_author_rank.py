@@ -67,9 +67,11 @@ def build_ground_truth_valid(args):
 
 def build_ground_truth_train(args):
     """根据某个领域的论文引用数加权求和构造学者排名，作为ground truth训练集。"""
-    data = OAGCoreDataset()
+    data = OAGCSDataset() if args.use_original_id else OAGCoreDataset()
     g = data[0]
-    g.nodes['paper'].data['citation'] = g.nodes['paper'].data['citation'].float().log1p()
+    g.nodes['paper'].data['citation'] = g.nodes['paper'].data['citation'].float()
+    if args.log_citation:
+        g.nodes['paper'].data['citation'] = g.nodes['paper'].data['citation'].log1p()
     g.edges['writes'].data['order'] = g.edges['writes'].data['order'].float()
     apg = g['author', 'writes', 'paper']
 
@@ -86,21 +88,17 @@ def build_ground_truth_train(args):
         _, idx = author_citation.topk(args.num_authors)
         aid = sg.nodes['author'].data[dgl.NID][idx]
         author_rank[i] = aid.tolist()
-    if args.use_original_id:
-        author_rank = {
-            g.nodes['field'].data[dgl.NID][i].item(): g.nodes['author'].data[dgl.NID][aid].tolist()
-            for i, aid in author_rank.items()
-        }
 
-    with open(DATA_DIR / 'rank/author_rank_train.json', 'w') as f:
+    suffix = '_original' if args.use_original_id else ''
+    with open(DATA_DIR / f'rank/author_rank_train{suffix}.json', 'w') as f:
         json.dump(author_rank, f)
         print('结果已保存到', f.name)
 
 
 def evaluate_ground_truth(args):
     """评估ground truth训练集的质量。"""
-    author_rank_val = load_author_rank(False)
-    author_rank_train = load_author_rank(True)
+    author_rank_val = load_author_rank('val')
+    author_rank_train = load_author_rank('train_original')
     fields = list(set(author_rank_val) & set(author_rank_train))
     author_rank_val = {k: v for k, v in author_rank_val.items() if k in fields}
     author_rank_train = {k: v for k, v in author_rank_train.items() if k in fields}
@@ -135,6 +133,7 @@ def main():
     build_train_parser = subparsers.add_parser('build-train', help='构造学者排名训练集')
     build_train_parser.add_argument('--num-papers', type=int, default=5000, help='筛选领域的论文数阈值')
     build_train_parser.add_argument('--num-authors', type=int, default=100, help='每个领域取top k的学者数量')
+    build_train_parser.add_argument('--log-citation', action='store_true', help='论文引用数取对数')
     build_train_parser.add_argument('--use-original-id', action='store_true', help='使用原始id')
     build_train_parser.set_defaults(func=build_ground_truth_train)
 

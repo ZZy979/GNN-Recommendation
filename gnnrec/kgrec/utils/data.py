@@ -2,6 +2,7 @@ import json
 import math
 
 import dgl
+import dgl.function as fn
 import numpy as np
 import torch
 from dgl.dataloading import Collator
@@ -69,14 +70,13 @@ def calc_author_citation(g):
         return g.nodes['author'].data['c']
 
 
-def load_author_rank(train=True):
+def load_author_rank(split='train'):
     """加载领域学者排名数据集
 
-    :param train: bool, optional True - 训练集，False - 验证集(AI 2000)
+    :param split: str, optional 训练集/验证集
     :return: Dict[int, List[int]] {field_id: [author_id]}
     """
     from ...config import DATA_DIR
-    split = 'train' if train else 'val'
     with open(DATA_DIR / f'rank/author_rank_{split}.json') as f:
         return {int(k): v for k, v in json.load(f).items()}
 
@@ -113,6 +113,23 @@ def load_rank_data(device='cpu'):
 
 
 def recall_paper(g, field_ids, num_recall):
+    """预先计算论文召回
+
+    :param g: DGLGraph 异构图
+    :param field_ids: List[int] 目标领域id
+    :param num_recall: 每个领域召回的论文数
+    :return: Dict[int, List[int]] {field_id: [paper_id]}
+    """
+    similarity = torch.zeros(len(field_ids), g.num_nodes('paper'))
+    sg = dgl.out_subgraph(g['has_field_rev'], {'field': field_ids}, relabel_nodes=True)
+    sg.apply_edges(fn.u_dot_v('feat', 'feat', 's'))
+    f, p = sg.edges()
+    similarity[f, sg.nodes['paper'].data[dgl.NID][p]] = sg.edata['s'].squeeze(dim=1)
+    _, pid = similarity.topk(num_recall, dim=1)
+    return {f: pid[i].tolist() for i, f in enumerate(field_ids)}
+
+
+def recall_paper_by_citation(g, field_ids, num_recall):
     """预先计算论文召回
 
     :param g: DGLGraph 异构图

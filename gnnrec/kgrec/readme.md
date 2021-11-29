@@ -28,21 +28,21 @@ python -m gnnrec.kgrec.data.preprocess.build_author_rank build-val
 即：假设一篇论文有n个作者，第k作者的权重为1/k，最后一个视为通讯作者，权重为1/2，归一化之后计算论文引用数的加权求和
 
 ```shell
-python -m gnnrec.kgrec.data.preprocess.build_author_rank build-train
+python -m gnnrec.kgrec.data.preprocess.build_author_rank build-train --log-citation
 ```
 
 （3）评估ground truth训练集的质量
 ```shell
-python -m gnnrec.kgrec.data.preprocess.build_author_rank build-train --use-original-id
+python -m gnnrec.kgrec.data.preprocess.build_author_rank build-train --log-citation --use-original-id
 python -m gnnrec.kgrec.data.preprocess.build_author_rank eval
 ```
 
 ```
-nDCG@100=0.1999 Precision@100=0.1580    Recall@100=0.1719
-nDCG@50=0.1833  Precision@50=0.2013     Recall@50=0.1095
-nDCG@20=0.2077  Precision@20=0.2767     Recall@20=0.0601
-nDCG@10=0.2354  Precision@10=0.3200     Recall@10=0.0349
-nDCG@5=0.2499   Precision@5=0.3600      Recall@5=0.0196
+nDCG@100=0.2420 Precision@100=0.1859    Recall@100=0.2037
+nDCG@50=0.2308  Precision@50=0.2494     Recall@50=0.1365
+nDCG@20=0.2492  Precision@20=0.3118     Recall@20=0.0685
+nDCG@10=0.2743  Precision@10=0.3471     Recall@10=0.0380
+nDCG@5=0.3165   Precision@5=0.3765      Recall@5=0.0205
 ```
 
 ## GARec
@@ -130,3 +130,5 @@ python -m gnnrec.kgrec.kgcn.train
 
 ## 实验结果
 [学者排名](result/rank.csv)
+
+[参数敏感性分析](result/param_analysis.csv)

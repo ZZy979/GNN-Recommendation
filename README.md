@@ -94,8 +94,8 @@ python manage.py runserver --settings=academic_graph.settings.prod 0.0.0.0:8000
 论文详情
 ![论文详情](img/论文详情.png)
 
-搜索学者
-![搜索学者](img/搜索学者.png)
+学者排名
+![学者排名](img/学者排名.png)
 
 学者详情
 ![学者详情](img/学者详情.png)
