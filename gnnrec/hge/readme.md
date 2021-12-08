@@ -14,6 +14,7 @@
 
 ## Baselines
 * [R-GCN](https://arxiv.org/pdf/1703.06103)
+* [HAN](https://arxiv.org/pdf/1903.07293)
 * [HGT](https://arxiv.org/pdf/2003.01332)
 * [HGConv](https://arxiv.org/pdf/2012.14722)
 * [R-HGNN](https://arxiv.org/pdf/2105.11122)
@@ -35,6 +36,9 @@ python -m gnnrec.hge.rgcn.train --dataset=oag-venue --num-hidden=48 --epochs=30
 python -m gnnrec.hge.metapath2vec.random_walk model/word2vec/ogbn-mag_corpus.txt
 python -m gnnrec.hge.metapath2vec.train_word2vec --size=128 --workers=8 model/word2vec/ogbn-mag_corpus.txt model/word2vec/ogbn-mag.model
 ```
+
+### HAN
+结果来自HeCo论文
 
 ### HGT
 ```shell
