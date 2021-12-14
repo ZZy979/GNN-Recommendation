@@ -37,6 +37,7 @@ def plot_param_analysis():
 
 
 def main():
+    plt.rcParams['font.size'] = 12
     plot_rank()
     plot_param_analysis()
 

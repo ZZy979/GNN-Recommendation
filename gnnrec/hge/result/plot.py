@@ -18,7 +18,7 @@ def plot_param_analysis():
         ax.plot(x, df[f'Macro-F1_{p}'].dropna().to_numpy(), '*--', label='Macro-F1')
         ax.set_xlabel(p)
         ax.set_ylabel('Accuracy / Macro-F1')
-        ax.legend()
+        ax.legend(loc='center right')
         fig.savefig(RESULT_DIR / f'param_analysis_{p}.png')
 
 
@@ -34,12 +34,13 @@ def plot_ablation_study():
         for r, model in zip(range(-1, 2), ('RHCO_pg', 'RHCO_sc', 'RHCO')):
             ax.bar(x + r * width, df[model][i * 2:(i + 1) * 2].to_numpy(), width, label=model)
         ax.set_xticks(x, labels)
-        ax.legend()
+        ax.legend(loc='upper center')
         fig.tight_layout()
         fig.savefig(RESULT_DIR / f'ablation_study_{d}.png')
 
 
 def main():
+    plt.rcParams['font.size'] = 12
     plot_param_analysis()
     plot_ablation_study()
 
